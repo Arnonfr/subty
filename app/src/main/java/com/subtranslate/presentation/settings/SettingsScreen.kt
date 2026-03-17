@@ -9,12 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-
-private val LANGUAGES = listOf(
-    "he" to "עברית", "en" to "English", "fr" to "Français", "de" to "Deutsch",
-    "es" to "Español", "ar" to "العربية", "ru" to "Русский",
-    "zh-cn" to "中文", "ja" to "日本語", "pt" to "Português"
-)
+import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 private val MODELS = listOf(
     "gemini-2.5-flash" to "Gemini Flash — Fast & Cheap",
@@ -66,7 +61,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 SimpleDropdown(
                     label = "Default target language",
                     selected = state.defaultTargetLang,
-                    options = LANGUAGES,
+                    options = GOOGLE_TRANSLATE_LANGUAGES,
                     onSelect = viewModel::onTargetLangChange
                 )
 

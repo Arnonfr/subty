@@ -1,5 +1,6 @@
 package com.subtranslate.presentation.search
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
@@ -25,8 +26,12 @@ data class SearchUiState(
     val isLoading: Boolean = false,
     val results: List<SubtitleSearchResult> = emptyList(),
     val error: String? = null,
+    // Autocomplete
     val suggestions: List<FeatureDto> = emptyList(),
     val showSuggestions: Boolean = false,
+    val suggestionsLoading: Boolean = false,
+    val suggestionsError: String? = null,
+    // Selected title metadata
     val selectedPosterUrl: String? = null,
     val selectedMovieTitle: String? = null
 )
@@ -48,7 +53,10 @@ class SearchViewModel @Inject constructor(
     fun onQueryChange(query: String) {
         _uiState.value = _uiState.value.copy(
             query = query,
+            // Clear old suggestions immediately when query becomes too short
+            suggestions = if (query.length < 2) emptyList() else _uiState.value.suggestions,
             showSuggestions = query.length >= 2,
+            suggestionsError = null,
             selectedPosterUrl = null,
             selectedMovieTitle = null
         )
@@ -58,19 +66,33 @@ class SearchViewModel @Inject constructor(
     private fun fetchSuggestions(query: String) {
         suggestJob?.cancel()
         if (query.length < 2) {
-            _uiState.value = _uiState.value.copy(suggestions = emptyList(), showSuggestions = false)
+            _uiState.value = _uiState.value.copy(
+                suggestions = emptyList(),
+                showSuggestions = false,
+                suggestionsLoading = false
+            )
             return
         }
+        _uiState.value = _uiState.value.copy(suggestionsLoading = true)
         suggestJob = viewModelScope.launch {
             delay(350)
             runCatching { openSubtitlesApi.searchFeatures(query) }
-                .getOrNull()
-                ?.data
-                ?.take(6)
-                ?.also { results ->
+                .onSuccess { response ->
+                    val results = response.data.take(6)
                     _uiState.value = _uiState.value.copy(
                         suggestions = results,
-                        showSuggestions = results.isNotEmpty()
+                        showSuggestions = results.isNotEmpty(),
+                        suggestionsLoading = false,
+                        suggestionsError = null
+                    )
+                }
+                .onFailure { throwable ->
+                    Log.e("SearchViewModel", "Suggestions fetch failed", throwable)
+                    _uiState.value = _uiState.value.copy(
+                        suggestions = emptyList(),
+                        showSuggestions = false,
+                        suggestionsLoading = false,
+                        suggestionsError = throwable.message ?: "Failed to load suggestions"
                     )
                 }
         }
@@ -89,6 +111,8 @@ class SearchViewModel @Inject constructor(
             query = title,
             showSuggestions = false,
             suggestions = emptyList(),
+            suggestionsLoading = false,
+            suggestionsError = null,
             selectedPosterUrl = posterUrl,
             selectedMovieTitle = title
         )
@@ -111,7 +135,13 @@ class SearchViewModel @Inject constructor(
 
     fun search() {
         val state = _uiState.value
-        _uiState.value = state.copy(isLoading = true, error = null, results = emptyList(), showSuggestions = false)
+        _uiState.value = state.copy(
+            isLoading = true,
+            error = null,
+            results = emptyList(),
+            showSuggestions = false,
+            suggestionsLoading = false
+        )
         viewModelScope.launch {
             val result = searchUseCase(
                 query = if (state.searchMode == SearchMode.TITLE) state.query.ifBlank { null } else null,

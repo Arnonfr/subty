@@ -18,12 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.domain.model.TranslationStatus
 import androidx.compose.foundation.layout.Box
-
-private val LANGUAGES = listOf(
-    "en" to "English", "he" to "עברית", "fr" to "Français", "de" to "Deutsch",
-    "es" to "Español", "ar" to "العربية", "ru" to "Русский",
-    "zh-cn" to "中文", "ja" to "日本語", "pt" to "Português"
-)
+import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 // "google" = Google Translate (default, free). Gemini models start with "gemini-".
 private const val MODEL_GOOGLE = "google"
@@ -116,7 +111,7 @@ fun TranslateScreen(
                     LanguageDropdown(
                         label = "Translate to",
                         selected = state.targetLang,
-                        options = LANGUAGES,
+                        options = GOOGLE_TRANSLATE_LANGUAGES,
                         onSelect = viewModel::onTargetLangChange,
                         modifier = Modifier.weight(1f)
                     )

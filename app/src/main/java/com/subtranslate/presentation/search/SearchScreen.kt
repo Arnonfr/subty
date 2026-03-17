@@ -21,12 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
-
-private val COMMON_LANGUAGES = listOf(
-    "en" to "English", "he" to "עברית", "fr" to "Français",
-    "de" to "Deutsch", "es" to "Español", "ar" to "العربية",
-    "ru" to "Русский", "zh-cn" to "中文", "ja" to "日本語"
-)
+import com.subtranslate.util.OPENSUBTITLES_SEARCH_LANGUAGES
 
 @Composable
 fun SearchScreen(
@@ -55,7 +50,7 @@ fun SearchScreen(
             }
         }
 
-        // Main search field with TMDB autocomplete
+        // Main search field with autocomplete (OpenSubtitles /features)
         if (state.searchMode == SearchMode.TITLE) {
             Column {
                 // Show selected poster as thumbnail inside the field row
@@ -76,6 +71,11 @@ fun SearchScreen(
                         modifier = Modifier.weight(1f),
                         label = { Text("Movie / Series name") },
                         leadingIcon = { Icon(Icons.Default.Search, null) },
+                        trailingIcon = {
+                            if (state.suggestionsLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            }
+                        },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = {
@@ -85,7 +85,7 @@ fun SearchScreen(
                     )
                 }
 
-                // Autocomplete dropdown
+                // Autocomplete suggestions
                 if (state.showSuggestions && state.suggestions.isNotEmpty()) {
                     Card(
                         modifier = Modifier
@@ -98,9 +98,7 @@ fun SearchScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable {
-                                            viewModel.onSuggestionSelected(result)
-                                        }
+                                        .clickable { viewModel.onSuggestionSelected(result) }
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -156,6 +154,16 @@ fun SearchScreen(
                         }
                     }
                 }
+
+                // Show error if suggestions fetch failed
+                state.suggestionsError?.let { err ->
+                    Text(
+                        text = "Autocomplete error: $err",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                    )
+                }
             }
         } else {
             OutlinedTextField(
@@ -188,7 +196,7 @@ fun SearchScreen(
         // Language selection
         Text("Languages", style = MaterialTheme.typography.labelMedium)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(COMMON_LANGUAGES) { (code, label) ->
+            items(OPENSUBTITLES_SEARCH_LANGUAGES) { (code, label) ->
                 FilterChip(
                     selected = code in state.selectedLanguages,
                     onClick = { viewModel.toggleLanguage(code) },
