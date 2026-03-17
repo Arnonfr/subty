@@ -1,23 +1,26 @@
 package com.subtranslate.presentation.translate
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.domain.model.TranslationStatus
-import androidx.compose.foundation.layout.Box
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 // "google" = Google Translate (default, free). Gemini models start with "gemini-".
@@ -76,100 +79,142 @@ fun TranslateScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                // Source language: auto-detected (read-only) → arrow → target language picker
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Unified Premium Engine & Language Selector Card
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = if (state.selectedModel.startsWith("gemini"))
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                    else
+                        MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp),
+                    shadowElevation = 2.dp
                 ) {
-                    // Detected source — display only, no dropdown
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Detected language",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Surface(
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        // Language Selection Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = LANGUAGES.find { it.first == state.sourceLang }?.second
-                                    ?: state.sourceLang.uppercase(),
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            // Source Selector
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "ממקור",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                LanguageDropdownMinimal(
+                                    selected = state.sourceLang,
+                                    options = GOOGLE_TRANSLATE_LANGUAGES,
+                                    onSelect = viewModel::onSourceLangChange
+                                )
+                            }
+
+                            // Elegant Glass Divider / Arrow
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            // Target Selector
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "ליעד",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                LanguageDropdownMinimal(
+                                    selected = state.targetLang,
+                                    options = GOOGLE_TRANSLATE_LANGUAGES,
+                                    onSelect = viewModel::onTargetLangChange
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(24.dp)) // Separator for engine selection
+
+                        // Engine Selector
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            val useGemini = state.selectedModel.startsWith("gemini")
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    if (useGemini) "Gemini AI" else "Google Translate",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    if (useGemini) "תרגום חכם מבוסס הקשר" else "תרגום מהיר וחינמי",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = useGemini,
+                                onCheckedChange = { on ->
+                                    viewModel.onModelChange(if (on) "gemini-2.5-flash" else MODEL_GOOGLE)
+                                }
                             )
                         }
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 18.dp)
-                    )
-                    LanguageDropdown(
-                        label = "Translate to",
-                        selected = state.targetLang,
-                        options = GOOGLE_TRANSLATE_LANGUAGES,
-                        onSelect = viewModel::onTargetLangChange,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
 
-            item {
-                // Engine: Google Translate (default) with optional Gemini upgrade
-                val useGemini = state.selectedModel.startsWith("gemini")
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            if (useGemini) "Gemini AI" else "Google Translate",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            if (useGemini) "Context-aware · slower" else "Fast · free",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = useGemini,
-                        onCheckedChange = { on ->
-                            viewModel.onModelChange(if (on) "gemini-2.5-flash" else MODEL_GOOGLE)
-                        }
-                    )
-                }
-                // Gemini model sub-picker — only shown when Gemini is on
-                AnimatedVisibility(visible = useGemini) {
-                    var geminiExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = geminiExpanded,
-                        onExpandedChange = { geminiExpanded = it },
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = GEMINI_MODELS.find { it.first == state.selectedModel }?.second
-                                ?: "Gemini Flash",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Gemini model") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = geminiExpanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = geminiExpanded,
-                            onDismissRequest = { geminiExpanded = false }
-                        ) {
-                            GEMINI_MODELS.forEach { (id, label) ->
-                                DropdownMenuItem(text = { Text(label) }, onClick = {
-                                    viewModel.onModelChange(id)
-                                    geminiExpanded = false
-                                })
+                        // Gemini Model Options
+                        val isGemini = state.selectedModel.startsWith("gemini")
+                        AnimatedVisibility(visible = isGemini) {
+                            Column {
+                                Spacer(Modifier.height(12.dp))
+                                var geminiExpanded by remember { mutableStateOf(false) }
+                                ExposedDropdownMenuBox(
+                                    expanded = geminiExpanded,
+                                    onExpandedChange = { geminiExpanded = it },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    OutlinedTextField(
+                                        value = GEMINI_MODELS.find { it.first == state.selectedModel }?.second ?: "Gemini Flash",
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        shape = RoundedCornerShape(16.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = geminiExpanded) },
+                                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                                    )
+                                    ExposedDropdownMenu(
+                                        expanded = geminiExpanded,
+                                        onDismissRequest = { geminiExpanded = false }
+                                    ) {
+                                        GEMINI_MODELS.forEach { (id, label) ->
+                                            DropdownMenuItem(
+                                                text = { Text(label, style = MaterialTheme.typography.bodySmall) },
+                                                onClick = {
+                                                    viewModel.onModelChange(id)
+                                                    geminiExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -177,26 +222,54 @@ fun TranslateScreen(
             }
 
             item {
-                // Start / Cancel button
-                val canStart = progress.status == TranslationStatus.IDLE ||
-                        progress.status == TranslationStatus.ERROR
+                // Start / Action Button (Premium Pulse/Gradient)
+                val isTranslating = progress.status == TranslationStatus.TRANSLATING
+                
                 Button(
                     onClick = {
                         val file = viewModel.pendingFile
-                        if (canStart && file != null) viewModel.startTranslation(file)
-                        else if (!canStart) viewModel.cancelTranslation()
+                        if (file != null) {
+                            viewModel.startTranslation(file)
+                        }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = if (!canStart) ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    ) else ButtonDefaults.buttonColors()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .padding(horizontal = 4.dp),
+                    enabled = !isTranslating && (viewModel.pendingFile != null),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                 ) {
-                    Text(if (canStart) "Start Translation" else "Cancel")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isTranslating) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text("מתרגם כרגע...", fontWeight = FontWeight.Bold)
+                        } else {
+                            Icon(
+                                if (state.translatedFile != null) Icons.Default.Refresh else Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                if (state.translatedFile != null) "תרגם מחדש" else "התחל תרגום",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
                 }
             }
 
-            // Progress
             if (progress.status == TranslationStatus.TRANSLATING) {
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -205,19 +278,25 @@ fun TranslateScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
-                            "Batch ${progress.currentBatch}/${progress.totalBatches} · " +
-                                    "${progress.translatedEntries}/${progress.totalEntries} lines",
-                            style = MaterialTheme.typography.labelMedium
+                            text = "Translating... ${(progress.progressFraction * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
                 }
             }
 
-            // Error
             progress.errorMessage?.let { err ->
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                        Text(err, Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = err,
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }
@@ -225,26 +304,26 @@ fun TranslateScreen(
             // Saved confirmation
             state.savedPath?.let { path ->
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text("Saved to: $path", Modifier.padding(12.dp))
                     }
                 }
             }
 
             // Live translated preview
-            item {
-                AnimatedVisibility(visible = progress.status == TranslationStatus.COMPLETE &&
-                        state.translatedFile != null) {
+            if (state.translatedFile != null) {
+                item {
                     Column {
                         HorizontalDivider()
                         Spacer(Modifier.height(8.dp))
                         Text("Translated preview", style = MaterialTheme.typography.titleMedium)
                     }
                 }
-            }
 
-            state.translatedFile?.entries?.let { entries ->
-                items(entries.take(50)) { entry ->
+                items(state.translatedFile!!.entries.take(50)) { entry ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -255,11 +334,21 @@ fun TranslateScreen(
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.width(80.dp)
                         )
-                        Text(entry.text, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(
+                            entry.text,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
-                if (entries.size > 50) {
-                    item { Text("… and ${entries.size - 50} more lines", style = MaterialTheme.typography.labelSmall) }
+
+                if (state.translatedFile!!.entries.size > 50) {
+                    item {
+                        Text(
+                            "… and ${state.translatedFile!!.entries.size - 50} more lines",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
                 }
             }
         }
@@ -268,26 +357,48 @@ fun TranslateScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LanguageDropdown(
-    label: String,
+fun LanguageDropdownMinimal(
     selected: String,
     options: List<Pair<String, String>>,
-    onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
+    onSelect: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
-        OutlinedTextField(
-            value = options.find { it.first == selected }?.second ?: selected,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+    Box {
+        Surface(
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
+            modifier = Modifier.height(44.dp).padding(horizontal = 4.dp)
+        ) {
+            Row(
+                Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = options.find { it.first == selected }?.second ?: selected,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
             options.forEach { (code, name) ->
-                DropdownMenuItem(text = { Text(name) }, onClick = { onSelect(code); expanded = false })
+                DropdownMenuItem(
+                    text = { Text(name, style = MaterialTheme.typography.bodyMedium) },
+                    onClick = { onSelect(code); expanded = false }
+                )
             }
         }
     }
