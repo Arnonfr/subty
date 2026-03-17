@@ -760,10 +760,40 @@ const LANGS=[
 const LANG_NAME={en:'English',he:'עברית',fr:'Français',de:'Deutsch',es:'Español',ar:'العربية',ru:'Русский','zh-cn':'中文',ja:'日本語',pt:'Português'};
 
 const MOCK_TITLES=[
+  // ── Movies ───────────────────────────────────────────────
   {t:'The Matrix',y:1999,id:'0133093',type:'movie',initials:'TM'},
   {t:'Matrix Reloaded',y:2003,id:'0234215',type:'movie',initials:'MR'},
   {t:'Inception',y:2010,id:'1375666',type:'movie',initials:'IN'},
   {t:'Interstellar',y:2014,id:'0816692',type:'movie',initials:'IS'},
+  {t:'The Dark Knight',y:2008,id:'0468569',type:'movie',initials:'DK'},
+  {t:'The Godfather',y:1972,id:'0068646',type:'movie',initials:'GF'},
+  {t:'Pulp Fiction',y:1994,id:'0110912',type:'movie',initials:'PF'},
+  {t:'Forrest Gump',y:1994,id:'0109830',type:'movie',initials:'FG'},
+  {t:'Fight Club',y:1999,id:'0137523',type:'movie',initials:'FC'},
+  {t:'Schindler\'s List',y:1993,id:'0108052',type:'movie',initials:'SL'},
+  {t:'Goodfellas',y:1990,id:'0099685',type:'movie',initials:'GF'},
+  {t:'The Shawshank Redemption',y:1994,id:'0111161',type:'movie',initials:'SR'},
+  {t:'The Silence of the Lambs',y:1991,id:'0102926',type:'movie',initials:'SL'},
+  {t:'Avengers: Endgame',y:2019,id:'4154796',type:'movie',initials:'AE'},
+  {t:'Avengers: Infinity War',y:2018,id:'4154756',type:'movie',initials:'AI'},
+  {t:'Spider-Man: No Way Home',y:2021,id:'10872600',type:'movie',initials:'SP'},
+  {t:'The Lion King',y:1994,id:'0110357',type:'movie',initials:'LK'},
+  {t:'Titanic',y:1997,id:'0120338',type:'movie',initials:'TI'},
+  {t:'Gladiator',y:2000,id:'0172495',type:'movie',initials:'GL'},
+  {t:'The Lord of the Rings',y:2001,id:'0120737',type:'movie',initials:'LR'},
+  {t:'Harry Potter',y:2001,id:'0241527',type:'movie',initials:'HP'},
+  {t:'Home Alone',y:1990,id:'0099785',type:'movie',initials:'HA'},
+  {t:'How to Train Your Dragon',y:2010,id:'0892769',type:'movie',initials:'HT'},
+  {t:'How the Grinch Stole Christmas',y:2000,id:'0170016',type:'movie',initials:'HG'},
+  {t:'The Social Network',y:2010,id:'1285016',type:'movie',initials:'SN'},
+  {t:'Parasite',y:2019,id:'6751668',type:'movie',initials:'PA'},
+  {t:'Oppenheimer',y:2023,id:'15398776',type:'movie',initials:'OP'},
+  {t:'Barbie',y:2023,id:'1517268',type:'movie',initials:'BA'},
+  {t:'Dune',y:2021,id:'1160419',type:'movie',initials:'DU'},
+  {t:'Top Gun: Maverick',y:2022,id:'1745960',type:'movie',initials:'TG'},
+  {t:'Everything Everywhere All at Once',y:2022,id:'6710474',type:'movie',initials:'EE'},
+  {t:'Breathe',y:2017,id:'5137540',type:'movie',initials:'BR'},
+  // ── TV Shows ─────────────────────────────────────────────
   {t:'Breaking Bad',y:2008,id:'0903747',type:'tv',initials:'BB',
    seasons:5,eps:{1:7,2:13,3:13,4:13,5:16}},
   {t:'Game of Thrones',y:2011,id:'0944947',type:'tv',initials:'GT',
@@ -776,7 +806,48 @@ const MOCK_TITLES=[
    seasons:1,eps:{1:5}},
   {t:'The Office',y:2005,id:'0386676',type:'tv',initials:'TO',
    seasons:9,eps:{1:6,2:22,3:25,4:19,5:28,6:26,7:26,8:24,9:25}},
-  {t:'Breathe',y:2017,id:'5137540',type:'movie',initials:'BR'},
+  {t:'Friends',y:1994,id:'0108778',type:'tv',initials:'FR',
+   seasons:10,eps:{1:24,2:24,3:25,4:24,5:24,6:25,7:24,8:24,9:24,10:18}},
+  {t:'The Sopranos',y:1999,id:'0141842',type:'tv',initials:'TS',
+   seasons:6,eps:{1:13,2:13,3:13,4:13,5:13,6:21}},
+  {t:'The Wire',y:2002,id:'0306414',type:'tv',initials:'TW',
+   seasons:5,eps:{1:13,2:12,3:12,4:13,5:10}},
+  {t:'The Crown',y:2016,id:'4786824',type:'tv',initials:'TC',
+   seasons:6,eps:{1:10,2:10,3:10,4:10,5:10,6:10}},
+  {t:'Better Call Saul',y:2015,id:'3032476',type:'tv',initials:'BC',
+   seasons:6,eps:{1:10,2:10,3:10,4:10,5:10,6:13}},
+  {t:'How I Met Your Mother',y:2005,id:'0460649',type:'tv',initials:'HM',
+   seasons:9,eps:{1:22,2:22,3:20,4:24,5:24,6:24,7:24,8:24,9:24}},
+  {t:'House of Cards',y:2013,id:'1856010',type:'tv',initials:'HC',
+   seasons:6,eps:{1:13,2:13,3:13,4:13,5:13,6:8}},
+  {t:'The Mandalorian',y:2019,id:'8111088',type:'tv',initials:'TM',
+   seasons:3,eps:{1:8,2:8,3:8}},
+  {t:'Loki',y:2021,id:'9140554',type:'tv',initials:'LO',
+   seasons:2,eps:{1:6,2:6}},
+  {t:'Wednesday',y:2022,id:'13443470',type:'tv',initials:'WE',
+   seasons:1,eps:{1:8}},
+  {t:'Squid Game',y:2021,id:'10919420',type:'tv',initials:'SQ',
+   seasons:2,eps:{1:9,2:7}},
+  {t:'Black Mirror',y:2011,id:'2085059',type:'tv',initials:'BM',
+   seasons:6,eps:{1:3,2:3,3:6,4:6,5:3,6:5}},
+  {t:'Sherlock',y:2010,id:'1475582',type:'tv',initials:'SH',
+   seasons:4,eps:{1:3,2:3,3:3,4:3}},
+  {t:'How to Get Away with Murder',y:2014,id:'3205802',type:'tv',initials:'HW',
+   seasons:6,eps:{1:15,2:15,3:15,4:15,5:15,6:15}},
+  {t:'The Boys',y:2019,id:'1190634',type:'tv',initials:'TB',
+   seasons:4,eps:{1:8,2:8,3:8,4:8}},
+  {t:'Ozark',y:2017,id:'5071412',type:'tv',initials:'OZ',
+   seasons:4,eps:{1:10,2:10,3:10,4:14}},
+  {t:'Peaky Blinders',y:2013,id:'2442560',type:'tv',initials:'PB',
+   seasons:6,eps:{1:6,2:6,3:6,4:6,5:6,6:6}},
+  {t:'Narcos',y:2015,id:'2707408',type:'tv',initials:'NA',
+   seasons:3,eps:{1:10,2:10,3:10}},
+  {t:'Dark',y:2017,id:'5753856',type:'tv',initials:'DA',
+   seasons:3,eps:{1:10,2:8,3:8}},
+  {t:'The Witcher',y:2019,id:'5180504',type:'tv',initials:'WI',
+   seasons:3,eps:{1:8,2:8,3:8}},
+  {t:'House M.D.',y:2004,id:'0412142',type:'tv',initials:'HM',
+   seasons:8,eps:{1:22,2:24,3:24,4:16,5:24,6:22,7:23,8:22}},
 ];
 
 // ── Per-title mock results ──
@@ -943,24 +1014,56 @@ function toggleLang(c){
 }
 
 // ── Autocomplete ──
+// acMatches holds normalized items: {t, y, id, type, seasons, eps, imgUrl, initials}
+const OS_API_KEY = 's7Y2RwG2TR4xPTmSShqVSM4gRYOTzToN';
+
 function onInput(){
   const v=document.getElementById('search-input').value.trim();
-  // reset title selection when user types again
   selTitle=null; selSeason=null; selEpisode=null;
   hideSeasonsEpisodes();
   updateSearchBtn();
   clearTimeout(acTimer);
   if(searchMode==='imdb'){
-    // no autocomplete for IMDB mode; enable btn if non-empty
     document.getElementById('search-btn').disabled=!v;
     hideDrop();
     return;
   }
   if(v.length<2){hideDrop();return;}
-  acTimer=setTimeout(()=>{
-    acMatches=MOCK_TITLES.filter(m=>m.t.toLowerCase().includes(v.toLowerCase())).slice(0,6);
-    renderDrop(acMatches);
-  },180);
+  // Show loading spinner in drop
+  const drop=document.getElementById('ac-drop');
+  drop.innerHTML='<div style="padding:12px 16px;font-size:12px;opacity:.6;">Searching…</div>';
+  drop.style.display='block';
+  acTimer=setTimeout(()=>fetchAcFromApi(v),280);
+}
+
+async function fetchAcFromApi(query){
+  // 1. Try real OpenSubtitles /features API
+  try{
+    const res=await fetch(
+      `https://api.opensubtitles.com/api/v1/features?query=${encodeURIComponent(query)}`,
+      {headers:{'Api-Key':OS_API_KEY,'User-Agent':'Subty v1.0','Content-Type':'application/json'}}
+    );
+    if(!res.ok) throw new Error('status '+res.status);
+    const json=await res.json();
+    const items=(json.data||[]).slice(0,6).map(f=>{
+      const a=f.attributes||{};
+      const title=a.title||a.original_title||'';
+      const isTv=f.type==='tv'||((a.feature_type||'').toLowerCase()==='tvshow');
+      const seasons=a.seasons_count||1;
+      return {t:title,y:a.year||'',id:String(a.imdb_id||f.id),
+              type:isTv?'tv':'movie',seasons,eps:{},
+              imgUrl:a.img_url||null,initials:title.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()};
+    });
+    acMatches=items;
+    renderDrop(items);
+    return;
+  }catch(e){
+    // CORS or network error — fall through to mock
+    console.warn('AC API failed, using mock:',e.message);
+  }
+  // 2. Fallback: filter extended MOCK_TITLES
+  acMatches=MOCK_TITLES.filter(m=>m.t.toLowerCase().includes(query.toLowerCase())).slice(0,6);
+  renderDrop(acMatches);
 }
 
 function hideDrop(){
@@ -969,16 +1072,24 @@ function hideDrop(){
 
 function renderDrop(items){
   const drop=document.getElementById('ac-drop');
-  if(!items.length){drop.style.display='none';return;}
-  drop.innerHTML=items.map((m,i)=>`
-    <div class="ac-item" onclick="pickTitle(${i})">
-      <div class="ac-thumb">${m.initials}</div>
+  if(!items.length){
+    drop.innerHTML='<div style="padding:12px 16px;font-size:12px;opacity:.6;">No results</div>';
+    drop.style.display='block';
+    setTimeout(()=>drop.style.display='none',1500);
+    return;
+  }
+  drop.innerHTML=items.map((m,i)=>{
+    const thumb=m.imgUrl
+      ?`<img src="${m.imgUrl}" style="width:28px;height:42px;object-fit:cover;border-radius:2px;flex-shrink:0;" onerror="this.style.display='none'">`
+      :`<div class="ac-thumb">${m.initials}</div>`;
+    return `<div class="ac-item" onclick="pickTitle(${i})">
+      ${thumb}
       <div>
         <div class="ac-info-title">${m.t}</div>
         <div class="ac-info-meta">${m.y} · <span style="color:var(--mocha);font-weight:700;">${m.type==='tv'?'Series':'Movie'}</span></div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   drop.style.display='block';
 }
 
