@@ -39,7 +39,6 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
           OPENSUBTITLES_API_KEY: ${{ secrets.OPENSUBTITLES_API_KEY }}
-          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
