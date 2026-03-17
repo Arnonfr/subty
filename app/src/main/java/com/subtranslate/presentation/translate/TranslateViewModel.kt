@@ -6,6 +6,7 @@ import com.subtranslate.data.repository.TranslationRepositoryImpl
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
 import com.subtranslate.domain.model.TranslationStatus
+import com.subtranslate.domain.usecase.DownloadSubtitleUseCase
 import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.TranslateSubtitleUseCase
 import com.subtranslate.util.SettingsDataStore
@@ -19,9 +20,10 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class TranslateUiState(
+    // sourceLang is auto-detected from the subtitle file — never entered manually
     val sourceLang: String = "en",
     val targetLang: String = "he",
-    val selectedModel: String = "claude-sonnet-4-5",
+    val selectedModel: String = "google",
     val progress: TranslationProgress = TranslationProgress(),
     val translatedFile: SubtitleFile? = null,
     val savedPath: String? = null,
@@ -30,6 +32,7 @@ data class TranslateUiState(
 
 @HiltViewModel
 class TranslateViewModel @Inject constructor(
+    private val downloadUseCase: DownloadSubtitleUseCase,
     private val translateUseCase: TranslateSubtitleUseCase,
     private val saveUseCase: SaveSubtitleUseCase,
     private val translationRepo: TranslationRepositoryImpl,
@@ -46,14 +49,38 @@ class TranslateViewModel @Inject constructor(
 
     init {
         _uiState.value = _uiState.value.copy(
-            sourceLang = settings.defaultSourceLanguage,
             targetLang = settings.defaultTargetLanguage,
             selectedModel = settings.translationModel
         )
     }
 
-    fun onSourceLangChange(lang: String) {
-        _uiState.value = _uiState.value.copy(sourceLang = lang)
+    /**
+     * Called when a subtitle is selected. Sets sourceLang from the file's detected language
+     * so the user never needs to enter it manually.
+     */
+    /** Downloads the subtitle and auto-sets source language — no user input required. */
+    fun downloadAndLoad(fileId: Int, languageCode: String) {
+        viewModelScope.launch {
+            val result = downloadUseCase(fileId, languageCode)
+            result.getOrNull()?.let { loadSubtitle(it) }
+        }
+    }
+
+    fun loadSubtitle(file: SubtitleFile) {
+        pendingFile = file
+        val detectedLang = file.sourceLanguage ?: "en"
+        val autoTarget = if (detectedLang == settings.defaultTargetLanguage)
+            settings.defaultSourceLanguage
+        else
+            settings.defaultTargetLanguage
+        _uiState.value = _uiState.value.copy(
+            sourceLang = detectedLang,
+            targetLang = autoTarget,
+            progress = TranslationProgress(),
+            translatedFile = null,
+            savedPath = null,
+            saveError = null
+        )
     }
 
     fun onTargetLangChange(lang: String) {

@@ -1,5 +1,6 @@
 package com.subtranslate.data.remote.opensubtitles
 
+import com.subtranslate.BuildConfig
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -7,30 +8,17 @@ import javax.inject.Singleton
 
 @Singleton
 class OpenSubtitlesAuthInterceptor @Inject constructor(
-    private val tokenProvider: TokenProvider
+    private val session: SessionStore
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val original = chain.request()
-        val builder = original.newBuilder()
+        val builder = chain.request().newBuilder()
             .header("Content-Type", "application/json")
-            .header("User-Agent", "SubTranslate v1.0")
+            .header("User-Agent", "Subty v1.0")
+            .header("Api-Key", BuildConfig.OPENSUBTITLES_API_KEY)
 
-        val apiKey = tokenProvider.apiKey
-        if (apiKey.isNotEmpty()) {
-            builder.header("Api-Key", apiKey)
-        }
-
-        val jwt = tokenProvider.jwtToken
-        if (!jwt.isNullOrEmpty()) {
-            builder.header("Authorization", "Bearer $jwt")
-        }
+        session.jwtToken?.let { builder.header("Authorization", "Bearer $it") }
 
         return chain.proceed(builder.build())
     }
-}
-
-interface TokenProvider {
-    val apiKey: String
-    val jwtToken: String?
 }

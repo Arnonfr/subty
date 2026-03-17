@@ -5,10 +5,11 @@ sealed class Screen(val route: String) {
     object Results : Screen("results/{query}") {
         fun createRoute(query: String) = "results/$query"
     }
-    object Preview : Screen("preview/{fileId}/{fileName}") {
-        fun createRoute(fileId: Int, fileName: String) = "preview/$fileId/${fileName}"
+    // languageCode added so TranslateViewModel can auto-detect source language
+    object Translate : Screen("translate/{fileId}/{fileName}/{languageCode}") {
+        fun createRoute(fileId: Int, fileName: String, languageCode: String) =
+            "translate/$fileId/$fileName/$languageCode"
     }
-    object Translate : Screen("translate")
     object History : Screen("history")
     object Settings : Screen("settings")
 }

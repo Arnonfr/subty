@@ -1,5 +1,28 @@
+# Secrets — לעולם לא לגיט
+local.properties
 .env
+*.jks
+*.keystore
+*-release.jks
+SECRETS_FILLED.md
+
+# Android build
 *.iml
 .gradle/
 build/
-local.properties
+app/build/
+*/build/
+
+# Android Studio
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Kotlin / Gradle cache
+.kotlin/

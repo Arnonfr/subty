@@ -1,3 +1,9 @@
+import java.util.Properties
+
+val localProps = Properties().also { props ->
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { props.load(it) }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,6 +23,10 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"${localProps["OPENSUBTITLES_API_KEY"] ?: ""}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${localProps["GEMINI_API_KEY"] ?: ""}\"")
+        buildConfigField("String", "GOOGLE_TRANSLATE_API_KEY", "\"${localProps["GOOGLE_TRANSLATE_API_KEY"] ?: ""}\"")
     }
 
     buildTypes {
@@ -41,6 +51,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -82,9 +93,6 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
-
-    // Anthropic SDK
-    implementation(libs.anthropic.sdk)
 
     // Coil
     implementation(libs.coil.compose)

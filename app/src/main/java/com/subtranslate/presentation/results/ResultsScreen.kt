@@ -23,7 +23,7 @@ import com.subtranslate.domain.model.SubtitleSearchResult
 @Composable
 fun ResultsScreen(
     query: String,
-    onSubtitleSelected: (fileId: Int, fileName: String) -> Unit,
+    onSubtitleSelected: (fileId: Int, fileName: String, languageCode: String) -> Unit,
     onBack: () -> Unit,
     viewModel: ResultsViewModel = hiltViewModel()
 ) {
@@ -81,7 +81,7 @@ fun ResultsScreen(
                 else -> LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(state.filteredResults) { result ->
                         SubtitleResultCard(result = result, onClick = {
-                            onSubtitleSelected(result.fileId, result.fileName)
+                            onSubtitleSelected(result.fileId, result.fileName, result.languageCode)
                         })
                     }
                 }

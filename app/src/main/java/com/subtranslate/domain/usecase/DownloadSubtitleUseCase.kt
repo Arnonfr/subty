@@ -7,7 +7,7 @@ import javax.inject.Inject
 class DownloadSubtitleUseCase @Inject constructor(
     private val repository: SubtitleRepository
 ) {
-    suspend operator fun invoke(fileId: Int): Result<SubtitleFile> = runCatching {
-        repository.download(fileId)
+    suspend operator fun invoke(fileId: Int, languageCode: String? = null): Result<SubtitleFile> = runCatching {
+        repository.download(fileId, languageCode)
     }
 }

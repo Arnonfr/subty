@@ -42,7 +42,7 @@ class SubtitleRepositoryImpl @Inject constructor(
         return response.data.mapNotNull { it.toDomain() }
     }
 
-    override suspend fun download(fileId: Int): SubtitleFile {
+    override suspend fun download(fileId: Int, languageCode: String?): SubtitleFile {
         val downloadResponse = api.requestDownload(DownloadRequest(fileId = fileId))
         val url = downloadResponse.link
         val fileName = downloadResponse.fileName
@@ -61,6 +61,7 @@ class SubtitleRepositoryImpl @Inject constructor(
             SubtitleFormat.ASS, SubtitleFormat.SSA -> AssParser()
         }
 
-        return parser.parse(content).copy(title = fileName)
+        // Carry the languageCode from the search result so TranslateViewModel can auto-detect
+        return parser.parse(content).copy(title = fileName, sourceLanguage = languageCode)
     }
 }

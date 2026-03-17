@@ -1,41 +1,46 @@
 package com.subtranslate.data.remote.translation
 
-import com.anthropic.client.AnthropicClient
-import com.anthropic.models.messages.MessageCreateParams
-import com.anthropic.models.messages.Model
+import com.subtranslate.BuildConfig
 import com.subtranslate.domain.model.SubtitleEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ClaudeTranslationService @Inject constructor(
-    private val clientProvider: AnthropicClientProvider
-) {
+class GeminiTranslationService @Inject constructor() {
     companion object {
         private const val BATCH_SIZE = 18
         private const val CONTEXT_OVERLAP = 3
         private const val MAX_RETRIES = 3
+        private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
     }
 
-    /**
-     * Translates a list of entries, emitting progress via [onProgress].
-     * Returns the full list with translated [SubtitleEntry.text] and [SubtitleEntry.rawText].
-     */
+    // Plain OkHttpClient — no OpenSubtitles interceptors
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+
     suspend fun translateEntries(
         entries: List<SubtitleEntry>,
         sourceLang: String,
         targetLang: String,
         title: String?,
-        modelId: String = Model.CLAUDE_SONNET_4_5.toString(),
+        modelId: String = "gemini-2.5-flash",
         onProgress: (translated: Int, total: Int, batch: Int, totalBatches: Int) -> Unit
     ): List<SubtitleEntry> = withContext(Dispatchers.IO) {
 
-        val client = clientProvider.getClient()
+        val apiKey = BuildConfig.GEMINI_API_KEY
         val systemPrompt = TranslationPromptBuilder.buildSystemPrompt(sourceLang, targetLang, title)
-
-        // Create batches with overlap
         val batches = createBatches(entries, BATCH_SIZE, CONTEXT_OVERLAP)
         val translationMap = mutableMapOf<Int, String>()
 
@@ -48,27 +53,10 @@ class ClaudeTranslationService @Inject constructor(
 
             while (attempt < MAX_RETRIES && !success) {
                 try {
-                    val userMessage = TranslationPromptBuilder.buildUserMessage(
-                        contextEntries, translateEntries
-                    )
-
-                    val response = client.messages().create(
-                        MessageCreateParams.builder()
-                            .model(modelId)
-                            .maxTokens(4096)
-                            .system(systemPrompt)
-                            .addUserMessage(userMessage)
-                            .build()
-                    )
-
-                    val responseText = response.content()
-                        .firstOrNull()
-                        ?.text()
-                        ?.text() ?: ""
-
+                    val userMessage = TranslationPromptBuilder.buildUserMessage(contextEntries, translateEntries)
+                    val responseText = callGemini(apiKey, modelId, systemPrompt, userMessage)
                     val parsed = TranslationPromptBuilder.parseResponse(responseText, expectedIndices)
 
-                    // Only accept if we got all expected lines
                     if (parsed.size >= expectedIndices.size * 0.9) {
                         translationMap.putAll(parsed)
                         success = true
@@ -81,11 +69,9 @@ class ClaudeTranslationService @Inject constructor(
                 }
             }
 
-            val translatedSoFar = translationMap.size
-            onProgress(translatedSoFar, entries.size, batchIdx + 1, batches.size)
+            onProgress(translationMap.size, entries.size, batchIdx + 1, batches.size)
         }
 
-        // Reconstruct entries with translated text
         entries.map { entry ->
             val translated = translationMap[entry.index]
             if (translated != null) {
@@ -93,22 +79,50 @@ class ClaudeTranslationService @Inject constructor(
                     text = translated,
                     rawText = reinsertOverrideTags(entry.rawText, translated)
                 )
-            } else {
-                entry
-            }
+            } else entry
         }
     }
 
-    /**
-     * If rawText had ASS override tags, put them back around the translated text.
-     * Simple strategy: keep leading/trailing tag blocks unchanged.
-     */
+    private fun callGemini(apiKey: String, modelId: String, systemPrompt: String, userMessage: String): String {
+        val body = JSONObject().apply {
+            put("systemInstruction", JSONObject().apply {
+                put("parts", JSONArray().put(JSONObject().put("text", systemPrompt)))
+            })
+            put("contents", JSONArray().put(JSONObject().apply {
+                put("role", "user")
+                put("parts", JSONArray().put(JSONObject().put("text", userMessage)))
+            }))
+            put("generationConfig", JSONObject().apply {
+                put("temperature", 0.3)
+                put("maxOutputTokens", 4096)
+            })
+        }
+
+        val request = Request.Builder()
+            .url("$BASE_URL/$modelId:generateContent?key=$apiKey")
+            .post(body.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw Exception("Gemini API error ${response.code}: ${response.body?.string()?.take(300)}")
+            }
+            val json = JSONObject(response.body!!.string())
+            return json
+                .getJSONArray("candidates")
+                .getJSONObject(0)
+                .getJSONObject("content")
+                .getJSONArray("parts")
+                .getJSONObject(0)
+                .getString("text")
+        }
+    }
+
     private fun reinsertOverrideTags(originalRaw: String, translated: String): String {
         val overrideRegex = Regex("""\{[^}]*\}""")
         val leadingTags = overrideRegex.findAll(originalRaw)
             .takeWhile { it.range.first < originalRaw.indexOf(it.value) + it.value.length }
             .joinToString("") { it.value }
-
         return if (leadingTags.isNotEmpty()) "$leadingTags$translated" else translated
     }
 
@@ -117,29 +131,17 @@ class ClaudeTranslationService @Inject constructor(
         val translateEntries: List<SubtitleEntry>
     )
 
-    private fun createBatches(
-        entries: List<SubtitleEntry>,
-        batchSize: Int,
-        overlap: Int
-    ): List<Batch> {
+    private fun createBatches(entries: List<SubtitleEntry>, batchSize: Int, overlap: Int): List<Batch> {
         val batches = mutableListOf<Batch>()
         var start = 0
-
         while (start < entries.size) {
             val end = minOf(start + batchSize, entries.size)
             val translateEntries = entries.subList(start, end)
-
             val contextStart = maxOf(0, start - overlap)
             val contextEntries = if (start > 0) entries.subList(contextStart, start) else emptyList()
-
             batches.add(Batch(contextEntries, translateEntries))
             start = end
         }
-
         return batches
     }
-}
-
-interface AnthropicClientProvider {
-    fun getClient(): AnthropicClient
 }

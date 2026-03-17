@@ -7,7 +7,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.subtranslate.presentation.history.HistoryScreen
-import com.subtranslate.presentation.preview.PreviewScreen
 import com.subtranslate.presentation.results.ResultsScreen
 import com.subtranslate.presentation.search.SearchScreen
 import com.subtranslate.presentation.settings.SettingsScreen
@@ -30,32 +29,31 @@ fun NavGraph(navController: NavHostController) {
             val query = backStack.arguments?.getString("query") ?: ""
             ResultsScreen(
                 query = query,
-                onSubtitleSelected = { fileId, fileName ->
-                    navController.navigate(Screen.Preview.createRoute(fileId, fileName))
+                // Results navigate directly to Translate — language code passed so VM can auto-detect
+                onSubtitleSelected = { fileId, fileName, languageCode ->
+                    navController.navigate(Screen.Translate.createRoute(fileId, fileName, languageCode))
                 },
                 onBack = { navController.popBackStack() }
             )
         }
 
         composable(
-            route = Screen.Preview.route,
+            route = Screen.Translate.route,
             arguments = listOf(
                 navArgument("fileId") { type = NavType.IntType },
-                navArgument("fileName") { type = NavType.StringType }
+                navArgument("fileName") { type = NavType.StringType },
+                navArgument("languageCode") { type = NavType.StringType }
             )
         ) { backStack ->
             val fileId = backStack.arguments?.getInt("fileId") ?: 0
             val fileName = backStack.arguments?.getString("fileName") ?: ""
-            PreviewScreen(
+            val languageCode = backStack.arguments?.getString("languageCode") ?: "en"
+            TranslateScreen(
                 fileId = fileId,
                 fileName = fileName,
-                onTranslate = { navController.navigate(Screen.Translate.route) },
+                languageCode = languageCode,
                 onBack = { navController.popBackStack() }
             )
-        }
-
-        composable(Screen.Translate.route) {
-            TranslateScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Screen.History.route) {

@@ -1,6 +1,7 @@
 package com.subtranslate.data.repository
 
-import com.subtranslate.data.remote.translation.ClaudeTranslationService
+import com.subtranslate.data.remote.translation.GeminiTranslationService
+import com.subtranslate.data.remote.translation.GoogleTranslateService
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
 import com.subtranslate.domain.model.TranslationStatus
@@ -12,10 +13,10 @@ import javax.inject.Singleton
 
 @Singleton
 class TranslationRepositoryImpl @Inject constructor(
-    private val claudeService: ClaudeTranslationService
+    private val googleTranslateService: GoogleTranslateService,
+    private val geminiService: GeminiTranslationService
 ) : TranslationRepository {
 
-    // Holds the most recently completed translated file so the ViewModel can read it
     var lastTranslatedFile: SubtitleFile? = null
 
     override fun translate(
@@ -30,22 +31,41 @@ class TranslationRepositoryImpl @Inject constructor(
         ))
 
         try {
-            val translatedEntries = claudeService.translateEntries(
-                entries = subtitleFile.entries,
-                sourceLang = sourceLang,
-                targetLang = targetLang,
-                title = subtitleFile.title,
-                modelId = modelId
-            ) { translated, total, batch, totalBatches ->
-                // This is called from IO dispatcher; flow builder handles thread-safety
-                kotlinx.coroutines.runBlocking {
-                    emit(TranslationProgress(
-                        totalEntries = total,
-                        translatedEntries = translated,
-                        currentBatch = batch,
-                        totalBatches = totalBatches,
-                        status = TranslationStatus.TRANSLATING
-                    ))
+            val translatedEntries = if (modelId.startsWith("gemini")) {
+                // Premium: Gemini (context-aware, batched with overlap)
+                geminiService.translateEntries(
+                    entries = subtitleFile.entries,
+                    sourceLang = sourceLang,
+                    targetLang = targetLang,
+                    title = subtitleFile.title,
+                    modelId = modelId
+                ) { translated, total, batch, totalBatches ->
+                    kotlinx.coroutines.runBlocking {
+                        emit(TranslationProgress(
+                            totalEntries = total,
+                            translatedEntries = translated,
+                            currentBatch = batch,
+                            totalBatches = totalBatches,
+                            status = TranslationStatus.TRANSLATING
+                        ))
+                    }
+                }
+            } else {
+                // Default: Google Translate (fast, cheap, no context)
+                googleTranslateService.translateEntries(
+                    entries = subtitleFile.entries,
+                    sourceLang = sourceLang,
+                    targetLang = targetLang
+                ) { translated, total ->
+                    kotlinx.coroutines.runBlocking {
+                        emit(TranslationProgress(
+                            totalEntries = total,
+                            translatedEntries = translated,
+                            currentBatch = 1,
+                            totalBatches = 1,
+                            status = TranslationStatus.TRANSLATING
+                        ))
+                    }
                 }
             }
 

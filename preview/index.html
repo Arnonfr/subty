@@ -3,393 +3,690 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>SubTranslate — Preview</title>
+<title>Subty</title>
 <style>
+/* ── Swiss Grid System ── */
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#1a1c1e; --bg2:#27292e; --bg3:#2e3038; --bg4:#1f2126;
-  --text:#e3e2e6; --text2:#9ba1b0; --text3:#6e7280;
-  --accent:#82b1ff; --accent-bg:rgba(130,177,255,.1);
-  --border:#44474e; --border2:#2e3038;
-  --error:#cf6679; --error-bg:#4a1622; --error-text:#ffb4ab;
-  --success-bg:#1a3a20; --success-text:#a8d5b0;
-  --card-shadow:none;
+  --black:#0a0908;
+  --white:#f5f0eb;
+  --mocha:#b5926a;
+  --mocha-dark:#7a5c3a;
+  --mocha-light:#e8ddd0;
+  --mocha-mid:#c4a882;
+  --gray:#9a8f86;
+  --gray-light:#d4cdc6;
+  --rule:1px solid var(--black);
+  --font:'Helvetica Neue',Helvetica,Arial,sans-serif;
 }
 .light{
-  --bg:#fafaff; --bg2:#f0f1f8; --bg3:#e3e2ec; --bg4:#ebebf5;
-  --text:#1a1b1f; --text2:#575e8b; --text3:#9ba1b0;
-  --accent:#1750d1; --accent-bg:rgba(23,80,209,.08);
-  --border:#c8c8d8; --border2:#dde0ea;
-  --error-bg:#ffeef0; --error-text:#b3001b;
-  --success-bg:#e6f4ea; --success-text:#1b6030;
-  --card-shadow:0 1px 4px rgba(0,0,0,.08);
+  --bg:var(--white); --bg2:#f0ece6; --bg3:var(--mocha-light);
+  --surface:#fff; --text:var(--black); --text2:#4a4038; --text3:var(--gray);
+  --border:var(--black); --border2:var(--gray-light);
+  --accent:var(--black); --accent2:var(--mocha);
 }
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f0f13;color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 0 60px;}
-.light-wrap{background:#e8eaf0;}
+.dark{
+  --bg:#0a0908; --bg2:#1a1612; --bg3:#241e18;
+  --surface:#1a1612; --text:var(--white); --text2:#c8bfb5; --text3:#7a6e65;
+  --border:var(--white); --border2:#3a342e;
+  --accent:var(--white); --accent2:var(--mocha);
+}
+body{
+  font-family:var(--font);
+  background:#2c2016;
+  min-height:100vh;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:32px 0 80px;
+  letter-spacing:-.01em;
+}
 
 /* ── Phone ── */
-.phone-shell{width:390px;min-height:844px;background:var(--bg);border-radius:48px;box-shadow:0 0 0 10px #2a2c30,0 30px 80px rgba(0,0,0,.7);overflow:hidden;position:relative;display:flex;flex-direction:column;transition:background .2s;}
-.status-bar{height:44px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding:0 28px;font-size:12px;color:var(--text3);border-bottom:1px solid var(--border2);transition:background .2s;}
+.phone{
+  width:390px;
+  min-height:844px;
+  background:var(--bg);
+  border:2px solid #3a302a;
+  border-radius:52px;
+  box-shadow:0 40px 100px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.05);
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+
+/* ── Status bar ── */
+.status{
+  height:48px;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text3);
+  border-bottom:var(--rule);
+}
+.status-name{
+  font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);
+}
+.status-btn{
+  border:none;background:none;cursor:pointer;
+  color:var(--text3);padding:4px;
+  display:flex;align-items:center;
+}
+.status-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;}
+
+/* ── Pages ── */
 .screen{flex:1;overflow:hidden;position:relative;}
-.page{position:absolute;inset:0;overflow-y:auto;background:var(--bg);display:none;flex-direction:column;transition:background .2s;}
+.page{position:absolute;inset:0;overflow-y:auto;background:var(--bg);display:none;flex-direction:column;}
 .page.active{display:flex;}
 
 /* ── Top bar ── */
-.top-bar{display:flex;align-items:center;padding:8px 16px;gap:10px;border-bottom:1px solid var(--border2);min-height:56px;background:var(--bg);}
-.back{width:32px;height:32px;border:none;background:none;color:var(--accent);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;}
-.top-bar h2{flex:1;font-size:17px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+.top-bar{
+  display:flex;align-items:center;
+  padding:0 24px;
+  height:56px;
+  border-bottom:var(--rule);
+  flex-shrink:0;
+  gap:12px;
+  background:var(--bg);
+}
+.top-bar h2{
+  flex:1;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.back-btn{
+  border:none;background:none;cursor:pointer;color:var(--text);padding:4px;
+  display:flex;align-items:center;
+}
+.back-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;}
 
 /* ── Bottom nav ── */
-.bottom-nav{height:72px;background:var(--bg4);border-top:1px solid var(--border2);display:flex;flex-shrink:0;}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-size:10px;color:var(--text3);border:none;background:none;}
-.nav-item.active{color:var(--accent);}
-.nav-item svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.bottom-nav{
+  height:68px;
+  background:var(--bg);
+  border-top:var(--rule);
+  display:flex;
+  flex-shrink:0;
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;cursor:pointer;border:none;background:none;
+  font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text3);
+  border-right:var(--rule);
+  transition:background .1s;
+}
+.nav-item:last-child{border-right:none;}
+.nav-item.active{background:var(--accent);color:var(--bg);}
+.nav-item svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;}
 
-/* ── Chips ── */
-.chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:20px;font-size:12px;border:1.5px solid var(--border);cursor:pointer;white-space:nowrap;transition:.15s;background:transparent;color:var(--text2);}
-.chip.selected{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
-.chips-row{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px;}
-.chips-scroll{display:flex;gap:8px;overflow-x:auto;padding:8px 16px;scrollbar-width:none;}
-.chips-scroll::-webkit-scrollbar{display:none;}
+/* ── Typography ── */
+.page-title{
+  font-size:36px;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;
+  color:var(--text);padding:24px 24px 0;line-height:1;
+}
+.page-sub{
+  font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text3);padding:6px 24px 20px;
+}
+.section-label{
+  font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text3);padding:16px 24px 8px;
+}
 
 /* ── Inputs ── */
-.field-wrap{padding:0 16px;}
-.field{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:11px 14px;outline:none;transition:border-color .15s;}
-.field:focus{border-color:var(--accent);}
-.field-label{font-size:11px;color:var(--text2);margin-bottom:4px;display:block;font-weight:500;}
-.row-fields{display:flex;gap:8px;padding:0 16px;}
-.row-fields .field-group{flex:1;}
+.field-group{padding:0 24px 12px;}
+.field-label{
+  font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text3);display:block;margin-bottom:6px;
+}
+.field{
+  width:100%;background:var(--bg2);
+  border:var(--rule);
+  color:var(--text);font-size:14px;font-family:var(--font);
+  padding:11px 14px;outline:none;border-radius:0;
+  transition:border-color .1s;
+  -webkit-appearance:none;
+}
+.field:focus{border-color:var(--accent2);}
+.field::placeholder{color:var(--text3);}
+.row-fields{display:flex;gap:0;padding:0 24px 12px;}
+.row-fields .field-group{padding:0;flex:1;}
+.row-fields .field-group:first-child .field{border-right:none;}
 
 /* ── Autocomplete ── */
-.autocomplete-wrap{position:relative;}
-.autocomplete-drop{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1.5px solid var(--accent);border-radius:8px;z-index:20;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.3);}
-.autocomplete-item{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;transition:background .1s;}
-.autocomplete-item:hover{background:var(--accent-bg);}
-.autocomplete-item img{width:36px;height:54px;object-fit:cover;border-radius:4px;background:var(--bg3);}
-.autocomplete-item-info{flex:1;}
-.autocomplete-item-title{font-size:14px;font-weight:500;color:var(--text);}
-.autocomplete-item-year{font-size:12px;color:var(--text3);}
+.ac-wrap{position:relative;}
+.ac-drop{
+  position:absolute;top:100%;left:0;right:0;z-index:20;
+  background:var(--bg);border:var(--rule);border-top:none;
+  display:none;
+}
+.ac-item{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  cursor:pointer;border-bottom:1px solid var(--border2);
+  transition:background .1s;
+}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--bg2);}
+.ac-thumb{
+  width:32px;height:48px;background:var(--bg3);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.04em;
+}
+.ac-info-title{font-size:13px;font-weight:600;color:var(--text);}
+.ac-info-meta{font-size:11px;color:var(--text3);margin-top:2px;letter-spacing:.03em;}
+
+/* ── Chips ── */
+.chips-scroll{
+  display:flex;gap:0;overflow-x:auto;padding:0 24px 16px;
+  scrollbar-width:none;
+}
+.chips-scroll::-webkit-scrollbar{display:none;}
+.chip{
+  padding:6px 14px;
+  border:var(--rule);border-right:none;
+  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  cursor:pointer;background:transparent;color:var(--text2);white-space:nowrap;
+  transition:background .1s;flex-shrink:0;
+}
+.chip:last-child{border-right:var(--rule);}
+.chip.on{background:var(--accent);color:var(--bg);}
 
 /* ── Buttons ── */
-.btn{width:calc(100% - 32px);margin:0 16px;padding:13px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:.15s;}
-.btn-primary{background:var(--accent);color:#fff;}
-.light .btn-primary{color:#fff;}
-.btn-primary:disabled{opacity:.35;cursor:not-allowed;}
-.btn-danger{background:var(--error-bg);color:var(--error);}
-.btn-outline{background:transparent;border:1.5px solid var(--accent);color:var(--accent);}
-.btn-sm{width:auto;margin:0;padding:8px 16px;font-size:13px;}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 20px;
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;border:var(--rule);background:transparent;
+  font-family:var(--font);color:var(--text);
+  transition:background .1s, color .1s;
+}
+.btn:hover,.btn:active{background:var(--accent);color:var(--bg);}
+.btn-fill{background:var(--text);color:var(--bg);}
+.btn-fill:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn-mocha{background:var(--mocha);color:var(--black);border-color:var(--mocha);}
+.btn-mocha:hover{background:var(--mocha-dark);border-color:var(--mocha-dark);}
+.btn-block{width:calc(100% - 48px);margin:0 24px;}
+.btn-sm{padding:8px 14px;font-size:9px;}
+.btn:disabled{opacity:.3;cursor:not-allowed;}
 
-/* ── Cards ── */
-.card{background:var(--bg2);border-radius:12px;margin:0 16px;overflow:hidden;box-shadow:var(--card-shadow);}
-.card+.card{margin-top:8px;}
-.card-content{padding:12px 14px;}
+/* ── Result cards ── */
+.result-item{
+  border-bottom:var(--rule);
+  padding:16px 24px;
+}
+.result-row1{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.result-lang{
+  font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent2);
+}
+.result-name{
+  font-size:12px;color:var(--text2);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;
+}
+.result-meta{
+  display:flex;gap:16px;margin-top:8px;
+  font-size:10px;color:var(--text3);letter-spacing:.03em;
+}
+.result-meta svg{
+  width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.5;
+  display:inline;vertical-align:middle;margin-right:2px;
+}
+.result-actions{display:flex;gap:0;margin-top:12px;}
+.result-actions .btn{flex:1;padding:9px 10px;font-size:9px;}
+.result-actions .btn:first-child{border-right:none;}
+.format-tag{
+  font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 8px;border:var(--rule);color:var(--text3);flex-shrink:0;
+}
 
-/* ── Result card ── */
-.result-card{background:var(--bg2);border-radius:12px;margin:0 16px 8px;cursor:pointer;box-shadow:var(--card-shadow);transition:background .1s;}
-.result-card:active{background:var(--bg3);}
-.result-inner{padding:12px 14px;}
-.lang-badge{font-size:13px;font-weight:700;color:var(--accent);}
-.result-filename{font-size:12px;color:var(--text2);margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.result-meta{display:flex;gap:10px;font-size:11px;color:var(--text3);align-items:center;margin-top:4px;}
-.result-meta svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.5;}
+/* ── Language filter bar ── */
+.lang-filter{
+  display:flex;gap:0;overflow-x:auto;
+  border-bottom:var(--rule);padding:0 24px;
+  scrollbar-width:none;flex-shrink:0;
+}
+.lang-filter::-webkit-scrollbar{display:none;}
+.lang-chip{
+  padding:10px 16px;
+  border-right:var(--rule);
+  font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  cursor:pointer;background:transparent;color:var(--text3);white-space:nowrap;
+  border:none;border-right:var(--rule);flex-shrink:0;
+}
+.lang-chip:first-child{padding-left:0;}
+.lang-chip.on{color:var(--text);border-bottom:2px solid var(--accent2);}
 
-/* ── Subtitle row ── */
-.sub-row{display:flex;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border2);}
-.sub-time{width:56px;flex-shrink:0;}
-.ts-start{font-size:11px;color:var(--accent);}
-.ts-end{font-size:11px;color:var(--text3);}
-.sub-text{font-size:14px;line-height:1.55;flex:1;color:var(--text);}
-.sub-translated{font-size:12px;color:var(--text3);margin-top:3px;font-style:italic;}
+/* ── Movie header ── */
+.movie-header{
+  display:flex;gap:16px;padding:16px 24px;
+  border-bottom:var(--rule);align-items:flex-start;
+}
+.movie-thumb{
+  width:44px;height:64px;background:var(--bg3);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border:var(--rule);
+}
+.movie-title{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.01em;}
+.movie-meta{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:.04em;text-transform:uppercase;}
 
-/* ── Progress ── */
-.progress-track{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
-.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .4s;}
-.progress-label{font-size:11px;color:var(--text3);margin-top:5px;}
+/* ── Translate screen ── */
+.info-row{
+  display:flex;gap:0;padding:16px 24px;
+  border-bottom:var(--rule);align-items:center;
+}
+.info-tag{
+  font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 10px;border:var(--rule);color:var(--text3);
+}
+.info-tag+.info-tag{margin-left:-1px;}
+.info-tag.hi{background:var(--accent2);color:var(--black);border-color:var(--accent2);}
+.detected-lang{
+  font-size:22px;font-weight:900;letter-spacing:-.01em;color:var(--text);
+  padding:20px 24px 0;text-transform:uppercase;
+}
+.detected-label{
+  font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text3);padding:4px 24px 20px;
+}
+.translate-arrow{
+  font-size:24px;text-align:center;padding:8px;color:var(--accent2);
+}
+.progress-wrap{padding:16px 24px 0;}
+.progress-track{height:3px;background:var(--border2);}
+.progress-fill{height:100%;background:var(--accent2);transition:width .4s;}
+.progress-label{
+  font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text3);margin-top:8px;
+}
+.save-box{
+  margin:16px 24px 0;padding:16px;
+  border:var(--rule);background:var(--bg2);
+  display:flex;flex-direction:column;gap:12px;
+}
+.save-box .field-label{padding:0;margin-bottom:4px;}
+.save-folder-row{display:flex;gap:0;}
+.save-folder-row .field{flex:1;border-right:none;}
 
-/* ── Misc ── */
-.section-title{font-size:11px;color:var(--text3);padding:12px 16px 5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
-.page-title{font-size:22px;font-weight:700;padding:18px 16px 4px;color:var(--text);}
-.divider{height:1px;background:var(--border2);margin:0 16px;}
-.info-chip{display:inline-flex;align-items:center;padding:2px 8px;background:var(--accent-bg);border-radius:4px;font-size:11px;color:var(--accent);}
-.empty-state{display:flex;flex:1;align-items:center;justify-content:center;color:var(--text3);font-size:14px;}
-.error-card{background:var(--error-bg);border-radius:8px;padding:12px 14px;margin:0 16px;font-size:13px;color:var(--error-text);}
-.success-card{background:var(--success-bg);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--success-text);}
-.gap12{display:flex;flex-direction:column;gap:12px;}
-.gap8{display:flex;flex-direction:column;gap:8px;}
-.p16{padding:16px;}
-.theme-toggle{border:none;background:none;color:var(--text2);cursor:pointer;padding:4px 8px;font-size:13px;display:flex;align-items:center;gap:4px;}
-.theme-toggle svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.5;}
+/* ── Translated preview ── */
+.preview-row{
+  display:flex;gap:12px;padding:12px 24px;
+  border-bottom:1px solid var(--border2);
+}
+.preview-ts{
+  font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--accent2);
+  width:44px;flex-shrink:0;padding-top:1px;
+}
+.preview-src{font-size:11px;color:var(--text3);line-height:1.4;}
+.preview-tgt{font-size:13px;color:var(--text);line-height:1.4;margin-top:2px;}
+
+/* ── History ── */
+.history-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;border-bottom:var(--rule);
+}
+.history-title{font-size:13px;font-weight:700;color:var(--text);}
+.history-langs{
+  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--accent2);margin-top:3px;
+}
+.history-date{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:.03em;}
+.del-btn{
+  border:none;background:none;cursor:pointer;color:var(--text3);padding:8px;
+}
+.del-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;}
 
 /* ── Settings ── */
-.settings-group{background:var(--bg2);border-radius:12px;margin:0 16px;overflow:hidden;}
-.settings-group-title{padding:12px 16px 4px;font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
-.settings-row{padding:10px 16px;display:flex;flex-direction:column;gap:4px;}
-.settings-row+.settings-row{border-top:1px solid var(--border2);}
-.settings-row-inline{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
-.settings-row-inline+.settings-row-inline{border-top:1px solid var(--border2);}
-.toggle{width:44px;height:26px;background:var(--bg3);border-radius:13px;position:relative;cursor:pointer;border:none;transition:background .2s;}
-.toggle.on{background:var(--accent);}
-.toggle::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:10px;top:3px;left:3px;transition:left .2s;}
+.settings-section{border-bottom:var(--rule);}
+.settings-section-title{
+  padding:14px 24px 10px;
+  font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text3);
+}
+.settings-row{padding:0 24px 12px;}
+.settings-row-inline{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;border-bottom:1px solid var(--border2);
+}
+.settings-row-label{font-size:13px;font-weight:600;color:var(--text);}
+.settings-row-desc{font-size:11px;color:var(--text3);margin-top:2px;}
+.toggle{
+  width:40px;height:22px;background:var(--border2);border:var(--rule);
+  border-radius:0;position:relative;cursor:pointer;border:var(--rule);
+  flex-shrink:0;
+}
+.toggle.on{background:var(--mocha);border-color:var(--mocha);}
+.toggle::after{
+  content:'';position:absolute;width:14px;height:14px;background:var(--bg);
+  top:3px;left:3px;transition:left .15s;
+}
 .toggle.on::after{left:21px;}
+
+/* ── Misc ── */
+.empty{
+  display:flex;flex:1;align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text3);
+}
+.rule{height:1px;background:var(--border2);margin:0;}
+.success-msg{
+  padding:12px 16px;background:var(--bg2);border:var(--rule);
+  font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--mocha);
+}
+.admin-note{
+  margin:0 24px 12px;padding:12px 14px;
+  background:var(--bg3);border:var(--rule);
+  font-size:10px;font-weight:500;letter-spacing:.04em;color:var(--text3);
+  display:flex;gap:8px;align-items:flex-start;
+}
 </style>
 </head>
 <body>
-<div class="phone-shell" id="phone">
-  <div class="status-bar">
+<div class="phone dark" id="phone">
+  <div class="status">
     <span>9:41</span>
-    <span style="font-weight:600;font-size:13px;color:var(--text);">SubTranslate</span>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+    <span class="status-name">Subty</span>
+    <button class="status-btn" onclick="toggleTheme()" title="Toggle theme">
       <svg id="theme-icon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
     </button>
   </div>
 
   <div class="screen">
 
-    <!-- ══════════ SEARCH ══════════ -->
+    <!-- ══════ SEARCH ══════ -->
     <div class="page active" id="page-search">
-      <div class="page-title">SubTranslate</div>
-      <div style="padding:0 16px 14px;color:var(--text3);font-size:13px;">Search · Download · Translate</div>
+      <div class="page-title">Subty</div>
+      <div class="page-sub">Search · Download · Translate</div>
 
-      <div class="section-title">Search by</div>
-      <div class="chips-row" id="search-mode-chips" style="margin-bottom:14px;">
-        <button class="chip selected" onclick="setSearchMode('title')">Title</button>
-        <button class="chip" onclick="setSearchMode('imdb')">IMDB ID</button>
+      <div class="section-label">Search by</div>
+      <div style="display:flex;gap:0;padding:0 24px 16px;" id="mode-chips">
+        <button class="chip on" onclick="setMode('title')">Title</button>
+        <button class="chip" onclick="setMode('imdb')">IMDB</button>
       </div>
 
-      <div class="field-wrap" style="margin-bottom:12px;">
-        <span class="field-label" id="search-field-label">Movie / Series name</span>
-        <div class="autocomplete-wrap">
-          <input id="search-input" class="field" type="text" placeholder="e.g. The Matrix" oninput="onSearchInput()" autocomplete="off"/>
-          <div id="autocomplete-drop" class="autocomplete-drop" style="display:none;"></div>
+      <div class="field-group">
+        <span class="field-label" id="search-label">Movie or Series</span>
+        <div class="ac-wrap">
+          <input id="search-input" class="field" type="text" placeholder="e.g. The Matrix" oninput="onInput()" autocomplete="off"/>
+          <div id="ac-drop" class="ac-drop"></div>
         </div>
       </div>
 
-      <div class="row-fields" style="margin-bottom:14px;">
-        <div class="field-group"><span class="field-label">Season</span><input class="field" id="season-input" type="number" placeholder="—"/></div>
-        <div class="field-group"><span class="field-label">Episode</span><input class="field" id="episode-input" type="number" placeholder="—"/></div>
+      <div class="row-fields">
+        <div class="field-group">
+          <span class="field-label">Season</span>
+          <input class="field" type="number" placeholder="—"/>
+        </div>
+        <div class="field-group" style="padding-left:0;">
+          <span class="field-label" style="padding-left:12px;">Episode</span>
+          <input class="field" type="number" placeholder="—" style="border-left:var(--rule);"/>
+        </div>
       </div>
 
-      <div class="section-title" style="margin-bottom:4px;">Languages</div>
-      <div class="chips-scroll" id="lang-chips" style="margin-bottom:16px;"></div>
+      <div class="section-label">Language</div>
+      <div class="chips-scroll" id="lang-chips" style="padding-bottom:20px;"></div>
 
-      <button class="btn btn-primary" id="search-btn" disabled onclick="doSearch()">Search Subtitles</button>
-      <div style="height:20px;"></div>
+      <button class="btn btn-fill btn-block" id="search-btn" disabled onclick="doSearch()">
+        Search Subtitles
+      </button>
+      <div style="height:24px;"></div>
     </div>
 
-    <!-- ══════════ RESULTS ══════════ -->
+    <!-- ══════ RESULTS ══════ -->
     <div class="page" id="page-results">
       <div class="top-bar">
-        <button class="back" onclick="goBack('search')">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        <button class="back-btn" onclick="goTo('search')">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2 id="results-title">Results</h2>
       </div>
-      <!-- Poster + movie info -->
-      <div id="movie-header" style="display:none;padding:12px 16px;display:flex;gap:12px;align-items:flex-start;border-bottom:1px solid var(--border2);">
-        <img id="movie-poster" src="" style="width:52px;height:78px;border-radius:6px;object-fit:cover;background:var(--bg3);flex-shrink:0;"/>
-        <div>
-          <div id="movie-header-title" style="font-size:16px;font-weight:600;color:var(--text);"></div>
-          <div id="movie-header-meta" style="font-size:12px;color:var(--text3);margin-top:3px;"></div>
-        </div>
-      </div>
-      <div class="chips-scroll" id="results-lang-filter" style="border-bottom:1px solid var(--border2);padding-bottom:10px;"></div>
-      <div id="results-list" style="overflow-y:auto;flex:1;padding:10px 0;"></div>
+
+      <div id="movie-header" style="display:none;"></div>
+
+      <div class="lang-filter" id="lang-filter"></div>
+
+      <div id="results-list" style="overflow-y:auto;flex:1;"></div>
     </div>
 
-    <!-- ══════════ TRANSLATE ══════════ (main action — no separate preview screen) -->
+    <!-- ══════ TRANSLATE ══════ -->
     <div class="page" id="page-translate">
       <div class="top-bar">
-        <button class="back" onclick="goBack('results')">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        <button class="back-btn" onclick="goTo('results')">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
-        <h2 id="translate-title">Translate</h2>
-        <span id="translate-format" class="info-chip" style="margin-left:auto;">SRT</span>
+        <h2 id="tl-title">Translate</h2>
+        <span id="tl-format" class="format-tag" style="margin-left:auto;"></span>
       </div>
 
-      <div style="overflow-y:auto;flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:14px;">
+      <!-- Subtitle info -->
+      <div id="tl-tags" class="info-row" style="gap:8px;flex-wrap:wrap;"></div>
 
-        <!-- Subtitle file info -->
-        <div id="subtitle-info-card" style="background:var(--bg2);border-radius:10px;padding:10px 14px;">
-          <div style="font-size:13px;color:var(--text2);" id="subtitle-info-name"></div>
-          <div style="display:flex;gap:10px;margin-top:4px;">
-            <span id="subtitle-info-lines" class="info-chip"></span>
-            <span id="subtitle-detected-lang" class="info-chip" style="background:rgba(130,177,255,.15);"></span>
+      <!-- Detected source language (read-only, auto-detected) -->
+      <div id="tl-src-display" class="detected-lang"></div>
+      <div class="detected-label">Detected language — auto</div>
+      <div class="translate-arrow" style="padding:0 24px 4px;">↓</div>
+
+      <!-- Target language -->
+      <div class="field-group">
+        <span class="field-label">Translate to</span>
+        <select class="field" id="tgt-lang">
+          <option value="he">עברית — Hebrew</option>
+          <option value="en">English</option>
+          <option value="fr">Français</option>
+          <option value="de">Deutsch</option>
+          <option value="es">Español</option>
+          <option value="ar">العربية</option>
+          <option value="ru">Русский</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
+          <option value="pt">Português</option>
+        </select>
+      </div>
+
+      <!-- Engine toggle -->
+      <div class="field-group">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <span class="field-label" id="engine-label">Google Translate</span>
+            <div class="settings-row-desc" id="engine-desc">Fast · Free</div>
           </div>
+          <button class="toggle" id="toggle-gemini" onclick="toggleGeminiEngine()"></button>
         </div>
-
-        <!-- Language selectors -->
-        <div style="display:flex;gap:8px;">
-          <div style="flex:1;">
-            <span class="field-label">Translate FROM</span>
-            <select class="field" id="src-lang">
-              <option value="en">English</option>
-              <option value="he">עברית</option>
-              <option value="fr">Français</option>
-              <option value="de">Deutsch</option>
-              <option value="es">Español</option>
-              <option value="ar">العربية</option>
-              <option value="ru">Русский</option>
-              <option value="ja">日本語</option>
-              <option value="zh">中文</option>
-              <option value="pt">Português</option>
-              <option value="it">Italiano</option>
-            </select>
-          </div>
-          <div style="flex:1;">
-            <span class="field-label">Translate TO</span>
-            <select class="field" id="tgt-lang">
-              <option value="he">עברית</option>
-              <option value="en">English</option>
-              <option value="fr">Français</option>
-              <option value="de">Deutsch</option>
-              <option value="es">Español</option>
-              <option value="ar">العربية</option>
-              <option value="ru">Русский</option>
-              <option value="ja">日本語</option>
-              <option value="zh">中文</option>
-              <option value="pt">Português</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <span class="field-label">Model</span>
-          <select class="field" id="model-select">
-            <option value="sonnet">Claude Sonnet 4.5 — Quality</option>
-            <option value="haiku">Claude Haiku 4.5 — Fast</option>
+        <div id="gemini-model-row" style="display:none;margin-top:10px;">
+          <span class="field-label">Gemini model</span>
+          <select class="field" id="model-sel" style="margin-top:4px;">
+            <option value="gemini-2.5-flash">Gemini Flash</option>
+            <option value="gemini-2.5-pro">Gemini Pro</option>
           </select>
         </div>
+      </div>
 
-        <!-- Translate / Cancel button -->
-        <button class="btn btn-primary" id="translate-btn" onclick="startTranslation()">Translate</button>
+      <!-- Translate button -->
+      <button class="btn btn-fill btn-block" id="tl-btn" onclick="startTranslation()">
+        Translate
+      </button>
 
-        <!-- Progress -->
-        <div id="progress-section" style="display:none;">
-          <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-          <div class="progress-label" id="progress-label">Starting…</div>
+      <!-- Progress -->
+      <div id="tl-progress" style="display:none;padding-top:4px;">
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+          <div class="progress-label" id="prog-label">—</div>
         </div>
+      </div>
 
-        <!-- Save section (shown after translation) -->
-        <div id="save-section" style="display:none;background:var(--bg2);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;">
-          <div class="success-card" id="complete-msg">✓ Translation complete</div>
-
-          <div>
-            <span class="field-label">Save as</span>
-            <input class="field" id="save-filename" type="text" placeholder="filename.srt"/>
+      <!-- Save section -->
+      <div id="save-box" class="save-box" style="display:none;">
+        <div class="success-msg" id="complete-msg">✓ Translation complete</div>
+        <div>
+          <span class="field-label">Filename</span>
+          <input class="field" id="save-name" type="text"/>
+        </div>
+        <div>
+          <span class="field-label">Save to (optional)</span>
+          <div class="save-folder-row">
+            <input class="field" id="save-folder" type="text" placeholder="/Downloads/"/>
+            <button class="btn btn-sm" style="border-left:none;flex-shrink:0;" onclick="pickFolder()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </button>
           </div>
+        </div>
+        <button class="btn btn-mocha" onclick="saveFile()">Save File</button>
+        <div id="save-ok" class="success-msg" style="display:none;"></div>
+      </div>
 
-          <div>
-            <span class="field-label">Save location (optional)</span>
-            <div style="display:flex;gap:8px;">
-              <input class="field" id="save-folder" type="text" placeholder="/Downloads/Subtitles/" style="flex:1;"/>
-              <button class="btn btn-outline btn-sm" onclick="pickFolder()" style="flex-shrink:0;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" style="display:inline;vertical-align:middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                Browse
-              </button>
-            </div>
+      <!-- Translated preview (collapsed) -->
+      <div id="preview-section" style="display:none;margin-top:16px;">
+        <button onclick="togglePreview()" style="background:none;border:none;cursor:pointer;width:100%;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;border-top:var(--rule);">
+          <span style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);">Preview translation</span>
+          <span id="prev-arrow" style="font-size:14px;color:var(--text3);">+</span>
+        </button>
+        <div id="prev-rows" style="display:none;"></div>
+      </div>
+
+      <div style="height:24px;"></div>
+    </div>
+
+    <!-- ══════ DOWNLOAD CONFIRM ══════ -->
+    <div class="page" id="page-download">
+      <div class="top-bar">
+        <button class="back-btn" onclick="goTo('results')">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <h2>Download</h2>
+      </div>
+      <div style="padding:24px;display:flex;flex-direction:column;gap:16px;flex:1;">
+        <div id="dl-info" style="border:var(--rule);padding:16px;background:var(--bg2);">
+          <div id="dl-name" style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;"></div>
+          <div id="dl-meta" style="font-size:10px;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;"></div>
+        </div>
+        <div>
+          <span class="field-label">Save to (optional)</span>
+          <div class="save-folder-row">
+            <input class="field" id="dl-folder" type="text" placeholder="/Downloads/"/>
+            <button class="btn btn-sm" style="border-left:none;flex-shrink:0;" onclick="pickFolder('dl')">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </button>
           </div>
-
-          <button class="btn btn-primary" style="margin:0;" onclick="saveFile()">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Save Translated File
-          </button>
-          <div id="save-confirmation" class="success-card" style="display:none;"></div>
         </div>
-
-        <!-- Preview of first lines (collapsible, secondary) -->
-        <div id="preview-toggle-wrap" style="display:none;">
-          <button onclick="togglePreview()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;">
-            <svg id="preview-toggle-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6 9 12 15 18 9"/></svg>
-            Show translated preview
-          </button>
-          <div id="translated-preview" style="display:none;margin-top:8px;"></div>
-        </div>
+        <button class="btn btn-fill" onclick="confirmDownload()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </button>
+        <div id="dl-ok" style="display:none;" class="success-msg"></div>
       </div>
     </div>
 
-    <!-- ══════════ HISTORY ══════════ -->
+    <!-- ══════ HISTORY ══════ -->
     <div class="page" id="page-history">
-      <div class="page-title">History</div>
-      <div id="history-list" style="flex:1;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:8px;"></div>
+      <div class="page-title" style="padding-bottom:0;">History</div>
+      <div class="page-sub">Downloads &amp; Translations</div>
+      <div id="history-list" style="flex:1;overflow-y:auto;"></div>
     </div>
 
-    <!-- ══════════ SETTINGS ══════════ -->
+    <!-- ══════ SETTINGS ══════ -->
     <div class="page" id="page-settings">
-      <div class="page-title">Settings</div>
-      <div style="overflow-y:auto;flex:1;padding-bottom:24px;display:flex;flex-direction:column;gap:12px;">
+      <div class="page-title" style="padding-bottom:0;">Settings</div>
+      <div class="page-sub">Subty</div>
+      <div style="overflow-y:auto;flex:1;">
 
-        <!-- Admin note -->
-        <div style="margin:0 16px;padding:10px 12px;background:var(--accent-bg);border-radius:8px;font-size:12px;color:var(--accent);">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" style="display:inline;vertical-align:middle;margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          The subtitle search API key is managed by the app administrator.
+        <!-- ── Display ── -->
+        <div class="settings-section">
+          <div class="settings-section-title">Display</div>
+          <div class="settings-row-inline">
+            <div>
+              <span class="settings-row-label">Show movie posters</span>
+              <div class="settings-row-desc">Display cover art in search results</div>
+            </div>
+            <button class="toggle on" id="toggle-posters" onclick="toggleSetting('toggle-posters')"></button>
+          </div>
+          <div class="settings-row-inline" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:12px;">
+            <div>
+              <span class="settings-row-label">Compact results</span>
+              <div class="settings-row-desc">Smaller cards, more results on screen</div>
+            </div>
+            <button class="toggle" id="toggle-compact" onclick="toggleSetting('toggle-compact')"></button>
+          </div>
+          <div class="settings-row-inline" style="border-top:1px solid var(--border2);margin-top:4px;padding-top:12px;">
+            <div>
+              <span class="settings-row-label">Light mode</span>
+              <div class="settings-row-desc">Switch between dark and light theme</div>
+            </div>
+            <button class="toggle" id="theme-toggle-btn" onclick="toggleTheme()"></button>
+          </div>
         </div>
 
-        <!-- Translation API -->
-        <div class="settings-group">
-          <div class="settings-group-title">Translation (Claude)</div>
+        <!-- ── Translation ── -->
+        <div class="settings-section">
+          <div class="settings-section-title">Translation</div>
           <div class="settings-row">
-            <span class="field-label">Anthropic API Key</span>
-            <input class="field" id="anthropic-key" type="password" placeholder="sk-ant-…"/>
-          </div>
-          <div class="settings-row">
-            <span class="field-label">Default model</span>
-            <select class="field" id="def-model">
-              <option value="sonnet">Claude Sonnet 4.5 — Quality</option>
-              <option value="haiku">Claude Haiku 4.5 — Fast</option>
+            <span class="field-label">Default target language</span>
+            <select class="field" id="setting-target-lang">
+              <option value="he">עברית — Hebrew</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+              <option value="es">Español</option>
+              <option value="ar">العربية</option>
+              <option value="ru">Русский</option>
+              <option value="zh">中文</option>
+              <option value="ja">日本語</option>
             </select>
           </div>
-        </div>
-
-        <!-- Defaults -->
-        <div class="settings-group">
-          <div class="settings-group-title">Defaults</div>
-          <div class="settings-row">
-            <span class="field-label">Source language</span>
-            <input class="field" id="def-src" type="text" value="en" placeholder="en"/>
+          <div class="settings-row" style="margin-top:8px;">
+            <span class="field-label">Model</span>
+            <select class="field">
+              <option>Gemini Flash — Fast · Cheap</option>
+              <option>Gemini Pro — Quality</option>
+            </select>
           </div>
-          <div class="settings-row">
-            <span class="field-label">Target language</span>
-            <input class="field" id="def-tgt" type="text" value="he" placeholder="he"/>
-          </div>
-          <div class="settings-row">
-            <span class="field-label">Default save folder</span>
-            <div style="display:flex;gap:8px;">
-              <input class="field" id="def-folder" type="text" placeholder="/Downloads/Subtitles/" style="flex:1;"/>
-              <button class="btn btn-outline btn-sm" onclick="pickFolder('def')" style="flex-shrink:0;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" style="display:inline;vertical-align:middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-              </button>
+          <div class="settings-row-inline" style="border-top:1px solid var(--border2);margin-top:12px;padding-top:12px;">
+            <div>
+              <span class="settings-row-label">Auto-translate on download</span>
+              <div class="settings-row-desc">Start translation immediately after downloading</div>
             </div>
+            <button class="toggle" id="toggle-auto-translate" onclick="toggleSetting('toggle-auto-translate')"></button>
           </div>
         </div>
 
-        <!-- Appearance -->
-        <div class="settings-group">
-          <div class="settings-group-title">Appearance</div>
-          <div class="settings-row-inline">
-            <span style="font-size:14px;color:var(--text);">Light mode</span>
-            <button class="toggle" id="light-toggle" onclick="toggleTheme()"></button>
+        <!-- ── Save ── -->
+        <div class="settings-section">
+          <div class="settings-section-title">Save</div>
+          <div class="settings-row">
+            <span class="field-label">Preferred format</span>
+            <select class="field">
+              <option>SRT</option>
+              <option>VTT</option>
+              <option>ASS</option>
+            </select>
+          </div>
+          <div class="settings-row-inline" style="border-top:1px solid var(--border2);margin-top:12px;padding-top:12px;">
+            <div>
+              <span class="settings-row-label">Auto-save translated files</span>
+              <div class="settings-row-desc">Save to Downloads automatically when done</div>
+            </div>
+            <button class="toggle" id="toggle-auto-save" onclick="toggleSetting('toggle-auto-save')"></button>
           </div>
         </div>
 
-        <div style="padding:0 16px;">
-          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        <div style="padding:20px 24px;">
+          <button class="btn btn-fill btn-block" style="margin:0;" onclick="saveSettings()">Save</button>
         </div>
-        <div id="settings-saved" class="success-card" style="display:none;margin:0 16px;"></div>
+        <div id="settings-ok" class="success-msg" style="display:none;margin:0 24px 16px;"></div>
       </div>
     </div>
 
   </div><!-- /screen -->
 
   <nav class="bottom-nav">
-    <button class="nav-item active" id="nav-search" onclick="goToTab('search')">
+    <button class="nav-item active" id="nav-search" onclick="goTab('search')">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       Search
     </button>
-    <button class="nav-item" id="nav-history" onclick="goToTab('history')">
+    <button class="nav-item" id="nav-history" onclick="goTab('history')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       History
     </button>
-    <button class="nav-item" id="nav-settings" onclick="goToTab('settings')">
+    <button class="nav-item" id="nav-settings" onclick="goTab('settings')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
     </button>
@@ -397,411 +694,349 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f0f13;color:var(--
 </div>
 
 <script>
-// ══ CONSTANTS ══
-const LANGUAGES=[
-  {code:'en',label:'English'},{code:'he',label:'עברית'},{code:'fr',label:'Français'},
-  {code:'de',label:'Deutsch'},{code:'es',label:'Español'},{code:'ar',label:'العربية'},
-  {code:'ru',label:'Русский'},{code:'zh-cn',label:'中文'},{code:'ja',label:'日本語'}
+const LANGS=[
+  {c:'en',n:'English'},{c:'he',n:'עברית'},{c:'fr',n:'Français'},
+  {c:'de',n:'Deutsch'},{c:'es',n:'Español'},{c:'ar',n:'العربية'},
+  {c:'ru',n:'Русский'},{c:'zh-cn',n:'中文'},{c:'ja',n:'日本語'}
 ];
-
-// Mock TMDB suggestions (simulates autocomplete)
-const MOCK_SUGGESTIONS = {
-  'mat':[
-    {title:'The Matrix',year:1999,poster:'https://image.tmdb.org/t/p/w92/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg',id:'0133093'},
-    {title:'Matrix Reloaded',year:2003,poster:'https://image.tmdb.org/t/p/w92/ezIurBz2fdUc68d98Fp9dRf5ihv.jpg',id:'0234215'},
-    {title:'Matrix Revolutions',year:2003,poster:'https://image.tmdb.org/t/p/w92/lZpWprJqbIFpEV5uoHfoK0KCnTW.jpg',id:'0242653'},
-  ],
-  'bre':[
-    {title:'Breaking Bad',year:2008,poster:'https://image.tmdb.org/t/p/w92/ggFHVNu6YYI5L9pCfOacjizRGt.jpg',id:'0903747'},
-    {title:'Breathe',year:2017,poster:'https://image.tmdb.org/t/p/w92/zRyvGBJGUmONFbFLDEWmjGSbkxK.jpg',id:'5137540'},
-  ],
-  'inc':[
-    {title:'Inception',year:2010,poster:'https://image.tmdb.org/t/p/w92/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg',id:'1375666'},
-    {title:'In Cold Blood',year:1967,poster:'',id:'0061809'},
-  ],
+const LANG_NAME={en:'English',he:'עברית',fr:'Français',de:'Deutsch',es:'Español',ar:'العربية',ru:'Русский','zh-cn':'中文',ja:'日本語',pt:'Português'};
+const AC={
+  mat:[{t:'The Matrix',y:1999,id:'0133093'},{t:'Matrix Reloaded',y:2003,id:'0234215'},{t:'Matrix Revolutions',y:2003,id:'0242653'}],
+  bre:[{t:'Breaking Bad',y:2008,id:'0903747'},{t:'Breathe',y:2017,id:'5137540'}],
+  inc:[{t:'Inception',y:2010,id:'1375666'}],
+};
+const RESULTS=[
+  {id:1,name:'The.Matrix.1999.BluRay.1080p.srt',lang:'English',lc:'en',dl:48200,r:9.1,fmt:'SRT',date:'2023-08-14',hi:false,trusted:true,by:'SubDB'},
+  {id:2,name:'The.Matrix.1999.HDTV.srt',lang:'English',lc:'en',dl:31500,r:8.4,fmt:'SRT',date:'2022-11-02',hi:true,trusted:false,by:'admin'},
+  {id:3,name:'Matrix.1999.Francais.srt',lang:'Français',lc:'fr',dl:14200,r:8.1,fmt:'SRT',date:'2021-04-18',hi:false,trusted:true,by:'CinéSub'},
+  {id:4,name:'Matrix.1999.Deutsch.BluRay.srt',lang:'Deutsch',lc:'de',dl:9800,r:7.9,fmt:'SRT',date:'2020-09-11',hi:false,trusted:false,by:'GermanSubs'},
+  {id:5,name:'Matrix.1999.Hebrew.sub',lang:'עברית',lc:'he',dl:12800,r:7.9,fmt:'SUB',date:'2021-04-18',hi:false,trusted:false,by:'avi_sub'},
+  {id:6,name:'Matrix.1999.Espanol.srt',lang:'Español',lc:'es',dl:7100,r:7.5,fmt:'SRT',date:'2022-03-22',hi:false,trusted:false,by:'SubEsp'},
+];
+const SUBS=[
+  {i:1,s:'00:02',e:'00:05',t:"Wake up, Neo..."},
+  {i:2,s:'00:07',e:'00:10',t:"The Matrix has you."},
+  {i:3,s:'00:12',e:'00:15',t:"Follow the white rabbit."},
+  {i:4,s:'01:22',e:'01:25',t:"Mr. Anderson."},
+  {i:5,s:'01:26',e:'01:30',t:"We've been expecting you."},
+  {i:6,s:'02:04',e:'02:08',t:"What is real? How do you define real?"},
+  {i:7,s:'02:10',e:'02:14',t:"If you can feel it, smell it..."},
+  {i:8,s:'02:16',e:'02:20',t:"...taste and see it — real is simply electrical signals."},
+  {i:9,s:'03:15',e:'03:18',t:"You take the blue pill, the story ends."},
+  {i:10,s:'03:20',e:'03:23',t:"You take the red pill — you stay in Wonderland."},
+];
+const TRANS={
+  he:["...תתעורר, ניאו","המטריקס שולטת בך.","עקוב אחרי הארנב הלבן.","מר אנדרסון.","ציפינו לך.","מה זה אמיתי? איך אתה מגדיר אמיתי?","אם אתה יכול להרגיש את זה, להריח את זה...","...לטעום ולראות — אמיתי הוא פשוט אותות חשמליים.","אתה לוקח את הגלולה הכחולה, הסיפור נגמר.","אתה לוקח את הגלולה האדומה — אתה נשאר בארץ הפלאות."],
+  fr:["Réveille-toi, Néo…","La Matrice t'a.","Suis le lapin blanc.","M. Anderson.","Nous vous attendions.","Qu'est-ce que le réel?","Si tu peux le ressentir, le sentir...","...le goûter et le voir — le réel est simplement des signaux électriques.","Tu prends la pilule bleue, l'histoire s'arrête.","Tu prends la pilule rouge — tu restes au Pays des Merveilles."],
+  de:["Wach auf, Neo…","Die Matrix hat dich.","Folge dem weißen Kaninchen.","Mr. Anderson.","Wir haben Sie erwartet.","Was ist real?","Wenn du es fühlen, riechen kannst...","...schmecken und sehen — real sind einfach elektrische Signale.","Du nimmst die blaue Pille, die Geschichte endet.","Du nimmst die rote Pille — du bleibst im Wunderland."],
 };
 
-const MOCK_RESULTS=[
-  {fileId:1,fileName:'The.Matrix.1999.BluRay.1080p.srt',language:'English',languageCode:'en',downloadCount:48200,rating:9.1,format:'srt',uploadedAt:'2023-08-14',isHearingImpaired:false,isTrusted:true,uploaderName:'SubDB'},
-  {fileId:2,fileName:'The.Matrix.1999.HDTV.srt',language:'English',languageCode:'en',downloadCount:31500,rating:8.4,format:'srt',uploadedAt:'2022-11-02',isHearingImpaired:true,isTrusted:false,uploaderName:'admin'},
-  {fileId:3,fileName:'Matrix.1999.Francais.srt',language:'Français',languageCode:'fr',downloadCount:14200,rating:8.1,format:'srt',uploadedAt:'2021-04-18',isHearingImpaired:false,isTrusted:true,uploaderName:'CinéSub'},
-  {fileId:4,fileName:'Matrix.1999.Deutsch.BluRay.srt',language:'Deutsch',languageCode:'de',downloadCount:9800,rating:7.9,format:'srt',uploadedAt:'2020-09-11',isHearingImpaired:false,isTrusted:false,uploaderName:'GermanSubs'},
-  {fileId:5,fileName:'Matrix.1999.Hebrew.sub',language:'עברית',languageCode:'he',downloadCount:12800,rating:7.9,format:'sub',uploadedAt:'2021-04-18',isHearingImpaired:false,isTrusted:false,uploaderName:'avi_sub'},
-  {fileId:6,fileName:'Matrix.1999.Espanol.srt',language:'Español',languageCode:'es',downloadCount:7100,rating:7.5,format:'srt',uploadedAt:'2022-03-22',isHearingImpaired:false,isTrusted:false,uploaderName:'SubEsp'},
-];
+// ── State ──
+let selLangs=new Set(['en']), searchMode='title', currentTab='search';
+let selMovie=null, activeResults=RESULTS, activeResult=null;
+let tlStep=0, tlTimer=null, prevOpen=false, isLight=false, histItems=[];
 
-const MOCK_SUBTITLE=[
-  {idx:1,start:'00:02',end:'00:05',text:"Wake up, Neo..."},
-  {idx:2,start:'00:07',end:'00:10',text:"The Matrix has you."},
-  {idx:3,start:'00:12',end:'00:15',text:"Follow the white rabbit."},
-  {idx:4,start:'01:22',end:'01:25',text:"Mr. Anderson."},
-  {idx:5,start:'01:26',end:'01:30',text:"We've been expecting you."},
-  {idx:6,start:'02:04',end:'02:08',text:"What is real? How do you define real?"},
-  {idx:7,start:'02:10',end:'02:14',text:"If you're talking about what you can feel,\nwhat you can smell..."},
-  {idx:8,start:'02:16',end:'02:20',text:"...what you can taste and see,\nthen real is simply electrical signals..."},
-  {idx:9,start:'02:22',end:'02:25',text:"...interpreted by your brain."},
-  {idx:10,start:'03:15',end:'03:18',text:"You take the blue pill, the story ends."},
-  {idx:11,start:'03:20',end:'03:23',text:"You take the red pill, you stay in Wonderland..."},
-  {idx:12,start:'03:25',end:'03:28',text:"...and I show you how deep the rabbit hole goes."},
-  {idx:13,start:'04:00',end:'04:03',text:"There is no spoon."},
-  {idx:14,start:'05:10',end:'05:14',text:"I know kung fu."},
-  {idx:15,start:'05:16',end:'05:18',text:"Show me."},
-];
-
-// Translated versions keyed by target language
-const MOCK_TRANSLATED={
-  he:["...תתעורר, ניאו","המטריקס שולטת בך.","עקוב אחרי הארנב הלבן.","מר אנדרסון.","ציפינו לך.","מה זה אמיתי? איך אתה מגדיר אמיתי?","אם אתה מדבר על מה שאתה יכול להרגיש,\nמה שאתה יכול להריח...","...מה שאתה יכול לטעום ולראות,\nאז 'אמיתי' הוא פשוט אותות חשמליים...","...שהמוח שלך מפרש.","אתה לוקח את הגלולה הכחולה — הסיפור נגמר.","אתה לוקח את הגלולה האדומה — אתה נשאר בארץ הפלאות...","...ואני מראה לך עד כמה עמוקה החור.","אין כפית.","אני יודע קונג פו.","תראה לי."],
-  fr:["Réveille-toi, Néo…","La Matrice t'a.","Suis le lapin blanc.","M. Anderson.","Nous vous attendions.","Qu'est-ce que le réel ?","Si tu parles de ce que tu peux ressentir...","...ce que tu peux goûter et voir...","...interprété par ton cerveau.","Tu prends la pilule bleue, l'histoire s'arrête.","Tu prends la pilule rouge, tu restes au Pays des Merveilles...","...et je te montre jusqu'où va le terrier.","Il n'y a pas de cuillère.","Je connais le kung-fu.","Montre-moi."],
-  de:["Wach auf, Neo…","Die Matrix hat dich.","Folge dem weißen Kaninchen.","Mr. Anderson.","Wir haben Sie erwartet.","Was ist real? Wie definierst du real?","Wenn du über das sprichst, was du fühlen kannst...","...was du schmecken und sehen kannst...","...interpretiert von deinem Gehirn.","Du nimmst die blaue Pille – die Geschichte endet.","Du nimmst die rote Pille – du bleibst im Wunderland...","...und ich zeige dir, wie tief der Kaninchenbau geht.","Es gibt keinen Löffel.","Ich kenne Kung-Fu.","Zeig mir."],
-  es:["Despierta, Neo…","Matrix te tiene.","Sigue al conejo blanco.","Sr. Anderson.","Le estábamos esperando.","¿Qué es real? ¿Cómo defines real?","Si hablas de lo que puedes sentir...","...lo que puedes saborear y ver...","...interpretado por tu cerebro.","Tomas la pastilla azul, la historia termina.","Tomas la pastilla roja, te quedas en el País de las Maravillas...","...y te muestro lo profundo que llega la madriguera.","No hay cuchara.","Sé kung-fu.","Muéstrame."],
-};
-
-// ══ STATE ══
-let selectedLangs=new Set(['en']);
-let searchMode='title';
-let pageStack=['search'];
-let currentTab='search';
-let currentResults=[];
-let currentSubtitle=null;
-let currentSubtitleLang='en';
-let historyItems=[];
-let translationTimer=null;
-let isLightMode=false;
-let previewOpen=false;
-let selectedMovie=null;
-
-// ══ INIT ══
+// ── Init ──
 function init(){
   renderLangChips();
   renderHistory();
 }
 
-// ══ THEME ══
+// ── Settings toggles ──
+function toggleSetting(id){
+  document.getElementById(id).classList.toggle('on');
+}
+
+// ── Translation engine toggle ──
+function toggleGeminiEngine(){
+  const btn=document.getElementById('toggle-gemini');
+  const on=btn.classList.toggle('on');
+  document.getElementById('engine-label').textContent=on?'Gemini AI':'Google Translate';
+  document.getElementById('engine-desc').textContent=on?'Context-aware · slower':'Fast · Free';
+  document.getElementById('gemini-model-row').style.display=on?'block':'none';
+}
+
+// ── Theme ──
 function toggleTheme(){
-  isLightMode=!isLightMode;
-  document.getElementById('phone').classList.toggle('light',isLightMode);
-  document.getElementById('light-toggle').classList.toggle('on',isLightMode);
+  isLight=!isLight;
+  document.getElementById('phone').className='phone '+(isLight?'light':'dark');
+  document.getElementById('theme-toggle-btn').classList.toggle('on',isLight);
   const icon=document.getElementById('theme-icon');
-  icon.innerHTML=isLightMode
+  icon.innerHTML=isLight
     ?'<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
     :'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
 }
 
-// ══ SEARCH MODE ══
-function setSearchMode(mode){
-  searchMode=mode;
-  document.querySelectorAll('#search-mode-chips .chip').forEach((c,i)=>{
-    c.classList.toggle('selected',(i===0&&mode==='title')||(i===1&&mode==='imdb'));
-  });
-  document.getElementById('search-field-label').textContent=mode==='title'?'Movie / Series name':'IMDB ID';
-  document.getElementById('search-input').placeholder=mode==='title'?'e.g. The Matrix':'e.g. 0133093';
-  document.getElementById('autocomplete-drop').style.display='none';
-}
-
-// ══ AUTOCOMPLETE ══
-let acTimer=null;
-function onSearchInput(){
-  const val=document.getElementById('search-input').value.trim();
-  document.getElementById('search-btn').disabled=val.length===0;
-  selectedMovie=null;
-  clearTimeout(acTimer);
-  if(val.length<2){document.getElementById('autocomplete-drop').style.display='none';return;}
-  acTimer=setTimeout(()=>showSuggestions(val),200);
-}
-
-function showSuggestions(val){
-  const key=Object.keys(MOCK_SUGGESTIONS).find(k=>val.toLowerCase().startsWith(k));
-  const items=key?MOCK_SUGGESTIONS[key]:[];
-  const drop=document.getElementById('autocomplete-drop');
-  if(!items.length){drop.style.display='none';return;}
-  drop.innerHTML=items.map((m,i)=>`
-    <div class="autocomplete-item" onclick="selectMovie(${i},'${key}')">
-      <img src="${m.poster}" onerror="this.style.display='none'" alt=""/>
-      <div class="autocomplete-item-info">
-        <div class="autocomplete-item-title">${m.title}</div>
-        <div class="autocomplete-item-year">${m.year} · IMDB: ${m.id}</div>
-      </div>
-    </div>
-  `).join('');
-  drop.style.display='block';
-}
-
-function selectMovie(idx,key){
-  const m=MOCK_SUGGESTIONS[key][idx];
-  selectedMovie=m;
-  document.getElementById('search-input').value=m.title;
-  document.getElementById('autocomplete-drop').style.display='none';
-  document.getElementById('search-btn').disabled=false;
-}
-
-// ══ LANG CHIPS ══
-function renderLangChips(){
-  document.getElementById('lang-chips').innerHTML=LANGUAGES.map(l=>`
-    <button class="chip ${selectedLangs.has(l.code)?'selected':''}" onclick="toggleLang('${l.code}')">${l.label}</button>
-  `).join('');
-}
-function toggleLang(code){
-  if(selectedLangs.has(code)&&selectedLangs.size>1)selectedLangs.delete(code);
-  else selectedLangs.add(code);
-  renderLangChips();
-}
-
-// ══ NAVIGATION ══
-function goTo(pageId){
+// ── Nav ──
+function goTo(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+pageId).classList.add('active');
+  document.getElementById('page-'+id).classList.add('active');
 }
-function goBack(to){pageStack.pop();goTo(to);}
-function goToTab(tab){
+function goTab(tab){
   currentTab=tab;
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('nav-'+tab).classList.add('active');
-  pageStack=[tab];
   goTo(tab);
 }
 
-// ══ SEARCH ══
+// ── Search ──
+function setMode(m){
+  searchMode=m;
+  document.querySelectorAll('#mode-chips .chip').forEach((c,i)=>c.classList.toggle('on',(i===0&&m==='title')||(i===1&&m==='imdb')));
+  document.getElementById('search-label').textContent=m==='title'?'Movie or Series':'IMDB ID';
+  document.getElementById('search-input').placeholder=m==='title'?'e.g. The Matrix':'e.g. 0133093';
+  document.getElementById('ac-drop').style.display='none';
+}
+function renderLangChips(){
+  document.getElementById('lang-chips').innerHTML=LANGS.map(l=>`
+    <button class="chip ${selLangs.has(l.c)?'on':''}" onclick="toggleLang('${l.c}')">${l.n}</button>
+  `).join('');
+}
+function toggleLang(c){
+  if(selLangs.has(c)&&selLangs.size>1)selLangs.delete(c);
+  else selLangs.add(c);
+  renderLangChips();
+}
+
+let acTimer=null;
+function onInput(){
+  const v=document.getElementById('search-input').value.trim();
+  document.getElementById('search-btn').disabled=!v;
+  selMovie=null;
+  clearTimeout(acTimer);
+  if(v.length<2){document.getElementById('ac-drop').style.display='none';return;}
+  acTimer=setTimeout(()=>{
+    const key=Object.keys(AC).find(k=>v.toLowerCase().startsWith(k));
+    const items=key?AC[key]:[];
+    const drop=document.getElementById('ac-drop');
+    if(!items.length){drop.style.display='none';return;}
+    drop.innerHTML=items.map((m,i)=>`
+      <div class="ac-item" onclick="pickMovie(${i},'${key}')">
+        <div class="ac-thumb">${m.t.split(' ').map(w=>w[0]).join('').slice(0,3)}</div>
+        <div>
+          <div class="ac-info-title">${m.t}</div>
+          <div class="ac-info-meta">${m.y} · IMDB ${m.id}</div>
+        </div>
+      </div>
+    `).join('');
+    drop.style.display='block';
+  },200);
+}
+function pickMovie(i,key){
+  selMovie=AC[key][i];
+  document.getElementById('search-input').value=selMovie.t;
+  document.getElementById('ac-drop').style.display='none';
+  document.getElementById('search-btn').disabled=false;
+}
 function doSearch(){
   const q=document.getElementById('search-input').value.trim();
-  if(!q)return;
-  document.getElementById('autocomplete-drop').style.display='none';
-  document.getElementById('results-title').textContent=selectedMovie?selectedMovie.title:q;
-
-  // Show movie header if we have a selected movie
-  const header=document.getElementById('movie-header');
-  if(selectedMovie){
-    document.getElementById('movie-poster').src=selectedMovie.poster||'';
-    document.getElementById('movie-header-title').textContent=selectedMovie.title;
-    document.getElementById('movie-header-meta').textContent=`${selectedMovie.year} · IMDB ${selectedMovie.id}`;
-    header.style.display='flex';
-  } else {
-    header.style.display='none';
-  }
-
-  currentResults=MOCK_RESULTS;
-  renderResultsFilter();
+  document.getElementById('ac-drop').style.display='none';
+  document.getElementById('results-title').textContent=selMovie?selMovie.t:q;
+  // Movie header
+  const hdr=document.getElementById('movie-header');
+  if(selMovie){
+    hdr.innerHTML=`<div class="movie-header">
+      <div class="movie-thumb">${selMovie.t.split(' ').map(w=>w[0]).join('').slice(0,3)}</div>
+      <div>
+        <div class="movie-title">${selMovie.t}</div>
+        <div class="movie-meta">${selMovie.y} · IMDB ${selMovie.id}</div>
+      </div>
+    </div>`;
+    hdr.style.display='block';
+  } else {hdr.style.display='none';}
+  activeResults=RESULTS;
+  renderLangFilter();
   renderResults('all');
-  pageStack.push('results');
   goTo('results');
 }
-
-function renderResultsFilter(){
-  const langs=[...new Set(currentResults.map(r=>r.languageCode))];
-  document.getElementById('results-lang-filter').innerHTML=
-    `<button class="chip selected" onclick="filterResults('all')">All (${currentResults.length})</button>`+
-    langs.map(l=>{
-      const n=currentResults.filter(r=>r.languageCode===l).length;
-      return `<button class="chip" onclick="filterResults('${l}')">${l.toUpperCase()} (${n})</button>`;
-    }).join('');
+function renderLangFilter(){
+  const langs=[...new Set(RESULTS.map(r=>r.lc))];
+  document.getElementById('lang-filter').innerHTML=
+    `<button class="lang-chip on" onclick="filterLang('all')">All</button>`+
+    langs.map(l=>`<button class="lang-chip" onclick="filterLang('${l}')">${l.toUpperCase()}</button>`).join('');
 }
-
-function filterResults(lang){
-  document.querySelectorAll('#results-lang-filter .chip').forEach(c=>{
-    const isAll=lang==='all'&&c.textContent.startsWith('All');
-    const isLang=lang!=='all'&&c.textContent.startsWith(lang.toUpperCase());
-    c.classList.toggle('selected',isAll||isLang);
+function filterLang(l){
+  document.querySelectorAll('.lang-chip').forEach(c=>{
+    c.classList.toggle('on',(l==='all'&&c.textContent==='All')||(l!=='all'&&c.textContent===l.toUpperCase()));
   });
-  renderResults(lang);
+  renderResults(l);
 }
-
-function renderResults(lang){
-  const list=lang==='all'?currentResults:currentResults.filter(r=>r.languageCode===lang);
+function renderResults(l){
+  const list=l==='all'?RESULTS:RESULTS.filter(r=>r.lc===l);
   document.getElementById('results-list').innerHTML=list.map(r=>`
-    <div class="result-card" onclick="openTranslate(${r.fileId})">
-      <div class="result-inner">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span class="lang-badge">${r.languageCode.toUpperCase()} · ${r.language}</span>
-          <span style="display:flex;gap:6px;align-items:center;">
-            ${r.isTrusted?`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent)"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`:''}
-            ${r.isHearingImpaired?`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>`:''}
-            <span style="font-size:10px;color:var(--text3);background:var(--bg3);padding:1px 6px;border-radius:4px;">${r.format.toUpperCase()}</span>
-          </span>
-        </div>
-        <div class="result-filename">${r.fileName}</div>
-        <div class="result-meta">
-          <span style="display:flex;align-items:center;gap:3px;"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${(r.downloadCount/1000).toFixed(1)}k</span>
-          <span style="display:flex;align-items:center;gap:3px;"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${r.rating}</span>
-          <span>${r.uploadedAt}</span>
-          <span style="margin-left:auto;">by ${r.uploaderName}</span>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ══ TRANSLATE (direct — no separate preview screen) ══
-function openTranslate(fileId){
-  currentSubtitle=MOCK_RESULTS.find(r=>r.fileId===fileId);
-  currentSubtitleLang=currentSubtitle.languageCode;
-
-  document.getElementById('translate-title').textContent='Translate · '+currentSubtitle.language;
-  document.getElementById('translate-format').textContent=currentSubtitle.format.toUpperCase();
-  document.getElementById('subtitle-info-name').textContent=currentSubtitle.fileName;
-  document.getElementById('subtitle-info-lines').textContent=MOCK_SUBTITLE.length+' lines';
-  document.getElementById('subtitle-detected-lang').textContent='Detected: '+currentSubtitle.language;
-
-  // Auto-set source language from the subtitle's language
-  const srcSelect=document.getElementById('src-lang');
-  const langCode=currentSubtitleLang==='he'?'he':currentSubtitleLang==='fr'?'fr':currentSubtitleLang==='de'?'de':currentSubtitleLang==='es'?'es':'en';
-  srcSelect.value=langCode;
-
-  // Reset UI
-  document.getElementById('progress-section').style.display='none';
-  document.getElementById('save-section').style.display='none';
-  document.getElementById('save-section').style.flexDirection=''; // reset
-  document.getElementById('preview-toggle-wrap').style.display='none';
-  document.getElementById('translated-preview').style.display='none';
-  previewOpen=false;
-  document.getElementById('translate-btn').textContent='Translate';
-  document.getElementById('translate-btn').className='btn btn-primary';
-  document.getElementById('translate-btn').onclick=startTranslation;
-
-  const tgt=document.getElementById('tgt-lang');
-  // Auto-set target: if subtitle is already in Hebrew, default to English
-  tgt.value=(langCode==='he')?'en':'he';
-
-  // Pre-fill save filename
-  const ext=currentSubtitle.format;
-  document.getElementById('save-filename').value=
-    currentSubtitle.fileName.replace(/\.[^.]+$/,'')+'_translated.'+ext;
-
-  pageStack.push('translate');
-  goTo('translate');
-}
-
-// ══ TRANSLATION ══
-let translationStep=0;
-const TOTAL=MOCK_SUBTITLE.length, BATCHES=2;
-
-function startTranslation(){
-  translationStep=0;
-  document.getElementById('progress-section').style.display='block';
-  document.getElementById('save-section').style.display='none';
-  document.getElementById('preview-toggle-wrap').style.display='none';
-  document.getElementById('progress-fill').style.width='0%';
-  document.getElementById('translate-btn').textContent='Cancel';
-  document.getElementById('translate-btn').className='btn btn-danger';
-  document.getElementById('translate-btn').onclick=cancelTranslation;
-  clearInterval(translationTimer);
-  animateTranslation();
-}
-
-function animateTranslation(){
-  const step=Math.ceil(TOTAL/10);
-  translationTimer=setInterval(()=>{
-    translationStep=Math.min(translationStep+step,TOTAL);
-    const pct=(translationStep/TOTAL*100).toFixed(0);
-    const batch=Math.ceil(translationStep/(TOTAL/BATCHES));
-    document.getElementById('progress-fill').style.width=pct+'%';
-    document.getElementById('progress-label').textContent=
-      `Batch ${Math.min(batch,BATCHES)}/${BATCHES} · ${translationStep}/${TOTAL} lines`;
-    if(translationStep>=TOTAL){clearInterval(translationTimer);finishTranslation();}
-  },280);
-}
-
-function finishTranslation(){
-  const tgt=document.getElementById('tgt-lang').value;
-  const translations=MOCK_TRANSLATED[tgt]||MOCK_TRANSLATED['he'];
-
-  document.getElementById('translate-btn').textContent='Translate Again';
-  document.getElementById('translate-btn').className='btn btn-outline';
-  document.getElementById('translate-btn').onclick=startTranslation;
-
-  // Show save section
-  const saveSection=document.getElementById('save-section');
-  saveSection.style.display='flex';
-  saveSection.style.flexDirection='column';
-  document.getElementById('save-confirmation').style.display='none';
-  document.getElementById('complete-msg').textContent=`✓ ${TOTAL} lines translated`;
-
-  // Show preview toggle
-  document.getElementById('preview-toggle-wrap').style.display='block';
-  document.getElementById('translated-preview').innerHTML=MOCK_SUBTITLE.slice(0,8).map((s,i)=>`
-    <div style="padding:7px 0;border-bottom:1px solid var(--border2);">
-      <div style="display:flex;gap:8px;align-items:flex-start;">
-        <span style="font-size:11px;color:var(--accent);width:46px;flex-shrink:0;">${s.start}</span>
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:2px;">${s.text.replace(/\n/g,' ')}</div>
-          <div style="font-size:13px;color:var(--text);">${(translations[i]||s.text).replace(/\n/g,'<br>')}</div>
-        </div>
-      </div>
-    </div>
-  `).join('');
-
-  // Add to history
-  if(currentSubtitle){
-    const src=document.getElementById('src-lang').value;
-    historyItems.unshift({id:Date.now(),title:currentSubtitle.fileName.replace(/\.[^.]+$/,''),from:src.toUpperCase(),to:tgt.toUpperCase(),format:currentSubtitle.format.toUpperCase(),date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})});
-    renderHistory();
-  }
-}
-
-function cancelTranslation(){
-  clearInterval(translationTimer);
-  document.getElementById('translate-btn').textContent='Translate';
-  document.getElementById('translate-btn').className='btn btn-primary';
-  document.getElementById('translate-btn').onclick=startTranslation;
-  document.getElementById('progress-section').style.display='none';
-}
-
-function togglePreview(){
-  previewOpen=!previewOpen;
-  document.getElementById('translated-preview').style.display=previewOpen?'block':'none';
-  document.getElementById('preview-toggle-icon').innerHTML=previewOpen
-    ?'<polyline points="18 15 12 9 6 15"/>'
-    :'<polyline points="6 9 12 15 18 9"/>';
-}
-
-// ══ SAVE ══
-function pickFolder(target){
-  const folders=['/Downloads/Subtitles/','/Movies/Subs/','/Documents/Subtitles/'];
-  const chosen=folders[Math.floor(Math.random()*folders.length)];
-  const field=target==='def'?'def-folder':'save-folder';
-  document.getElementById(field).value=chosen;
-}
-
-function saveFile(){
-  const name=document.getElementById('save-filename').value||'subtitle_translated.srt';
-  const folder=document.getElementById('save-folder').value||'/Downloads/';
-  const full=folder.endsWith('/')?folder+name:folder+'/'+name;
-  const conf=document.getElementById('save-confirmation');
-  conf.textContent='💾 Saved: '+full;
-  conf.style.display='block';
-}
-
-// ══ HISTORY ══
-function renderHistory(){
-  const list=document.getElementById('history-list');
-  if(!historyItems.length){list.innerHTML='<div class="empty-state">No translations yet</div>';return;}
-  list.innerHTML=historyItems.map(h=>`
-    <div class="card" style="margin:0 16px;">
-      <div class="card-content" style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="result-item">
+      <div class="result-row1">
         <div>
-          <div style="font-size:14px;font-weight:600;color:var(--text);">${h.title}</div>
-          <div style="font-size:12px;color:var(--accent);margin-top:3px;">${h.from} → ${h.to} · ${h.format}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px;">${h.date}</div>
+          <div class="result-lang">${r.lc.toUpperCase()} · ${r.lang}</div>
+          <div class="result-name">${r.name}</div>
         </div>
-        <button onclick="deleteHistory(${h.id})" style="background:none;border:none;cursor:pointer;padding:8px;color:var(--text3);">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        <span class="format-tag">${r.fmt}</span>
+      </div>
+      <div class="result-meta">
+        <span><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>${(r.dl/1000).toFixed(1)}k</span>
+        <span><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${r.r}</span>
+        <span>${r.date}</span>
+        ${r.trusted?'<span>✓ Trusted</span>':''}
+        ${r.hi?'<span>HI</span>':''}
+      </div>
+      <div class="result-actions">
+        <button class="btn" onclick="openDownload(${r.id})">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </button>
+        <button class="btn btn-mocha" onclick="openTranslate(${r.id})">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
+          Translate
         </button>
       </div>
     </div>
   `).join('');
 }
-function deleteHistory(id){historyItems=historyItems.filter(h=>h.id!==id);renderHistory();}
 
-// ══ SETTINGS ══
+// ── Download ──
+function openDownload(id){
+  activeResult=RESULTS.find(r=>r.id===id);
+  document.getElementById('dl-name').textContent=activeResult.name;
+  document.getElementById('dl-meta').textContent=`${activeResult.lang} · ${activeResult.fmt} · ${activeResult.date} · by ${activeResult.by}`;
+  document.getElementById('dl-ok').style.display='none';
+  goTo('download');
+}
+function confirmDownload(){
+  const folder=document.getElementById('dl-folder').value||'/Downloads/';
+  const path=folder.endsWith('/')?folder+activeResult.name:folder+'/'+activeResult.name;
+  const el=document.getElementById('dl-ok');
+  el.textContent='✓ Saved: '+path;
+  el.style.display='block';
+  histItems.unshift({id:Date.now(),title:activeResult.name.replace(/\.[^.]+$/,''),from:activeResult.lc.toUpperCase(),to:'—',fmt:activeResult.fmt,date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),type:'dl'});
+  renderHistory();
+}
+
+// ── Translate ──
+function openTranslate(id){
+  activeResult=RESULTS.find(r=>r.id===id);
+  document.getElementById('tl-title').textContent=activeResult.lang;
+  document.getElementById('tl-format').textContent=activeResult.fmt;
+  document.getElementById('tl-src-display').textContent=activeResult.lang.toUpperCase();
+  document.getElementById('tl-tags').innerHTML=
+    `<span class="info-tag">${(activeResult.dl/1000).toFixed(1)}k dl</span>`+
+    `<span class="info-tag">${activeResult.date}</span>`+
+    `<span class="info-tag">by ${activeResult.by}</span>`+
+    (activeResult.trusted?'<span class="info-tag hi">Trusted</span>':'')+
+    (activeResult.hi?'<span class="info-tag">HI</span>':'');
+  // Auto-set target: if subtitle is in Hebrew → English, else → Hebrew
+  document.getElementById('tgt-lang').value=activeResult.lc==='he'?'en':'he';
+  document.getElementById('tl-btn').textContent='Translate';
+  document.getElementById('tl-btn').className='btn btn-fill btn-block';
+  document.getElementById('tl-btn').onclick=startTranslation;
+  document.getElementById('tl-progress').style.display='none';
+  document.getElementById('save-box').style.display='none';
+  document.getElementById('preview-section').style.display='none';
+  document.getElementById('save-ok').style.display='none';
+  goTo('translate');
+}
+
+// ── Translation ──
+function startTranslation(){
+  tlStep=0;
+  document.getElementById('tl-progress').style.display='block';
+  document.getElementById('save-box').style.display='none';
+  document.getElementById('preview-section').style.display='none';
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('tl-btn').textContent='Cancel';
+  document.getElementById('tl-btn').className='btn btn-block';
+  document.getElementById('tl-btn').onclick=cancelTranslation;
+  clearInterval(tlTimer);
+  const total=SUBS.length, batches=2;
+  tlTimer=setInterval(()=>{
+    tlStep=Math.min(tlStep+Math.ceil(total/8),total);
+    const pct=(tlStep/total*100).toFixed(0);
+    const b=Math.min(Math.ceil(tlStep/(total/batches)),batches);
+    document.getElementById('prog-fill').style.width=pct+'%';
+    document.getElementById('prog-label').textContent=`Batch ${b}/${batches} · ${tlStep}/${total} lines`;
+    if(tlStep>=total){clearInterval(tlTimer);finishTranslation();}
+  },250);
+}
+function cancelTranslation(){
+  clearInterval(tlTimer);
+  document.getElementById('tl-btn').textContent='Translate';
+  document.getElementById('tl-btn').className='btn btn-fill btn-block';
+  document.getElementById('tl-btn').onclick=startTranslation;
+  document.getElementById('tl-progress').style.display='none';
+}
+function finishTranslation(){
+  const tgt=document.getElementById('tgt-lang').value;
+  const tr=TRANS[tgt]||TRANS.he;
+  document.getElementById('tl-btn').textContent='Translate Again';
+  document.getElementById('tl-btn').className='btn btn-block';
+  document.getElementById('tl-btn').onclick=startTranslation;
+  const ext=activeResult.fmt.toLowerCase();
+  document.getElementById('save-name').value=activeResult.name.replace(/\.[^.]+$/,'')+'_'+tgt+'.'+ext;
+  document.getElementById('complete-msg').textContent=`✓ ${SUBS.length} lines translated`;
+  document.getElementById('save-box').style.display='flex';
+  document.getElementById('save-box').style.flexDirection='column';
+  document.getElementById('preview-section').style.display='block';
+  document.getElementById('prev-rows').innerHTML=SUBS.slice(0,8).map((s,i)=>`
+    <div class="preview-row">
+      <div class="preview-ts">${s.s}</div>
+      <div style="flex:1;">
+        <div class="preview-src">${s.t}</div>
+        <div class="preview-tgt">${tr[i]||s.t}</div>
+      </div>
+    </div>
+  `).join('');
+  histItems.unshift({id:Date.now(),title:activeResult.name.replace(/\.[^.]+$/,''),from:activeResult.lc.toUpperCase(),to:tgt.toUpperCase(),fmt:activeResult.fmt,date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}),type:'tr'});
+  renderHistory();
+}
+function togglePreview(){
+  prevOpen=!prevOpen;
+  document.getElementById('prev-rows').style.display=prevOpen?'block':'none';
+  document.getElementById('prev-arrow').textContent=prevOpen?'−':'+';
+}
+
+// ── Save ──
+function saveFile(){
+  const name=document.getElementById('save-name').value;
+  const folder=document.getElementById('save-folder').value||'/Downloads/';
+  const path=folder.endsWith('/')?folder+name:folder+'/'+name;
+  const el=document.getElementById('save-ok');
+  el.textContent='✓ '+path;
+  el.style.display='block';
+}
+function pickFolder(t){
+  const f=['/Downloads/Subtitles/','/Movies/Subs/','/Documents/Subs/'][Math.floor(Math.random()*3)];
+  document.getElementById(t==='dl'?'dl-folder':'save-folder').value=f;
+}
+
+// ── History ──
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(!histItems.length){el.innerHTML='<div class="empty">No activity yet</div>';return;}
+  el.innerHTML=histItems.map(h=>`
+    <div class="history-item">
+      <div>
+        <div class="history-title">${h.title}</div>
+        <div class="history-langs">${h.from}${h.to!=='—'?' → '+h.to:''} · ${h.fmt} · ${h.type==='tr'?'Translated':'Downloaded'}</div>
+        <div class="history-date">${h.date}</div>
+      </div>
+      <button class="del-btn" onclick="delHistory(${h.id})">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+function delHistory(id){histItems=histItems.filter(h=>h.id!==id);renderHistory();}
+
+// ── Settings ──
 function saveSettings(){
-  const el=document.getElementById('settings-saved');
-  el.textContent='✓ Settings saved';
+  const el=document.getElementById('settings-ok');
+  el.textContent='✓ Saved';
   el.style.display='block';
   setTimeout(()=>el.style.display='none',2000);
 }
 
-// Close autocomplete on outside click
+// Close AC on outside click
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.autocomplete-wrap'))
-    document.getElementById('autocomplete-drop').style.display='none';
+  if(!e.target.closest('.ac-wrap'))document.getElementById('ac-drop').style.display='none';
 });
 
 init();

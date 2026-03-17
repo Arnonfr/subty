@@ -14,5 +14,5 @@ interface SubtitleRepository {
         page: Int = 1
     ): List<SubtitleSearchResult>
 
-    suspend fun download(fileId: Int): SubtitleFile
+    suspend fun download(fileId: Int, languageCode: String? = null): SubtitleFile
 }
