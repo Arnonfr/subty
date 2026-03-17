@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "629153402724",
+    "project_id": "subty-ca344",
+    "storage_bucket": "subty-ca344.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:629153402724:android:5be6d738494f24372c3471",
+        "android_client_info": {
+          "package_name": "com.subtranslate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAM_K8BpGhoXNoIYIurxbWCyOp_7eKDwYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

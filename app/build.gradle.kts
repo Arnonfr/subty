@@ -66,7 +66,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             firebaseAppDistribution {
                 artifactType = "APK"
-                groups = "testers"
+                serviceCredentialsFile = System.getenv("FIREBASE_SERVICE_ACCOUNT") ?: ""
+                // no groups required — distributes to all testers added in Firebase console
             }
         }
     }
