@@ -7,7 +7,7 @@ import com.subtranslate.domain.model.SubtitleSearchResult
 import com.subtranslate.domain.usecase.DownloadSubtitleUseCase
 import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.SearchSubtitlesUseCase
-import com.subtranslate.util.SettingsDataStore
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

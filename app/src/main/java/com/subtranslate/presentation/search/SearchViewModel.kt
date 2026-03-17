@@ -33,7 +33,9 @@ data class SearchUiState(
     val suggestionsError: String? = null,
     // Selected title metadata
     val selectedPosterUrl: String? = null,
-    val selectedMovieTitle: String? = null
+    val selectedMovieTitle: String? = null,
+    val seasonsCount: Int = 0,
+    val episodesCount: Int = 0
 )
 
 enum class SearchMode { TITLE, IMDB_ID }
@@ -114,7 +116,9 @@ class SearchViewModel @Inject constructor(
             suggestionsLoading = false,
             suggestionsError = null,
             selectedPosterUrl = posterUrl,
-            selectedMovieTitle = title
+            selectedMovieTitle = title,
+            seasonsCount = feature.attributes.seasonsCount ?: 0,
+            episodesCount = feature.attributes.episodesCount ?: 0
         )
     }
 
@@ -123,8 +127,17 @@ class SearchViewModel @Inject constructor(
     }
 
     fun onImdbIdChange(id: String) { _uiState.value = _uiState.value.copy(imdbId = id) }
-    fun onSeasonChange(s: String) { _uiState.value = _uiState.value.copy(season = s) }
-    fun onEpisodeChange(e: String) { _uiState.value = _uiState.value.copy(episode = e) }
+    fun onSeasonChange(s: String) {
+        _uiState.value = _uiState.value.copy(
+            season = if (_uiState.value.season == s) "" else s
+        )
+    }
+
+    fun onEpisodeChange(e: String) {
+        _uiState.value = _uiState.value.copy(
+            episode = if (_uiState.value.episode == e) "" else e
+        )
+    }
     fun onSearchModeChange(mode: SearchMode) { _uiState.value = _uiState.value.copy(searchMode = mode) }
 
     fun toggleLanguage(lang: String) {

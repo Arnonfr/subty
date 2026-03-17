@@ -1,0 +1,17 @@
+current directory: /Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/gems/sysrandom-1.0.5/ext/sysrandom
+/System/Library/Frameworks/Ruby.framework/Versions/2.6/usr/bin/ruby -I /System/Library/Frameworks/Ruby.framework/Versions/2.6/usr/lib/ruby/2.6.0 -r ./siteconf20260317-24211-1h46rdf.rb extconf.rb
+creating Makefile
+
+current directory: /Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/gems/sysrandom-1.0.5/ext/sysrandom
+make "DESTDIR=" clean
+
+current directory: /Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/gems/sysrandom-1.0.5/ext/sysrandom
+make "DESTDIR="
+compiling randombytes_sysrandom.c
+compiling sysrandom_ext.c
+linking shared-object sysrandom_ext.bundle
+ld: warning: search path '/AppleInternal/Library/BuildRoots/4~CB3uugBQxypsiyQCrI82QcTPBCns7_J7YMudMGY/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.Internal.sdk/usr/local/lib' not found
+
+current directory: /Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/gems/sysrandom-1.0.5/ext/sysrandom
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 sysrandom_ext.bundle ./.gem.20260317-24211-1k2tp5d

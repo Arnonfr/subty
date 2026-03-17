@@ -1,0 +1,28 @@
+default_platform(:android)
+
+platform :android do
+  desc "Build and upload to Google Play Internal track"
+  lane :internal do
+    gradle(
+      task: "bundle",
+      build_type: "Release"
+    )
+    upload_to_play_store(
+      track: 'internal',
+      aab: 'app/build/outputs/bundle/release/app-release.aab'
+    )
+  end
+
+  desc "Build and upload to Firebase App Distribution"
+  lane :firebase do
+    gradle(
+      task: "assemble",
+      build_type: "Release"
+    )
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID"],
+      groups: "testers",
+      release_notes: "New automated release via Fastlane"
+    )
+  end
+end

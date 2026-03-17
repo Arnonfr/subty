@@ -1,0 +1,5 @@
+current directory: /Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/gems/unf-0.2.0/ext
+/System/Library/Frameworks/Ruby.framework/Versions/2.6/usr/bin/ruby mkrf_conf.rb
+
+current directory: /Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/gems/unf-0.2.0/ext
+/System/Library/Frameworks/Ruby.framework/Versions/2.6/usr/bin/ruby -rrubygems /Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/gems/rake-13.3.1/exe/rake RUBYARCHDIR\=/Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/extensions/universal-darwin-25/2.6.0/unf-0.2.0 RUBYLIBDIR\=/Users/hyh/Documents/translate-sub/vendor/bundle/ruby/2.6.0/extensions/universal-darwin-25/2.6.0/unf-0.2.0

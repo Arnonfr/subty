@@ -11,11 +11,14 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GeminiTranslationService @Inject constructor() {
+class GeminiTranslationService @Inject constructor(
+    private val settingsDataStore: SettingsDataStore
+) {
     companion object {
         private const val BATCH_SIZE = 18
         private const val CONTEXT_OVERLAP = 3
@@ -35,11 +38,11 @@ class GeminiTranslationService @Inject constructor() {
         sourceLang: String,
         targetLang: String,
         title: String?,
-        modelId: String = "gemini-2.5-flash",
+        modelId: String = "gemini-1.5-flash",
         onProgress: (translated: Int, total: Int, batch: Int, totalBatches: Int) -> Unit
     ): List<SubtitleEntry> = withContext(Dispatchers.IO) {
 
-        val apiKey = BuildConfig.GEMINI_API_KEY
+        val apiKey = settingsDataStore.geminiApiKey?.ifBlank { null } ?: BuildConfig.GEMINI_API_KEY
         val systemPrompt = TranslationPromptBuilder.buildSystemPrompt(sourceLang, targetLang, title)
         val batches = createBatches(entries, BATCH_SIZE, CONTEXT_OVERLAP)
         val translationMap = mutableMapOf<Int, String>()

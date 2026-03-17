@@ -1,7 +1,7 @@
 package com.subtranslate.presentation.settings
 
 import androidx.lifecycle.ViewModel
-import com.subtranslate.util.SettingsDataStore
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +10,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     // Translation
     val defaultTargetLang: String = "he",
-    val translationModel: String = "gemini-2.5-flash",
+    val translationModel: String = "google",
     val autoTranslate: Boolean = false,
     // Display
     val showPosters: Boolean = true,
@@ -18,6 +18,8 @@ data class SettingsUiState(
     // Save
     val preferredSaveFormat: String = "srt",
     val autoSave: Boolean = false,
+    val geminiApiKey: String = "",
+    val openSubtitlesApiKey: String = "",
     val saved: Boolean = false
 )
 
@@ -34,7 +36,9 @@ class SettingsViewModel @Inject constructor(
             showPosters = settings.showPosters,
             compactResults = settings.compactResults,
             preferredSaveFormat = settings.preferredSaveFormat,
-            autoSave = settings.autoSaveTranslated
+            autoSave = settings.autoSaveTranslated,
+            geminiApiKey = settings.geminiApiKey ?: "",
+            openSubtitlesApiKey = settings.openSubtitlesApiKey ?: ""
         )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -46,6 +50,8 @@ class SettingsViewModel @Inject constructor(
     fun onCompactResultsChange(v: Boolean) = update { copy(compactResults = v, saved = false) }
     fun onSaveFormatChange(v: String) = update { copy(preferredSaveFormat = v, saved = false) }
     fun onAutoSaveChange(v: Boolean) = update { copy(autoSave = v, saved = false) }
+    fun onGeminiApiKeyChange(v: String) = update { copy(geminiApiKey = v, saved = false) }
+    fun onOpenSubtitlesApiKeyChange(v: String) = update { copy(openSubtitlesApiKey = v, saved = false) }
 
     fun save() {
         val s = _uiState.value
@@ -56,6 +62,8 @@ class SettingsViewModel @Inject constructor(
         settings.compactResults = s.compactResults
         settings.preferredSaveFormat = s.preferredSaveFormat
         settings.autoSaveTranslated = s.autoSave
+        settings.geminiApiKey = s.geminiApiKey.ifBlank { null }
+        settings.openSubtitlesApiKey = s.openSubtitlesApiKey.ifBlank { null }
         update { copy(saved = true) }
     }
 

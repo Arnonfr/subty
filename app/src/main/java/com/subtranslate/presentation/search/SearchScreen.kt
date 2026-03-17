@@ -176,21 +176,62 @@ fun SearchScreen(
         }
 
         // Season / Episode
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = state.season,
-                onValueChange = viewModel::onSeasonChange,
-                modifier = Modifier.weight(1f),
-                label = { Text("Season") },
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = state.episode,
-                onValueChange = viewModel::onEpisodeChange,
-                modifier = Modifier.weight(1f),
-                label = { Text("Episode") },
-                singleLine = true
-            )
+        // Season / Episode
+        if (state.seasonsCount > 0) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Season", style = MaterialTheme.typography.labelSmall)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(state.seasonsCount) { index ->
+                        val s = (index + 1).toString()
+                        FilterChip(
+                            selected = state.season == s,
+                            onClick = { viewModel.onSeasonChange(s) },
+                            label = { Text(s) }
+                        )
+                    }
+                }
+
+                Text("Episode", style = MaterialTheme.typography.labelSmall)
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Use episodes_count as a guide, or default to a reasonable number
+                    val count = if (state.episodesCount > 0) {
+                        // If it's a huge number, it's probably total episodes across all seasons
+                        if (state.episodesCount > 50) 30 else state.episodesCount
+                    } else 30
+                    
+                    items(count) { index ->
+                        val e = (index + 1).toString()
+                        FilterChip(
+                            selected = state.episode == e,
+                            onClick = { viewModel.onEpisodeChange(e) },
+                            label = { Text(e) }
+                        )
+                    }
+                }
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = state.season,
+                    onValueChange = viewModel::onSeasonChange,
+                    modifier = Modifier.weight(1f),
+                    label = { Text("Season") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = state.episode,
+                    onValueChange = viewModel::onEpisodeChange,
+                    modifier = Modifier.weight(1f),
+                    label = { Text("Episode") },
+                    singleLine = true
+                )
+            }
         }
 
         // Language selection

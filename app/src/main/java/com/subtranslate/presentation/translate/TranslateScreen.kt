@@ -26,8 +26,8 @@ import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 // "google" = Google Translate (default, free). Gemini models start with "gemini-".
 private const val MODEL_GOOGLE = "google"
 private val GEMINI_MODELS = listOf(
-    "gemini-2.5-flash" to "Gemini Flash",
-    "gemini-2.5-pro" to "Gemini Pro"
+    "gemini-1.5-flash" to "Gemini 1.5 Flash",
+    "gemini-2.0-flash" to "Gemini 2.0 Flash"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -175,7 +175,7 @@ fun TranslateScreen(
                             Switch(
                                 checked = useGemini,
                                 onCheckedChange = { on ->
-                                    viewModel.onModelChange(if (on) "gemini-2.5-flash" else MODEL_GOOGLE)
+                                    viewModel.onModelChange(if (on) "gemini-1.5-flash" else MODEL_GOOGLE)
                                 }
                             )
                         }
@@ -192,7 +192,7 @@ fun TranslateScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     OutlinedTextField(
-                                        value = GEMINI_MODELS.find { it.first == state.selectedModel }?.second ?: "Gemini Flash",
+                                        value = GEMINI_MODELS.find { it.first == state.selectedModel }?.second ?: "Gemini 1.5 Flash",
                                         onValueChange = {},
                                         readOnly = true,
                                         shape = RoundedCornerShape(16.dp),

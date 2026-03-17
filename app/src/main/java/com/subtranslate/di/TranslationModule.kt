@@ -1,7 +1,7 @@
 package com.subtranslate.di
 
 import android.content.Context
-import com.subtranslate.util.SettingsDataStore
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

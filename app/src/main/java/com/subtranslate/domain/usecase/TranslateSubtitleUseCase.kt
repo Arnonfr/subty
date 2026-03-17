@@ -13,6 +13,6 @@ class TranslateSubtitleUseCase @Inject constructor(
         subtitleFile: SubtitleFile,
         sourceLang: String,
         targetLang: String,
-        modelId: String = "claude-sonnet-4-5"
+        modelId: String = "google"
     ): Flow<TranslationProgress> = repository.translate(subtitleFile, sourceLang, targetLang, modelId)
 }
