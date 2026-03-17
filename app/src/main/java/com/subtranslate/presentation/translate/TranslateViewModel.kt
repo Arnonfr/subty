@@ -94,6 +94,10 @@ class TranslateViewModel @Inject constructor(
         )
     }
 
+    fun onSourceLangChange(lang: String) {
+        _uiState.value = _uiState.value.copy(sourceLang = lang)
+    }
+
     fun onTargetLangChange(lang: String) {
         _uiState.value = _uiState.value.copy(targetLang = lang)
     }
