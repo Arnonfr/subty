@@ -1037,13 +1037,16 @@ function onInput(){
 }
 
 async function fetchAcFromApi(query){
-  // 1. Try real OpenSubtitles /features API
+  const drop=document.getElementById('ac-drop');
   try{
     const res=await fetch(
       `https://api.opensubtitles.com/api/v1/features?query=${encodeURIComponent(query)}`,
       {headers:{'Api-Key':OS_API_KEY,'User-Agent':'Subty v1.0','Content-Type':'application/json'}}
     );
-    if(!res.ok) throw new Error('status '+res.status);
+    if(!res.ok){
+      const txt=await res.text().catch(()=>'');
+      throw new Error(`HTTP ${res.status}: ${txt.slice(0,120)}`);
+    }
     const json=await res.json();
     const items=(json.data||[]).slice(0,6).map(f=>{
       const a=f.attributes||{};
@@ -1052,18 +1055,20 @@ async function fetchAcFromApi(query){
       const seasons=a.seasons_count||1;
       return {t:title,y:a.year||'',id:String(a.imdb_id||f.id),
               type:isTv?'tv':'movie',seasons,eps:{},
-              imgUrl:a.img_url||null,initials:title.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()};
+              imgUrl:a.img_url||null,
+              initials:title.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()};
     });
     acMatches=items;
     renderDrop(items);
-    return;
   }catch(e){
-    // CORS or network error — fall through to mock
-    console.warn('AC API failed, using mock:',e.message);
+    console.error('OpenSubtitles /features error:',e);
+    drop.innerHTML=`<div style="padding:10px 14px;font-size:11px;color:#e55;line-height:1.5;">
+      <b>API error:</b><br>${e.message}
+      ${e.message.includes('Failed to fetch')||e.message.includes('NetworkError')
+        ?'<br><span style="opacity:.7">CORS blocked — open browser console for details</span>':''}
+    </div>`;
+    drop.style.display='block';
   }
-  // 2. Fallback: filter extended MOCK_TITLES
-  acMatches=MOCK_TITLES.filter(m=>m.t.toLowerCase().includes(query.toLowerCase())).slice(0,6);
-  renderDrop(acMatches);
 }
 
 function hideDrop(){
