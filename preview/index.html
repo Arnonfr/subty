@@ -265,6 +265,7 @@ body{
   width:44px;height:64px;background:var(--bg3);flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   border:var(--rule);
+  font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.04em;
 }
 .movie-title{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.01em;}
 .movie-meta{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:.04em;text-transform:uppercase;}
@@ -379,6 +380,55 @@ body{
   font-size:10px;font-weight:500;letter-spacing:.04em;color:var(--text3);
   display:flex;gap:8px;align-items:flex-start;
 }
+
+/* ── Collapsed search bar ── */
+.search-pill{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 24px;border-bottom:var(--rule);
+  background:var(--bg);cursor:pointer;
+  flex-shrink:0;
+}
+.search-pill-thumb{
+  width:28px;height:42px;background:var(--bg3);
+  border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;color:var(--text3);
+  flex-shrink:0;
+}
+.search-pill-info{flex:1;}
+.search-pill-title{font-size:13px;font-weight:700;color:var(--text);}
+.search-pill-sub{font-size:10px;color:var(--text3);letter-spacing:.04em;margin-top:1px;}
+.search-pill-edit{
+  border:var(--rule);background:none;color:var(--text3);
+  font-size:9px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:5px 10px;cursor:pointer;
+  font-family:var(--font);
+}
+
+/* ── Season/Episode pill rows ── */
+.se-section{padding:0 24px 12px;}
+.se-label{
+  font-size:9px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text3);
+  padding:12px 0 8px;display:block;
+}
+.se-pills{
+  display:flex;gap:0;overflow-x:auto;
+  scrollbar-width:none;margin:0 -24px;padding:0 24px;
+}
+.se-pills::-webkit-scrollbar{display:none;}
+.se-pill{
+  padding:7px 14px;border:var(--rule);border-right:none;
+  font-size:10px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;cursor:pointer;
+  background:transparent;color:var(--text2);
+  white-space:nowrap;flex-shrink:0;
+  transition:background .1s;
+  font-family:var(--font);
+}
+.se-pill:last-child{border-right:var(--rule);}
+.se-pill.on{background:var(--accent2);color:var(--black);border-color:var(--accent2);}
+.se-pill:hover:not(.on){background:var(--bg2);}
 </style>
 </head>
 <body>
@@ -394,64 +444,71 @@ body{
   <div class="screen">
 
     <!-- ══════ SEARCH ══════ -->
-    <div class="page active" id="page-search">
-      <div class="page-title">Subty</div>
-      <div class="page-sub">Search · Download · Translate</div>
+    <div class="page active" id="page-search" style="display:flex;flex-direction:column;overflow:hidden;">
 
-      <div class="section-label">Search by</div>
-      <div style="display:flex;gap:0;padding:0 24px 16px;" id="mode-chips">
-        <button class="chip on" onclick="setMode('title')">Title</button>
-        <button class="chip" onclick="setMode('imdb')">IMDB</button>
-      </div>
-
-      <div class="field-group">
-        <span class="field-label" id="search-label">Movie or Series</span>
-        <div class="ac-wrap">
-          <input id="search-input" class="field" type="text" placeholder="e.g. The Matrix" oninput="onInput()" autocomplete="off"/>
-          <div id="ac-drop" class="ac-drop"></div>
+      <!-- Collapsed bar (shown when results are visible) -->
+      <div id="search-pill" class="search-pill" style="display:none;" onclick="expandSearch()">
+        <div class="search-pill-thumb" id="pill-thumb"></div>
+        <div class="search-pill-info">
+          <div class="search-pill-title" id="pill-title"></div>
+          <div class="search-pill-sub" id="pill-sub"></div>
         </div>
+        <button class="search-pill-edit" onclick="event.stopPropagation();expandSearch()">&#9998; Edit</button>
       </div>
 
-      <div class="row-fields">
+      <!-- Expanded form -->
+      <div id="search-expanded" style="overflow-y:auto;flex:1;">
+        <div class="page-title">Subty</div>
+        <div class="page-sub">Search · Download · Translate</div>
+
+        <div class="section-label">Search by</div>
+        <div style="display:flex;gap:0;padding:0 24px 16px;" id="mode-chips">
+          <button class="chip on" onclick="setMode('title')">Title</button>
+          <button class="chip" onclick="setMode('imdb')">IMDB</button>
+        </div>
+
         <div class="field-group">
-          <span class="field-label">Season</span>
-          <input class="field" type="number" placeholder="—"/>
+          <span class="field-label" id="search-label">Movie or Series</span>
+          <div class="ac-wrap">
+            <input id="search-input" class="field" type="text" placeholder="e.g. Breaking Bad" oninput="onInput()" autocomplete="off"/>
+            <div id="ac-drop" class="ac-drop"></div>
+          </div>
         </div>
-        <div class="field-group" style="padding-left:0;">
-          <span class="field-label" style="padding-left:12px;">Episode</span>
-          <input class="field" type="number" placeholder="—" style="border-left:var(--rule);"/>
+
+        <!-- Season pills (TV only, shown after series selection) -->
+        <div id="season-section" style="display:none;" class="se-section">
+          <span class="se-label">Season</span>
+          <div class="se-pills" id="season-pills"></div>
         </div>
-      </div>
 
-      <div class="section-label">Language</div>
-      <div class="chips-scroll" id="lang-chips" style="padding-bottom:20px;"></div>
+        <!-- Episode pills (shown after season selection) -->
+        <div id="episode-section" style="display:none;" class="se-section">
+          <span class="se-label">Episode</span>
+          <div class="se-pills" id="episode-pills"></div>
+        </div>
 
-      <button class="btn btn-fill btn-block" id="search-btn" disabled onclick="doSearch()">
-        Search Subtitles
-      </button>
-      <div style="height:24px;"></div>
-    </div>
+        <div class="section-label">Language</div>
+        <div class="chips-scroll" id="lang-chips" style="padding-bottom:20px;"></div>
 
-    <!-- ══════ RESULTS ══════ -->
-    <div class="page" id="page-results">
-      <div class="top-bar">
-        <button class="back-btn" onclick="goTo('search')">
-          <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        <button class="btn btn-fill btn-block" id="search-btn" disabled onclick="doSearch()">
+          Search Subtitles
         </button>
-        <h2 id="results-title">Results</h2>
+        <div style="height:16px;"></div>
       </div>
 
-      <div id="movie-header" style="display:none;"></div>
+      <!-- Results section (same page, shown after search) -->
+      <div id="results-section" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div id="movie-header-inline" style="display:none;"></div>
+        <div class="lang-filter" id="lang-filter-inline"></div>
+        <div id="results-list-inline" style="overflow-y:auto;flex:1;"></div>
+      </div>
 
-      <div class="lang-filter" id="lang-filter"></div>
-
-      <div id="results-list" style="overflow-y:auto;flex:1;"></div>
     </div>
 
     <!-- ══════ TRANSLATE ══════ -->
     <div class="page" id="page-translate">
       <div class="top-bar">
-        <button class="back-btn" onclick="goTo('results')">
+        <button class="back-btn" onclick="goTo('search')">
           <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2 id="tl-title">Translate</h2>
@@ -549,7 +606,7 @@ body{
     <!-- ══════ DOWNLOAD CONFIRM ══════ -->
     <div class="page" id="page-download">
       <div class="top-bar">
-        <button class="back-btn" onclick="goTo('results')">
+        <button class="back-btn" onclick="goTo('search')">
           <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         </button>
         <h2>Download</h2>
@@ -694,25 +751,98 @@ body{
 </div>
 
 <script>
+// ── Data ──
 const LANGS=[
   {c:'en',n:'English'},{c:'he',n:'עברית'},{c:'fr',n:'Français'},
   {c:'de',n:'Deutsch'},{c:'es',n:'Español'},{c:'ar',n:'العربية'},
   {c:'ru',n:'Русский'},{c:'zh-cn',n:'中文'},{c:'ja',n:'日本語'}
 ];
 const LANG_NAME={en:'English',he:'עברית',fr:'Français',de:'Deutsch',es:'Español',ar:'العربية',ru:'Русский','zh-cn':'中文',ja:'日本語',pt:'Português'};
-const AC={
-  mat:[{t:'The Matrix',y:1999,id:'0133093'},{t:'Matrix Reloaded',y:2003,id:'0234215'},{t:'Matrix Revolutions',y:2003,id:'0242653'}],
-  bre:[{t:'Breaking Bad',y:2008,id:'0903747'},{t:'Breathe',y:2017,id:'5137540'}],
-  inc:[{t:'Inception',y:2010,id:'1375666'}],
-};
-const RESULTS=[
-  {id:1,name:'The.Matrix.1999.BluRay.1080p.srt',lang:'English',lc:'en',dl:48200,r:9.1,fmt:'SRT',date:'2023-08-14',hi:false,trusted:true,by:'SubDB'},
-  {id:2,name:'The.Matrix.1999.HDTV.srt',lang:'English',lc:'en',dl:31500,r:8.4,fmt:'SRT',date:'2022-11-02',hi:true,trusted:false,by:'admin'},
-  {id:3,name:'Matrix.1999.Francais.srt',lang:'Français',lc:'fr',dl:14200,r:8.1,fmt:'SRT',date:'2021-04-18',hi:false,trusted:true,by:'CinéSub'},
-  {id:4,name:'Matrix.1999.Deutsch.BluRay.srt',lang:'Deutsch',lc:'de',dl:9800,r:7.9,fmt:'SRT',date:'2020-09-11',hi:false,trusted:false,by:'GermanSubs'},
-  {id:5,name:'Matrix.1999.Hebrew.sub',lang:'עברית',lc:'he',dl:12800,r:7.9,fmt:'SUB',date:'2021-04-18',hi:false,trusted:false,by:'avi_sub'},
-  {id:6,name:'Matrix.1999.Espanol.srt',lang:'Español',lc:'es',dl:7100,r:7.5,fmt:'SRT',date:'2022-03-22',hi:false,trusted:false,by:'SubEsp'},
+
+const MOCK_TITLES=[
+  {t:'The Matrix',y:1999,id:'0133093',type:'movie',initials:'TM'},
+  {t:'Matrix Reloaded',y:2003,id:'0234215',type:'movie',initials:'MR'},
+  {t:'Inception',y:2010,id:'1375666',type:'movie',initials:'IN'},
+  {t:'Interstellar',y:2014,id:'0816692',type:'movie',initials:'IS'},
+  {t:'Breaking Bad',y:2008,id:'0903747',type:'tv',initials:'BB',
+   seasons:5,eps:{1:7,2:13,3:13,4:13,5:16}},
+  {t:'Game of Thrones',y:2011,id:'0944947',type:'tv',initials:'GT',
+   seasons:8,eps:{1:10,2:10,3:10,4:10,5:10,6:10,7:7,8:6}},
+  {t:'Stranger Things',y:2016,id:'4574334',type:'tv',initials:'ST',
+   seasons:4,eps:{1:8,2:9,3:8,4:9}},
+  {t:'Succession',y:2018,id:'7660850',type:'tv',initials:'SU',
+   seasons:4,eps:{1:10,2:10,3:9,4:9}},
+  {t:'Chernobyl',y:2019,id:'9148288',type:'tv',initials:'CH',
+   seasons:1,eps:{1:5}},
+  {t:'The Office',y:2005,id:'0386676',type:'tv',initials:'TO',
+   seasons:9,eps:{1:6,2:22,3:25,4:19,5:28,6:26,7:26,8:24,9:25}},
+  {t:'Breathe',y:2017,id:'5137540',type:'movie',initials:'BR'},
 ];
+
+// ── Per-title mock results ──
+const RESULTS_DB = {
+  '0133093': [ // The Matrix
+    {id:1,name:'The.Matrix.1999.BluRay.1080p.srt',lang:'English',lc:'en',dl:48200,r:9.1,fmt:'SRT',date:'2023-08-14',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'The.Matrix.1999.HDTV.srt',lang:'English',lc:'en',dl:31500,r:8.4,fmt:'SRT',date:'2022-11-02',hi:true,trusted:false,by:'admin'},
+    {id:3,name:'Matrix.1999.Francais.srt',lang:'Français',lc:'fr',dl:14200,r:8.1,fmt:'SRT',date:'2021-04-18',hi:false,trusted:true,by:'CinéSub'},
+    {id:4,name:'Matrix.1999.Deutsch.BluRay.srt',lang:'Deutsch',lc:'de',dl:9800,r:7.9,fmt:'SRT',date:'2020-09-11',hi:false,trusted:false,by:'GermanSubs'},
+    {id:5,name:'Matrix.1999.Hebrew.sub',lang:'עברית',lc:'he',dl:12800,r:7.9,fmt:'SUB',date:'2021-04-18',hi:false,trusted:false,by:'avi_sub'},
+    {id:6,name:'Matrix.1999.Espanol.srt',lang:'Español',lc:'es',dl:7100,r:7.5,fmt:'SRT',date:'2022-03-22',hi:false,trusted:false,by:'SubEsp'},
+  ],
+  '0234215': [ // Matrix Reloaded
+    {id:1,name:'Matrix.Reloaded.2003.BluRay.srt',lang:'English',lc:'en',dl:22100,r:8.3,fmt:'SRT',date:'2022-05-10',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Matrix.Reloaded.2003.Hebrew.srt',lang:'עברית',lc:'he',dl:8400,r:7.8,fmt:'SRT',date:'2021-11-03',hi:false,trusted:false,by:'avi_sub'},
+  ],
+  '1375666': [ // Inception
+    {id:1,name:'Inception.2010.BluRay.1080p.srt',lang:'English',lc:'en',dl:61000,r:9.3,fmt:'SRT',date:'2023-01-20',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Inception.2010.Hebrew.srt',lang:'עברית',lc:'he',dl:19500,r:8.9,fmt:'SRT',date:'2022-08-15',hi:false,trusted:true,by:'avi_sub'},
+    {id:3,name:'Inception.2010.Francais.srt',lang:'Français',lc:'fr',dl:11200,r:8.5,fmt:'SRT',date:'2021-06-10',hi:false,trusted:false,by:'CinéSub'},
+    {id:4,name:'Inception.2010.Deutsch.srt',lang:'Deutsch',lc:'de',dl:8700,r:8.1,fmt:'SRT',date:'2020-12-22',hi:false,trusted:false,by:'GermanSubs'},
+  ],
+  '0816692': [ // Interstellar
+    {id:1,name:'Interstellar.2014.BluRay.srt',lang:'English',lc:'en',dl:54300,r:9.4,fmt:'SRT',date:'2023-03-11',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Interstellar.2014.Hebrew.srt',lang:'עברית',lc:'he',dl:17800,r:9.0,fmt:'SRT',date:'2022-07-22',hi:false,trusted:false,by:'avi_sub'},
+    {id:3,name:'Interstellar.2014.Arabic.srt',lang:'العربية',lc:'ar',dl:9200,r:8.6,fmt:'SRT',date:'2021-09-05',hi:false,trusted:false,by:'ArabSubs'},
+  ],
+  '0903747': [ // Breaking Bad — tv
+    {id:1,name:'Breaking.Bad.S02E03.720p.srt',lang:'English',lc:'en',dl:38900,r:9.5,fmt:'SRT',date:'2023-09-01',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Breaking.Bad.S02E03.Hebrew.srt',lang:'עברית',lc:'he',dl:14200,r:9.1,fmt:'SRT',date:'2022-12-14',hi:false,trusted:false,by:'avi_sub'},
+    {id:3,name:'Breaking.Bad.S02E03.Spanish.srt',lang:'Español',lc:'es',dl:7600,r:8.8,fmt:'SRT',date:'2021-05-30',hi:false,trusted:false,by:'SubEsp'},
+  ],
+  '0944947': [ // Game of Thrones
+    {id:1,name:'Game.of.Thrones.S01E01.BluRay.srt',lang:'English',lc:'en',dl:72000,r:9.6,fmt:'SRT',date:'2023-10-05',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Game.of.Thrones.S01E01.Hebrew.srt',lang:'עברית',lc:'he',dl:26400,r:9.2,fmt:'SRT',date:'2022-11-11',hi:false,trusted:true,by:'avi_sub'},
+    {id:3,name:'Game.of.Thrones.S01E01.Francais.srt',lang:'Français',lc:'fr',dl:15100,r:8.9,fmt:'SRT',date:'2021-08-20',hi:false,trusted:false,by:'CinéSub'},
+    {id:4,name:'Game.of.Thrones.S01E01.Russian.srt',lang:'Русский',lc:'ru',dl:11800,r:8.7,fmt:'SRT',date:'2020-10-14',hi:false,trusted:false,by:'RuSubs'},
+  ],
+  '4574334': [ // Stranger Things
+    {id:1,name:'Stranger.Things.S01E01.WEBRip.srt',lang:'English',lc:'en',dl:44500,r:9.2,fmt:'SRT',date:'2023-07-17',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Stranger.Things.S01E01.Hebrew.srt',lang:'עברית',lc:'he',dl:16300,r:8.8,fmt:'SRT',date:'2022-10-02',hi:false,trusted:false,by:'avi_sub'},
+    {id:3,name:'Stranger.Things.S01E01.Deutsch.srt',lang:'Deutsch',lc:'de',dl:8900,r:8.4,fmt:'SRT',date:'2021-04-25',hi:false,trusted:false,by:'GermanSubs'},
+  ],
+  '7660850': [ // Succession
+    {id:1,name:'Succession.S01E01.WEBRip.srt',lang:'English',lc:'en',dl:29700,r:9.3,fmt:'SRT',date:'2023-06-08',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Succession.S01E01.Hebrew.srt',lang:'עברית',lc:'he',dl:9100,r:8.9,fmt:'SRT',date:'2022-09-19',hi:false,trusted:false,by:'avi_sub'},
+  ],
+  '9148288': [ // Chernobyl
+    {id:1,name:'Chernobyl.S01E01.BluRay.srt',lang:'English',lc:'en',dl:33200,r:9.6,fmt:'SRT',date:'2023-02-14',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'Chernobyl.S01E01.Hebrew.srt',lang:'עברית',lc:'he',dl:12700,r:9.3,fmt:'SRT',date:'2022-05-07',hi:false,trusted:false,by:'avi_sub'},
+    {id:3,name:'Chernobyl.S01E01.Russian.srt',lang:'Русский',lc:'ru',dl:18400,r:9.1,fmt:'SRT',date:'2021-12-01',hi:false,trusted:true,by:'RuSubs'},
+  ],
+  '0386676': [ // The Office
+    {id:1,name:'The.Office.S02E03.WEBRip.srt',lang:'English',lc:'en',dl:41800,r:9.1,fmt:'SRT',date:'2023-11-22',hi:false,trusted:true,by:'SubDB'},
+    {id:2,name:'The.Office.S02E03.Hebrew.srt',lang:'עברית',lc:'he',dl:13500,r:8.7,fmt:'SRT',date:'2022-08-30',hi:false,trusted:false,by:'avi_sub'},
+    {id:3,name:'The.Office.S02E03.HI.srt',lang:'English',lc:'en',dl:9200,r:8.4,fmt:'SRT',date:'2021-03-15',hi:true,trusted:false,by:'HISubs'},
+    {id:4,name:'The.Office.S02E03.Espanol.srt',lang:'Español',lc:'es',dl:6300,r:8.0,fmt:'SRT',date:'2020-07-11',hi:false,trusted:false,by:'SubEsp'},
+  ],
+};
+// fallback for free-text searches with no IMDB match
+const RESULTS_DEFAULT = [
+  {id:1,name:'subtitle.en.srt',lang:'English',lc:'en',dl:5200,r:7.8,fmt:'SRT',date:'2023-01-01',hi:false,trusted:false,by:'user123'},
+  {id:2,name:'subtitle.he.srt',lang:'עברית',lc:'he',dl:2100,r:7.2,fmt:'SRT',date:'2022-06-15',hi:false,trusted:false,by:'avi_sub'},
+];
+let currentResults = RESULTS_DB['0133093']; // active result set
+
 const SUBS=[
   {i:1,s:'00:02',e:'00:05',t:"Wake up, Neo..."},
   {i:2,s:'00:07',e:'00:10',t:"The Matrix has you."},
@@ -731,10 +861,18 @@ const TRANS={
   de:["Wach auf, Neo…","Die Matrix hat dich.","Folge dem weißen Kaninchen.","Mr. Anderson.","Wir haben Sie erwartet.","Was ist real?","Wenn du es fühlen, riechen kannst...","...schmecken und sehen — real sind einfach elektrische Signale.","Du nimmst die blaue Pille, die Geschichte endet.","Du nimmst die rote Pille — du bleibst im Wunderland."],
 };
 
-// ── State ──
-let selLangs=new Set(['en']), searchMode='title', currentTab='search';
-let selMovie=null, activeResults=RESULTS, activeResult=null;
-let tlStep=0, tlTimer=null, prevOpen=false, isLight=false, histItems=[];
+// ── Search State ──
+let selTitle = null;    // selected MOCK_TITLES entry
+let selSeason = null;   // selected season number (int) or null
+let selEpisode = null;  // selected episode number (int) or 'ALL'
+let resultsVisible = false;
+let acMatches = [];     // current autocomplete matches
+
+// ── Global State ──
+let selLangs = new Set(['en']), searchMode = 'title', currentTab = 'search';
+let activeResult = null;
+let tlStep = 0, tlTimer = null, prevOpen = false, isLight = false, histItems = [];
+let acTimer = null;
 
 // ── Init ──
 function init(){
@@ -779,14 +917,20 @@ function goTab(tab){
   goTo(tab);
 }
 
-// ── Search ──
+// ── Search mode ──
 function setMode(m){
   searchMode=m;
   document.querySelectorAll('#mode-chips .chip').forEach((c,i)=>c.classList.toggle('on',(i===0&&m==='title')||(i===1&&m==='imdb')));
   document.getElementById('search-label').textContent=m==='title'?'Movie or Series':'IMDB ID';
-  document.getElementById('search-input').placeholder=m==='title'?'e.g. The Matrix':'e.g. 0133093';
+  document.getElementById('search-input').placeholder=m==='title'?'e.g. Breaking Bad':'e.g. 0133093';
   document.getElementById('ac-drop').style.display='none';
+  // reset title state when switching modes
+  selTitle=null; selSeason=null; selEpisode=null;
+  hideSeasonsEpisodes();
+  updateSearchBtn();
 }
+
+// ── Language chips (search form) ──
 function renderLangChips(){
   document.getElementById('lang-chips').innerHTML=LANGS.map(l=>`
     <button class="chip ${selLangs.has(l.c)?'on':''}" onclick="toggleLang('${l.c}')">${l.n}</button>
@@ -798,72 +942,214 @@ function toggleLang(c){
   renderLangChips();
 }
 
-let acTimer=null;
+// ── Autocomplete ──
 function onInput(){
   const v=document.getElementById('search-input').value.trim();
-  document.getElementById('search-btn').disabled=!v;
-  selMovie=null;
+  // reset title selection when user types again
+  selTitle=null; selSeason=null; selEpisode=null;
+  hideSeasonsEpisodes();
+  updateSearchBtn();
   clearTimeout(acTimer);
-  if(v.length<2){document.getElementById('ac-drop').style.display='none';return;}
+  if(searchMode==='imdb'){
+    // no autocomplete for IMDB mode; enable btn if non-empty
+    document.getElementById('search-btn').disabled=!v;
+    hideDrop();
+    return;
+  }
+  if(v.length<2){hideDrop();return;}
   acTimer=setTimeout(()=>{
-    const key=Object.keys(AC).find(k=>v.toLowerCase().startsWith(k));
-    const items=key?AC[key]:[];
-    const drop=document.getElementById('ac-drop');
-    if(!items.length){drop.style.display='none';return;}
-    drop.innerHTML=items.map((m,i)=>`
-      <div class="ac-item" onclick="pickMovie(${i},'${key}')">
-        <div class="ac-thumb">${m.t.split(' ').map(w=>w[0]).join('').slice(0,3)}</div>
-        <div>
-          <div class="ac-info-title">${m.t}</div>
-          <div class="ac-info-meta">${m.y} · IMDB ${m.id}</div>
-        </div>
-      </div>
-    `).join('');
-    drop.style.display='block';
-  },200);
+    acMatches=MOCK_TITLES.filter(m=>m.t.toLowerCase().includes(v.toLowerCase())).slice(0,6);
+    renderDrop(acMatches);
+  },180);
 }
-function pickMovie(i,key){
-  selMovie=AC[key][i];
-  document.getElementById('search-input').value=selMovie.t;
+
+function hideDrop(){
   document.getElementById('ac-drop').style.display='none';
-  document.getElementById('search-btn').disabled=false;
 }
+
+function renderDrop(items){
+  const drop=document.getElementById('ac-drop');
+  if(!items.length){drop.style.display='none';return;}
+  drop.innerHTML=items.map((m,i)=>`
+    <div class="ac-item" onclick="pickTitle(${i})">
+      <div class="ac-thumb">${m.initials}</div>
+      <div>
+        <div class="ac-info-title">${m.t}</div>
+        <div class="ac-info-meta">${m.y} · <span style="color:var(--mocha);font-weight:700;">${m.type==='tv'?'Series':'Movie'}</span></div>
+      </div>
+    </div>
+  `).join('');
+  drop.style.display='block';
+}
+
+function pickTitle(i){
+  const item=acMatches[i];
+  if(!item)return;
+  selTitle=item;
+  selSeason=null;
+  selEpisode=null;
+  document.getElementById('search-input').value=item.t;
+  hideDrop();
+  if(item.type==='tv'){
+    renderSeasonPills(item);
+    document.getElementById('search-btn').disabled=true;
+  } else {
+    hideSeasonsEpisodes();
+    document.getElementById('search-btn').disabled=false;
+    document.getElementById('search-btn').textContent='Search Subtitles';
+  }
+}
+
+function renderSeasonPills(item){
+  const container=document.getElementById('season-pills');
+  container.innerHTML='';
+  for(let s=1;s<=item.seasons;s++){
+    const btn=document.createElement('button');
+    btn.className='se-pill';
+    btn.textContent='S'+s;
+    btn.onclick=(()=>{const ss=s;return()=>pickSeason(ss);})();
+    container.appendChild(btn);
+  }
+  document.getElementById('season-section').style.display='block';
+  document.getElementById('episode-section').style.display='none';
+}
+
+function pickSeason(s){
+  selSeason=s;
+  selEpisode=null;
+  document.querySelectorAll('#season-pills .se-pill').forEach((p,i)=>
+    p.classList.toggle('on',i+1===s));
+  // render episode pills
+  const epCount=selTitle.eps[s]||1;
+  const epContainer=document.getElementById('episode-pills');
+  epContainer.innerHTML='';
+  // "ALL" pill first
+  const allBtn=document.createElement('button');
+  allBtn.className='se-pill';
+  allBtn.textContent='ALL';
+  allBtn.onclick=()=>pickEpisode('ALL');
+  epContainer.appendChild(allBtn);
+  for(let e=1;e<=epCount;e++){
+    const btn=document.createElement('button');
+    btn.className='se-pill';
+    btn.textContent='E'+e;
+    btn.onclick=(()=>{const ee=e;return()=>pickEpisode(ee);})();
+    epContainer.appendChild(btn);
+  }
+  document.getElementById('episode-section').style.display='block';
+  // keep search btn disabled until episode picked
+  document.getElementById('search-btn').disabled=true;
+  updateSearchBtn();
+}
+
+function pickEpisode(e){
+  selEpisode=e;
+  document.querySelectorAll('#episode-pills .se-pill').forEach(p=>{
+    p.classList.toggle('on',
+      (e==='ALL'&&p.textContent==='ALL')||
+      (e!=='ALL'&&p.textContent==='E'+e)
+    );
+  });
+  document.getElementById('search-btn').disabled=false;
+  updateSearchBtn();
+}
+
+function hideSeasonsEpisodes(){
+  document.getElementById('season-section').style.display='none';
+  document.getElementById('episode-section').style.display='none';
+}
+
+function updateSearchBtn(){
+  const btn=document.getElementById('search-btn');
+  if(selTitle&&selTitle.type==='tv'&&selSeason&&selEpisode){
+    let label='Search Season '+selSeason;
+    if(selEpisode==='ALL') label+=' · All Eps';
+    else label+=' Ep '+selEpisode;
+    btn.textContent=label;
+  } else {
+    btn.textContent='Search Subtitles';
+  }
+}
+
+// ── Three-state search flow ──
 function doSearch(){
   const q=document.getElementById('search-input').value.trim();
-  document.getElementById('ac-drop').style.display='none';
-  document.getElementById('results-title').textContent=selMovie?selMovie.t:q;
-  // Movie header
-  const hdr=document.getElementById('movie-header');
-  if(selMovie){
+  if(!q)return;
+  hideDrop();
+
+  const title=selTitle?selTitle.t:q;
+  const initials=selTitle?selTitle.initials:q.split(' ').map(w=>w[0]||'').join('').slice(0,3).toUpperCase();
+  let subLine='';
+  if(selTitle&&selTitle.type==='tv'&&selSeason){
+    subLine='Season '+selSeason;
+    if(selEpisode&&selEpisode!=='ALL') subLine+=' · Episode '+selEpisode;
+    else if(selEpisode==='ALL') subLine+=' · All Episodes';
+  } else if(selTitle){
+    subLine=selTitle.y+(selTitle.type==='tv'?' · Series':' · Movie');
+  }
+
+  // Fill collapsed pill bar
+  document.getElementById('pill-thumb').textContent=initials;
+  document.getElementById('pill-title').textContent=title;
+  document.getElementById('pill-sub').textContent=subLine||q;
+
+  // Movie header inline (in results section)
+  const hdr=document.getElementById('movie-header-inline');
+  if(selTitle){
     hdr.innerHTML=`<div class="movie-header">
-      <div class="movie-thumb">${selMovie.t.split(' ').map(w=>w[0]).join('').slice(0,3)}</div>
+      <div class="movie-thumb">${initials}</div>
       <div>
-        <div class="movie-title">${selMovie.t}</div>
-        <div class="movie-meta">${selMovie.y} · IMDB ${selMovie.id}</div>
+        <div class="movie-title">${title}</div>
+        <div class="movie-meta">${selTitle.y} · ${selTitle.type==='tv'?'Series':'Movie'}${subLine?' · '+subLine:''}</div>
       </div>
     </div>`;
     hdr.style.display='block';
-  } else {hdr.style.display='none';}
-  activeResults=RESULTS;
-  renderLangFilter();
-  renderResults('all');
-  goTo('results');
+  } else {
+    hdr.style.display='none';
+  }
+
+  // Load results for this specific title
+  currentResults = selTitle
+    ? (RESULTS_DB[selTitle.id] || RESULTS_DEFAULT).map(r => ({
+        ...r,
+        name: r.name  // already title-specific from DB
+      }))
+    : RESULTS_DEFAULT;
+
+  // Transition to results state
+  document.getElementById('search-pill').style.display='flex';
+  document.getElementById('search-expanded').style.display='none';
+  document.getElementById('results-section').style.display='flex';
+  resultsVisible=true;
+
+  renderLangFilterInline();
+  renderResultsInline('all');
 }
-function renderLangFilter(){
-  const langs=[...new Set(RESULTS.map(r=>r.lc))];
-  document.getElementById('lang-filter').innerHTML=
-    `<button class="lang-chip on" onclick="filterLang('all')">All</button>`+
-    langs.map(l=>`<button class="lang-chip" onclick="filterLang('${l}')">${l.toUpperCase()}</button>`).join('');
+
+function expandSearch(){
+  document.getElementById('search-pill').style.display='none';
+  document.getElementById('search-expanded').style.display='block';
+  document.getElementById('results-section').style.display='none';
+  resultsVisible=false;
 }
-function filterLang(l){
-  document.querySelectorAll('.lang-chip').forEach(c=>{
+
+function renderLangFilterInline(){
+  const langs=[...new Set(currentResults.map(r=>r.lc))];
+  document.getElementById('lang-filter-inline').innerHTML=
+    `<button class="lang-chip on" onclick="filterLangInline('all')">All</button>`+
+    langs.map(l=>`<button class="lang-chip" onclick="filterLangInline('${l}')">${l.toUpperCase()}</button>`).join('');
+}
+
+function filterLangInline(l){
+  document.querySelectorAll('#lang-filter-inline .lang-chip').forEach(c=>{
     c.classList.toggle('on',(l==='all'&&c.textContent==='All')||(l!=='all'&&c.textContent===l.toUpperCase()));
   });
-  renderResults(l);
+  renderResultsInline(l);
 }
-function renderResults(l){
-  const list=l==='all'?RESULTS:RESULTS.filter(r=>r.lc===l);
-  document.getElementById('results-list').innerHTML=list.map(r=>`
+
+function renderResultsInline(l){
+  const list=l==='all'?currentResults:currentResults.filter(r=>r.lc===l);
+  document.getElementById('results-list-inline').innerHTML=list.map(r=>`
     <div class="result-item">
       <div class="result-row1">
         <div>
@@ -895,7 +1181,7 @@ function renderResults(l){
 
 // ── Download ──
 function openDownload(id){
-  activeResult=RESULTS.find(r=>r.id===id);
+  activeResult=currentResults.find(r=>r.id===id);
   document.getElementById('dl-name').textContent=activeResult.name;
   document.getElementById('dl-meta').textContent=`${activeResult.lang} · ${activeResult.fmt} · ${activeResult.date} · by ${activeResult.by}`;
   document.getElementById('dl-ok').style.display='none';
@@ -913,7 +1199,7 @@ function confirmDownload(){
 
 // ── Translate ──
 function openTranslate(id){
-  activeResult=RESULTS.find(r=>r.id===id);
+  activeResult=currentResults.find(r=>r.id===id);
   document.getElementById('tl-title').textContent=activeResult.lang;
   document.getElementById('tl-format').textContent=activeResult.fmt;
   document.getElementById('tl-src-display').textContent=activeResult.lang.toUpperCase();
@@ -1034,9 +1320,9 @@ function saveSettings(){
   setTimeout(()=>el.style.display='none',2000);
 }
 
-// Close AC on outside click
+// Close autocomplete on outside click
 document.addEventListener('click',e=>{
-  if(!e.target.closest('.ac-wrap'))document.getElementById('ac-drop').style.display='none';
+  if(!e.target.closest('.ac-wrap'))hideDrop();
 });
 
 init();
