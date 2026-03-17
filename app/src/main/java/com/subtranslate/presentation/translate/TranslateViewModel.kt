@@ -1,0 +1,107 @@
+package com.subtranslate.presentation.translate
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.subtranslate.data.repository.TranslationRepositoryImpl
+import com.subtranslate.domain.model.SubtitleFile
+import com.subtranslate.domain.model.TranslationProgress
+import com.subtranslate.domain.model.TranslationStatus
+import com.subtranslate.domain.usecase.SaveSubtitleUseCase
+import com.subtranslate.domain.usecase.TranslateSubtitleUseCase
+import com.subtranslate.util.SettingsDataStore
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class TranslateUiState(
+    val sourceLang: String = "en",
+    val targetLang: String = "he",
+    val selectedModel: String = "claude-sonnet-4-5",
+    val progress: TranslationProgress = TranslationProgress(),
+    val translatedFile: SubtitleFile? = null,
+    val savedPath: String? = null,
+    val saveError: String? = null
+)
+
+@HiltViewModel
+class TranslateViewModel @Inject constructor(
+    private val translateUseCase: TranslateSubtitleUseCase,
+    private val saveUseCase: SaveSubtitleUseCase,
+    private val translationRepo: TranslationRepositoryImpl,
+    private val settings: SettingsDataStore
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(TranslateUiState())
+    val uiState: StateFlow<TranslateUiState> = _uiState
+
+    // The subtitle file to translate - set by the owning screen via shared ViewModel or nav args
+    var pendingFile: SubtitleFile? = null
+
+    private var translationJob: Job? = null
+
+    init {
+        _uiState.value = _uiState.value.copy(
+            sourceLang = settings.defaultSourceLanguage,
+            targetLang = settings.defaultTargetLanguage,
+            selectedModel = settings.translationModel
+        )
+    }
+
+    fun onSourceLangChange(lang: String) {
+        _uiState.value = _uiState.value.copy(sourceLang = lang)
+    }
+
+    fun onTargetLangChange(lang: String) {
+        _uiState.value = _uiState.value.copy(targetLang = lang)
+    }
+
+    fun onModelChange(model: String) {
+        _uiState.value = _uiState.value.copy(selectedModel = model)
+    }
+
+    fun startTranslation(file: SubtitleFile) {
+        pendingFile = file
+        translationJob = viewModelScope.launch {
+            translateUseCase(
+                subtitleFile = file,
+                sourceLang = _uiState.value.sourceLang,
+                targetLang = _uiState.value.targetLang,
+                modelId = _uiState.value.selectedModel
+            ).onEach { progress ->
+                val translatedFile = if (progress.status == TranslationStatus.COMPLETE) {
+                    translationRepo.lastTranslatedFile
+                } else null
+                _uiState.value = _uiState.value.copy(
+                    progress = progress,
+                    translatedFile = translatedFile ?: _uiState.value.translatedFile
+                )
+            }.launchIn(this)
+        }
+    }
+
+    fun save() {
+        val file = _uiState.value.translatedFile ?: return
+        val ext = file.format.name.lowercase()
+        val name = "${file.title?.substringBeforeLast(".")}_${_uiState.value.targetLang}.$ext"
+
+        viewModelScope.launch {
+            val result = saveUseCase(file, name)
+            _uiState.value = _uiState.value.copy(
+                savedPath = result.getOrNull()?.absolutePath,
+                saveError = result.exceptionOrNull()?.message
+            )
+        }
+    }
+
+    fun cancelTranslation() {
+        translationJob?.cancel()
+        _uiState.value = _uiState.value.copy(
+            progress = _uiState.value.progress.copy(status = TranslationStatus.IDLE)
+        )
+    }
+}
