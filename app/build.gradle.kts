@@ -38,7 +38,8 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: localProps["KEYSTORE_PATH"] ?: "keystore.jks")
+            val ksPath = System.getenv("KEYSTORE_PATH") ?: localProps["KEYSTORE_PATH"]?.toString()
+            if (!ksPath.isNullOrBlank()) storeFile = file(ksPath)
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: localProps["KEYSTORE_PASSWORD"]?.toString() ?: ""
             keyAlias = System.getenv("KEY_ALIAS") ?: localProps["KEY_ALIAS"]?.toString() ?: ""
             keyPassword = System.getenv("KEY_PASSWORD") ?: localProps["KEY_PASSWORD"]?.toString() ?: ""
@@ -57,8 +58,8 @@ android {
 
             firebaseAppDistribution {
                 artifactType = "AAB"
-                serviceCredentialsFile = System.getenv("FIREBASE_SERVICE_ACCOUNT") ?: ""
-                groups = "testers"
+                val creds = System.getenv("FIREBASE_SERVICE_ACCOUNT").orEmpty()
+                if (creds.isNotBlank()) serviceCredentialsFile = creds
             }
         }
 
@@ -66,8 +67,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
             firebaseAppDistribution {
                 artifactType = "APK"
-                serviceCredentialsFile = System.getenv("FIREBASE_SERVICE_ACCOUNT") ?: ""
-                // no groups required — distributes to all testers added in Firebase console
+                val creds = System.getenv("FIREBASE_SERVICE_ACCOUNT").orEmpty()
+                if (creds.isNotBlank()) serviceCredentialsFile = creds
             }
         }
     }
