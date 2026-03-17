@@ -2,15 +2,12 @@ package com.subtranslate.di
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.subtranslate.BuildConfig
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesAuthInterceptor
-import com.subtranslate.data.remote.tmdb.TmdbApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -58,36 +55,4 @@ object NetworkModule {
         .build()
         .create(OpenSubtitlesApi::class.java)
 
-    // ── TMDB ─────────────────────────────────────────────────────────────────
-
-    @Provides
-    @Singleton
-    @Named("tmdb")
-    fun provideTmdbOkHttpClient(): OkHttpClient {
-        val tmdbKeyInterceptor = Interceptor { chain ->
-            val req = chain.request()
-            val url = req.url.newBuilder()
-                .addQueryParameter("api_key", BuildConfig.TMDB_API_KEY)
-                .build()
-            chain.proceed(req.newBuilder().url(url).build())
-        }
-        return OkHttpClient.Builder()
-            .addInterceptor(tmdbKeyInterceptor)
-            .addInterceptor(loggingInterceptor())
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideTmdbApi(
-        @Named("tmdb") client: OkHttpClient,
-        moshi: Moshi
-    ): TmdbApi = Retrofit.Builder()
-        .baseUrl("https://api.themoviedb.org/3/")
-        .client(client)
-        .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .build()
-        .create(TmdbApi::class.java)
 }

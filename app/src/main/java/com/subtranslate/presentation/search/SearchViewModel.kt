@@ -2,9 +2,9 @@ package com.subtranslate.presentation.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
+import com.subtranslate.data.remote.opensubtitles.dto.FeatureDto
 import com.subtranslate.data.remote.tmdb.SearchSession
-import com.subtranslate.data.remote.tmdb.TmdbApi
-import com.subtranslate.data.remote.tmdb.TmdbResult
 import com.subtranslate.domain.model.SubtitleSearchResult
 import com.subtranslate.domain.usecase.SearchSubtitlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,8 +25,7 @@ data class SearchUiState(
     val isLoading: Boolean = false,
     val results: List<SubtitleSearchResult> = emptyList(),
     val error: String? = null,
-    // TMDB autocomplete
-    val suggestions: List<TmdbResult> = emptyList(),
+    val suggestions: List<FeatureDto> = emptyList(),
     val showSuggestions: Boolean = false,
     val selectedPosterUrl: String? = null,
     val selectedMovieTitle: String? = null
@@ -37,7 +36,7 @@ enum class SearchMode { TITLE, IMDB_ID }
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchUseCase: SearchSubtitlesUseCase,
-    private val tmdbApi: TmdbApi,
+    private val openSubtitlesApi: OpenSubtitlesApi,
     private val searchSession: SearchSession
 ) : ViewModel() {
 
@@ -63,11 +62,10 @@ class SearchViewModel @Inject constructor(
             return
         }
         suggestJob = viewModelScope.launch {
-            delay(350) // debounce
-            runCatching { tmdbApi.searchMulti(query) }
+            delay(350)
+            runCatching { openSubtitlesApi.searchFeatures(query) }
                 .getOrNull()
-                ?.results
-                ?.filter { it.media_type in listOf("movie", "tv") }
+                ?.data
                 ?.take(6)
                 ?.also { results ->
                     _uiState.value = _uiState.value.copy(
@@ -78,17 +76,21 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun onSuggestionSelected(result: TmdbResult) {
-        searchSession.posterUrl = result.posterUrl
-        searchSession.movieTitle = result.displayTitle
-        searchSession.imdbId = result.imdb_id
+    fun onSuggestionSelected(feature: FeatureDto) {
+        val title = feature.attributes.title ?: feature.attributes.originalTitle ?: ""
+        val posterUrl = feature.attributes.imgUrl
+        val imdbId = feature.attributes.imdbId?.toString()
+
+        searchSession.posterUrl = posterUrl
+        searchSession.movieTitle = title
+        searchSession.imdbId = imdbId
 
         _uiState.value = _uiState.value.copy(
-            query = result.displayTitle,
+            query = title,
             showSuggestions = false,
             suggestions = emptyList(),
-            selectedPosterUrl = result.posterUrl,
-            selectedMovieTitle = result.displayTitle
+            selectedPosterUrl = posterUrl,
+            selectedMovieTitle = title
         )
     }
 
@@ -121,7 +123,6 @@ class SearchViewModel @Inject constructor(
             val posterUrl = searchSession.posterUrl
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                // Inject posterUrl into every result (same movie)
                 results = result.getOrNull()?.map { it.copy(posterUrl = posterUrl) } ?: emptyList(),
                 error = result.exceptionOrNull()?.message
             )

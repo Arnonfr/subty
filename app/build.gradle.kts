@@ -10,6 +10,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.appdistribution)
 }
 
 android {
@@ -36,14 +38,38 @@ android {
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: localProps["KEYSTORE_PATH"] ?: "keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: localProps["KEYSTORE_PASSWORD"]?.toString() ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: localProps["KEY_ALIAS"]?.toString() ?: ""
+            keyPassword = System.getenv("KEY_PASSWORD") ?: localProps["KEY_PASSWORD"]?.toString() ?: ""
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            firebaseAppDistribution {
+                artifactType = "AAB"
+                serviceCredentialsFile = System.getenv("FIREBASE_SERVICE_ACCOUNT") ?: ""
+                groups = "testers"
+            }
+        }
+
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+            firebaseAppDistribution {
+                artifactType = "APK"
+                groups = "testers"
+            }
         }
     }
 
@@ -114,4 +140,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
 }

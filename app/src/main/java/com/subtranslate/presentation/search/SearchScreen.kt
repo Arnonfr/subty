@@ -105,7 +105,13 @@ fun SearchScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    result.posterUrl?.let { url ->
+                                    val title = result.attributes.title
+                                        ?: result.attributes.originalTitle ?: ""
+                                    val year = result.attributes.year?.toString() ?: ""
+                                    val isTv = result.type == "tv" ||
+                                        result.attributes.featureType?.lowercase() == "tvshow"
+
+                                    result.attributes.imgUrl?.let { url ->
                                         AsyncImage(
                                             model = url,
                                             contentDescription = null,
@@ -119,7 +125,7 @@ fun SearchScreen(
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
-                                            result.displayTitle.take(1),
+                                            title.take(1),
                                             style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -127,18 +133,18 @@ fun SearchScreen(
 
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            result.displayTitle,
+                                            title,
                                             style = MaterialTheme.typography.bodyMedium,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            if (result.year.isNotEmpty()) {
-                                                Text(result.year, style = MaterialTheme.typography.labelSmall,
+                                            if (year.isNotEmpty()) {
+                                                Text(year, style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                             Text(
-                                                if (result.media_type == "tv") "Series" else "Movie",
+                                                if (isTv) "Series" else "Movie",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
