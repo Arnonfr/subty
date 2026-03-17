@@ -24,9 +24,13 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"${localProps["OPENSUBTITLES_API_KEY"] ?: ""}\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"${localProps["GEMINI_API_KEY"] ?: ""}\"")
-        buildConfigField("String", "GOOGLE_TRANSLATE_API_KEY", "\"${localProps["GOOGLE_TRANSLATE_API_KEY"] ?: ""}\"")
+        val geminiApiKey = System.getenv("GEMINI_API_KEY") ?: localProps["GEMINI_API_KEY"] ?: ""
+        val googleTranslateApiKey = System.getenv("GOOGLE_TRANSLATE_API_KEY") ?: localProps["GOOGLE_TRANSLATE_API_KEY"] ?: ""
+        val opensubtitlesApiKey = System.getenv("OPENSUBTITLES_API_KEY") ?: localProps["OPENSUBTITLES_API_KEY"] ?: ""
+
+        buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "GOOGLE_TRANSLATE_API_KEY", "\"$googleTranslateApiKey\"")
     }
 
     buildTypes {
