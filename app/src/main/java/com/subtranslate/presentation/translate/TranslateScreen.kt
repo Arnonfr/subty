@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.domain.model.TranslationStatus
+import androidx.compose.foundation.layout.Box
 
 private val LANGUAGES = listOf(
     "en" to "English", "he" to "עברית", "fr" to "Français", "de" to "Deutsch",
@@ -63,6 +64,17 @@ fun TranslateScreen(
             }
         }
     ) { padding ->
+        // Show loading spinner while subtitle file is being downloaded
+        if (state.isLoadingFile) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CircularProgressIndicator()
+                    Text("Loading subtitle…", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            return@Scaffold
+        }
+
         LazyColumn(
             modifier = Modifier.padding(padding).fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -225,12 +237,14 @@ fun TranslateScreen(
             }
 
             // Live translated preview
-            AnimatedVisibility(visible = progress.status == TranslationStatus.COMPLETE &&
-                    state.translatedFile != null) {
-                Column {
-                    HorizontalDivider()
-                    Spacer(Modifier.height(8.dp))
-                    Text("Translated preview", style = MaterialTheme.typography.titleMedium)
+            item {
+                AnimatedVisibility(visible = progress.status == TranslationStatus.COMPLETE &&
+                        state.translatedFile != null) {
+                    Column {
+                        HorizontalDivider()
+                        Spacer(Modifier.height(8.dp))
+                        Text("Translated preview", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
 

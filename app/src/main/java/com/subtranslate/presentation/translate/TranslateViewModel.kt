@@ -24,6 +24,7 @@ data class TranslateUiState(
     val sourceLang: String = "en",
     val targetLang: String = "he",
     val selectedModel: String = "google",
+    val isLoadingFile: Boolean = false,
     val progress: TranslationProgress = TranslationProgress(),
     val translatedFile: SubtitleFile? = null,
     val savedPath: String? = null,
@@ -60,9 +61,19 @@ class TranslateViewModel @Inject constructor(
      */
     /** Downloads the subtitle and auto-sets source language — no user input required. */
     fun downloadAndLoad(fileId: Int, languageCode: String) {
+        _uiState.value = _uiState.value.copy(isLoadingFile = true)
         viewModelScope.launch {
             val result = downloadUseCase(fileId, languageCode)
+            _uiState.value = _uiState.value.copy(isLoadingFile = false)
             result.getOrNull()?.let { loadSubtitle(it) }
+                ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        progress = _uiState.value.progress.copy(
+                            status = com.subtranslate.domain.model.TranslationStatus.ERROR,
+                            errorMessage = result.exceptionOrNull()?.message ?: "Download failed"
+                        )
+                    )
+                }
         }
     }
 

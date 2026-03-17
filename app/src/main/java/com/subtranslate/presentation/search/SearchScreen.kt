@@ -1,5 +1,6 @@
 package com.subtranslate.presentation.search
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -13,9 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
 
 private val COMMON_LANGUAGES = listOf(
     "en" to "English", "he" to "עברית", "fr" to "Français",
@@ -37,7 +42,7 @@ fun SearchScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("SubTranslate", style = MaterialTheme.typography.titleLarge)
+        Text("Subty", style = MaterialTheme.typography.titleLarge)
 
         // Search mode toggle
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -50,18 +55,102 @@ fun SearchScreen(
             }
         }
 
-        // Main search field
+        // Main search field with TMDB autocomplete
         if (state.searchMode == SearchMode.TITLE) {
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = viewModel::onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Movie / Series name") },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { viewModel.search(); onSearch(state.query) })
-            )
+            Column {
+                // Show selected poster as thumbnail inside the field row
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.selectedPosterUrl?.let { url ->
+                        AsyncImage(
+                            model = url,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(MaterialTheme.shapes.small)
+                        )
+                    }
+                    OutlinedTextField(
+                        value = state.query,
+                        onValueChange = viewModel::onQueryChange,
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Movie / Series name") },
+                        leadingIcon = { Icon(Icons.Default.Search, null) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = {
+                            viewModel.search()
+                            onSearch(state.query)
+                        })
+                    )
+                }
+
+                // Autocomplete dropdown
+                if (state.showSuggestions && state.suggestions.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 2.dp),
+                        elevation = CardDefaults.cardElevation(8.dp)
+                    ) {
+                        Column {
+                            state.suggestions.forEach { result ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.onSuggestionSelected(result)
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    result.posterUrl?.let { url ->
+                                        AsyncImage(
+                                            model = url,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(width = 28.dp, height = 42.dp)
+                                                .clip(MaterialTheme.shapes.small)
+                                        )
+                                    } ?: Box(
+                                        modifier = Modifier.size(width = 28.dp, height = 42.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            result.displayTitle.take(1),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            result.displayTitle,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            if (result.year.isNotEmpty()) {
+                                                Text(result.year, style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                            Text(
+                                                if (result.media_type == "tv") "Series" else "Movie",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                                if (result != state.suggestions.last()) HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            }
         } else {
             OutlinedTextField(
                 value = state.imdbId,
@@ -116,11 +205,8 @@ fun SearchScreen(
 
         state.error?.let { err ->
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                Text(
-                    text = err,
-                    modifier = Modifier.padding(12.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
+                Text(text = err, modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer)
             }
         }
     }

@@ -30,7 +30,7 @@ fun NavGraph(navController: NavHostController) {
             ResultsScreen(
                 query = query,
                 // Results navigate directly to Translate — language code passed so VM can auto-detect
-                onSubtitleSelected = { fileId, fileName, languageCode ->
+                onTranslate = { fileId, fileName, languageCode ->
                     navController.navigate(Screen.Translate.createRoute(fileId, fileName, languageCode))
                 },
                 onBack = { navController.popBackStack() }

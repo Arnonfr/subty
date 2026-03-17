@@ -14,5 +14,6 @@ data class SubtitleSearchResult(
     val imdbId: String?,
     val isHearingImpaired: Boolean,
     val isTrusted: Boolean,
-    val uploaderName: String?
+    val uploaderName: String?,
+    val posterUrl: String? = null   // injected from TMDB via SearchSession
 )
