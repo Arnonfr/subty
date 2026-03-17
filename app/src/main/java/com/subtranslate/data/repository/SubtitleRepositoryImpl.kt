@@ -13,12 +13,13 @@ import com.subtranslate.domain.repository.SubtitleRepository
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class SubtitleRepositoryImpl @Inject constructor(
     private val api: OpenSubtitlesApi,
-    private val okHttpClient: OkHttpClient
+    @Named("opensubtitles") private val okHttpClient: OkHttpClient
 ) : SubtitleRepository {
 
     override suspend fun search(
