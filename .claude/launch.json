@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "subtranslate-preview",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-p", "7890", "preview"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["preview/server.js"],
       "port": 7890
     }
   ]

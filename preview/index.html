@@ -1040,8 +1040,7 @@ async function fetchAcFromApi(query){
   const drop=document.getElementById('ac-drop');
   try{
     const res=await fetch(
-      `https://api.opensubtitles.com/api/v1/features?query=${encodeURIComponent(query)}`,
-      {headers:{'Api-Key':OS_API_KEY,'User-Agent':'Subty v1.0','Content-Type':'application/json'}}
+      `/osapi/features?query=${encodeURIComponent(query)}`
     );
     if(!res.ok){
       const txt=await res.text().catch(()=>'');
