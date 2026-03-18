@@ -3,6 +3,11 @@ package com.subtranslate.data.remote.translation
 import com.subtranslate.BuildConfig
 import com.subtranslate.domain.model.SubtitleEntry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -10,7 +15,9 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Collections
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,9 +27,10 @@ class GeminiTranslationService @Inject constructor(
     private val settingsDataStore: SettingsDataStore
 ) {
     companion object {
-        private const val BATCH_SIZE = 18
+        private const val BATCH_SIZE = 40
         private const val CONTEXT_OVERLAP = 3
         private const val MAX_RETRIES = 3
+        private const val MAX_CONCURRENT = 4
         private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
     }
 
@@ -45,34 +53,39 @@ class GeminiTranslationService @Inject constructor(
         val apiKey = settingsDataStore.geminiApiKey?.ifBlank { null } ?: BuildConfig.GEMINI_API_KEY
         val systemPrompt = TranslationPromptBuilder.buildSystemPrompt(sourceLang, targetLang, title)
         val batches = createBatches(entries, BATCH_SIZE, CONTEXT_OVERLAP)
-        val translationMap = mutableMapOf<Int, String>()
+        val translationMap: MutableMap<Int, String> = Collections.synchronizedMap(mutableMapOf())
+        val completedCount = AtomicInteger(0)
 
-        batches.forEachIndexed { batchIdx, batch ->
-            val (contextEntries, translateEntries) = batch
-            val expectedIndices = translateEntries.map { it.index }
-
-            var attempt = 0
-            var success = false
-
-            while (attempt < MAX_RETRIES && !success) {
-                try {
-                    val userMessage = TranslationPromptBuilder.buildUserMessage(contextEntries, translateEntries)
-                    val responseText = callGemini(apiKey, modelId, systemPrompt, userMessage)
-                    val parsed = TranslationPromptBuilder.parseResponse(responseText, expectedIndices)
-
-                    if (parsed.size >= expectedIndices.size * 0.9) {
-                        translationMap.putAll(parsed)
-                        success = true
-                    } else {
-                        attempt++
+        coroutineScope {
+            val semaphore = Semaphore(MAX_CONCURRENT)
+            batches.mapIndexed { batchIdx, batch ->
+                async {
+                    semaphore.withPermit {
+                        val (contextEntries, translateEntries) = batch
+                        val expectedIndices = translateEntries.map { it.index }
+                        var attempt = 0
+                        var success = false
+                        while (attempt < MAX_RETRIES && !success) {
+                            try {
+                                val userMessage = TranslationPromptBuilder.buildUserMessage(contextEntries, translateEntries)
+                                val responseText = callGemini(apiKey, modelId, systemPrompt, userMessage)
+                                val parsed = TranslationPromptBuilder.parseResponse(responseText, expectedIndices)
+                                if (parsed.size >= expectedIndices.size * 0.9) {
+                                    translationMap.putAll(parsed)
+                                    success = true
+                                } else {
+                                    attempt++
+                                }
+                            } catch (e: Exception) {
+                                attempt++
+                                if (attempt >= MAX_RETRIES) throw e
+                            }
+                        }
+                        val done = completedCount.incrementAndGet()
+                        onProgress(translationMap.size, entries.size, done, batches.size)
                     }
-                } catch (e: Exception) {
-                    attempt++
-                    if (attempt >= MAX_RETRIES) throw e
                 }
-            }
-
-            onProgress(translationMap.size, entries.size, batchIdx + 1, batches.size)
+            }.awaitAll()
         }
 
         entries.map { entry ->

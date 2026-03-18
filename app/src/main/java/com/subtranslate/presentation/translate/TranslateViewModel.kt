@@ -1,7 +1,11 @@
 package com.subtranslate.presentation.translate
 
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.repository.TranslationRepositoryImpl
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
@@ -9,8 +13,10 @@ import com.subtranslate.domain.model.TranslationStatus
 import com.subtranslate.domain.usecase.DownloadSubtitleUseCase
 import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.TranslateSubtitleUseCase
-import com.subtranslate.data.local.datastore.SettingsDataStore
+import com.subtranslate.service.TranslationForegroundService
+import com.subtranslate.service.TranslationStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +43,9 @@ class TranslateViewModel @Inject constructor(
     private val translateUseCase: TranslateSubtitleUseCase,
     private val saveUseCase: SaveSubtitleUseCase,
     private val translationRepo: TranslationRepositoryImpl,
-    private val settings: SettingsDataStore
+    private val settings: SettingsDataStore,
+    private val stateHolder: TranslationStateHolder,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TranslateUiState())
@@ -118,13 +126,18 @@ class TranslateViewModel @Inject constructor(
 
     fun startTranslation(file: SubtitleFile) {
         pendingFile = file
+        stateHolder.reset()
+        TranslationForegroundService.pendingFile = file
+        val intent = Intent(context, TranslationForegroundService::class.java).apply {
+            putExtra(TranslationForegroundService.EXTRA_SOURCE_LANG, _uiState.value.sourceLang)
+            putExtra(TranslationForegroundService.EXTRA_TARGET_LANG, _uiState.value.targetLang)
+            putExtra(TranslationForegroundService.EXTRA_MODEL_ID,    _uiState.value.selectedModel)
+        }
+        ContextCompat.startForegroundService(context, intent)
+
+        // Observe service state in ViewModel for UI updates
         translationJob = viewModelScope.launch {
-            translateUseCase(
-                subtitleFile = file,
-                sourceLang = _uiState.value.sourceLang,
-                targetLang = _uiState.value.targetLang,
-                modelId = _uiState.value.selectedModel
-            ).onEach { progress ->
+            stateHolder.progress.collect { progress ->
                 val translatedFile = if (progress.status == TranslationStatus.COMPLETE) {
                     translationRepo.lastTranslatedFile
                 } else null
@@ -132,7 +145,7 @@ class TranslateViewModel @Inject constructor(
                     progress = progress,
                     translatedFile = translatedFile ?: _uiState.value.translatedFile
                 )
-            }.launchIn(this)
+            }
         }
     }
 
@@ -152,6 +165,7 @@ class TranslateViewModel @Inject constructor(
 
     fun cancelTranslation() {
         translationJob?.cancel()
+        context.stopService(Intent(context, TranslationForegroundService::class.java))
         _uiState.value = _uiState.value.copy(
             progress = _uiState.value.progress.copy(status = TranslationStatus.IDLE)
         )

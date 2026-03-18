@@ -30,7 +30,12 @@ class SaveSubtitleUseCase @Inject constructor(
             val resolver = context.contentResolver
             val values = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                val mimeType = when (subtitleFile.format) {
+                    SubtitleFormat.SRT, SubtitleFormat.SUB -> "application/x-subrip"
+                    SubtitleFormat.VTT                     -> "text/vtt"
+                    SubtitleFormat.ASS, SubtitleFormat.SSA -> "text/x-ass"
+                }
+                put(MediaStore.Downloads.MIME_TYPE, mimeType)
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)

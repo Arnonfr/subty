@@ -11,8 +11,11 @@ import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.SearchSubtitlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -41,6 +44,9 @@ class ResultsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ResultsUiState())
     val uiState: StateFlow<ResultsUiState> = _uiState
+
+    private val _downloadDoneEvents = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val downloadDoneEvents: SharedFlow<String> = _downloadDoneEvents.asSharedFlow()
 
     fun search(query: String) {
         _uiState.value = _uiState.value.copy(
@@ -117,6 +123,7 @@ class ResultsViewModel @Inject constructor(
             val saveResult = saveUseCase(file, saveName)
             if (saveResult.isSuccess) {
                 setDownloadState(fileId, DownloadState.DONE)
+                _downloadDoneEvents.tryEmit(saveName)
             } else {
                 setDownloadState(fileId, DownloadState.ERROR, saveResult.exceptionOrNull()?.message)
             }
