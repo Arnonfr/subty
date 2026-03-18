@@ -85,6 +85,15 @@ class SubtitleRepositoryImpl @Inject constructor(
 
     // ── SubDL search (returns SubtitleSearchResult with negative fileIds) ─────
 
+    /**
+     * Format an IMDB ID string to SubDL's required format: "tt" + 7-digit zero-padded number.
+     * Accepts "386676", "tt386676", "tt0386676", etc.
+     */
+    private fun formatImdbId(raw: String): String {
+        val digits = raw.removePrefix("tt").trimStart('0').ifEmpty { "0" }
+        return "tt" + digits.padStart(7, '0')
+    }
+
     suspend fun searchSubDL(
         title: String?,
         imdbId: String?    = null,
@@ -94,11 +103,14 @@ class SubtitleRepositoryImpl @Inject constructor(
         type: String?      = null,
     ): List<SubtitleSearchResult> {
         val apiKey = BuildConfig.SUBDL_API_KEY.ifBlank { return emptyList() }
+        // SubDL requires an IMDB ID — title-only queries return nothing
+        if (imdbId.isNullOrBlank()) return emptyList()
+        val formattedImdbId = formatImdbId(imdbId)
         return try {
             val resp = subDLApi.searchSubtitles(
                 apiKey    = apiKey,
-                title     = title,
-                imdbId    = imdbId,
+                title     = null,          // SubDL ignores title when imdb_id is given
+                imdbId    = formattedImdbId,
                 season    = season,
                 episode   = episode,
                 languages = languages,

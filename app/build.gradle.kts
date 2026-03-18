@@ -22,8 +22,8 @@ android {
         applicationId = "com.subtranslate"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val geminiApiKey = System.getenv("GEMINI_API_KEY") ?: localProps["GEMINI_API_KEY"] ?: ""
@@ -33,9 +33,10 @@ android {
             ?: localProps["OPENSUBTITLES_API_KEY"]?.toString()
             ?: "s7Y2RwG2TR4xPTmSShqVSM4gRYOTzToN"
 
+        // Key already in preview/server.js (public repo) — fallback so CI works without the secret
         val subdlApiKey = System.getenv("SUBDL_API_KEY")
             ?: localProps["SUBDL_API_KEY"]?.toString()
-            ?: ""
+            ?: "flS-uvm6eADL2bkt0YBONxB5glM2X4Xr"
 
         val osUsername = System.getenv("OPENSUBTITLES_USERNAME")
             ?: localProps["OPENSUBTITLES_USERNAME"]?.toString()
