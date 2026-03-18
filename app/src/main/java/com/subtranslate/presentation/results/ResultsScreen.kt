@@ -1,246 +1,267 @@
 package com.subtranslate.presentation.results
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.subtranslate.domain.model.SubtitleSearchResult
+import com.subtranslate.presentation.theme.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResultsScreen(
     query: String,
     onTranslate: (fileId: Int, fileName: String, languageCode: String) -> Unit,
     onBack: () -> Unit,
-    viewModel: ResultsViewModel = hiltViewModel()
+    viewModel: ResultsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-
     LaunchedEffect(query) { viewModel.search(query) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(query, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SubtyBg),
+    ) {
+        SubtyTopBar(title = query, onBack = onBack)
 
-            // ── Movie poster header ─────────────────────────────────────────
-            state.posterUrl?.let { url ->
-                Row(
+        // ── Movie header ──────────────────────────────────────────────────────
+        state.posterUrl?.let { url ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .size(width = 44.dp, height = 64.dp)
+                        .border(1.dp, SubtyBorder)
+                        .background(SubtyBg3),
                 ) {
                     AsyncImage(
                         model = url,
                         contentDescription = query,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(width = 56.dp, height = 84.dp)
-                            .clip(MaterialTheme.shapes.small)
+                        modifier = Modifier.fillMaxSize(),
                     )
-                    Column {
-                        Text(query, style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "${state.filteredResults.size} subtitles found",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
-                HorizontalDivider()
-            }
-
-            // ── Language filter chips ────────────────────────────────────────
-            val languages = state.results.map { it.languageCode }.distinct()
-            if (languages.isNotEmpty()) {
-                LazyRow(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item {
-                        FilterChip(
-                            selected = state.languageFilter == null,
-                            onClick = { viewModel.filterByLanguage(null) },
-                            label = { Text("All") }
-                        )
-                    }
-                    items(languages) { lang ->
-                        FilterChip(
-                            selected = state.languageFilter == lang,
-                            onClick = { viewModel.filterByLanguage(lang) },
-                            label = { Text(lang.uppercase()) }
-                        )
-                    }
+                Column {
+                    SubtyText(
+                        query,
+                        fontSize = 16,
+                        weight = FontWeight.ExtraBold,
+                        color = SubtyText1,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    SubtyText(
+                        "${state.filteredResults.size} subtitles found",
+                        fontSize = 10,
+                        color = SubtyText3,
+                        uppercase = true,
+                        letterSpacing = 0.04f,
+                    )
                 }
             }
+            SubtyDivider()
+        }
 
-            when {
-                state.isLoading -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    CircularProgressIndicator()
+        // ── Language filter bar ───────────────────────────────────────────────
+        val languages = state.results.map { it.languageCode }.distinct()
+        if (languages.isNotEmpty()) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SubtyBg),
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                item {
+                    SubtyLangChip(
+                        "All",
+                        selected = state.languageFilter == null,
+                        onClick = { viewModel.filterByLanguage(null) },
+                    )
                 }
-                state.error != null -> Box(Modifier.fillMaxSize().padding(16.dp), Alignment.Center) {
-                    Text(state.error!!, color = MaterialTheme.colorScheme.error)
+                items(languages) { lang ->
+                    SubtyLangChip(
+                        lang.uppercase(),
+                        selected = state.languageFilter == lang,
+                        onClick = { viewModel.filterByLanguage(lang) },
+                    )
                 }
-                state.filteredResults.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    Text("No subtitles found")
-                }
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(state.filteredResults, key = { it.fileId }) { result ->
-                        SubtitleResultCard(
-                            result = result,
-                            downloadState = state.downloadStates[result.fileId] ?: DownloadState.IDLE,
-                            downloadError = state.downloadErrors[result.fileId],
-                            onDownload = {
-                                viewModel.downloadAndSave(result.fileId, result.languageCode, result.fileName)
-                            },
-                            onTranslate = {
-                                onTranslate(result.fileId, result.fileName, result.languageCode)
-                            }
-                        )
-                    }
+            }
+            SubtyDivider()
+        }
+
+        // ── Content ───────────────────────────────────────────────────────────
+        when {
+            state.isLoading -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                CircularProgressIndicator(color = SubtyMocha, strokeWidth = 1.5.dp)
+            }
+
+            state.error != null -> Box(
+                Modifier.fillMaxSize().padding(24.dp), Alignment.Center
+            ) {
+                SubtyErrorBanner(state.error!!)
+            }
+
+            state.filteredResults.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                SubtyText("No subtitles found", color = SubtyText3)
+            }
+
+            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(state.filteredResults, key = { it.fileId }) { result ->
+                    SubtitleResultRow(
+                        result = result,
+                        downloadState = state.downloadStates[result.fileId] ?: DownloadState.IDLE,
+                        downloadError = state.downloadErrors[result.fileId],
+                        onDownload = {
+                            viewModel.downloadAndSave(result.fileId, result.languageCode, result.fileName)
+                        },
+                        onTranslate = {
+                            onTranslate(result.fileId, result.fileName, result.languageCode)
+                        },
+                    )
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SubtitleResultCard(
+fun SubtitleResultRow(
     result: SubtitleSearchResult,
     downloadState: DownloadState,
     downloadError: String?,
     onDownload: () -> Unit,
-    onTranslate: () -> Unit
+    onTranslate: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            // Language + badges
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(SubtyBg),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            // Language + HI badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = result.languageCode.uppercase(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                SubtyText(
+                    result.languageCode.uppercase(),
+                    fontSize = 11,
+                    weight = FontWeight.ExtraBold,
+                    color = SubtyMocha,
+                    letterSpacing = 0.1f,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (result.isHearingImpaired) {
-                        Icon(Icons.Default.Accessibility, "HI", modifier = Modifier.size(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .border(1.dp, SubtyBorderDim)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
+                            SubtyText("HI", fontSize = 8, weight = FontWeight.Bold, color = SubtyText3)
+                        }
                     }
                     if (result.isTrusted) {
-                        Icon(Icons.Default.VerifiedUser, "Trusted",
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary)
+                        Box(
+                            modifier = Modifier
+                                .border(1.dp, SubtyMocha)
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
+                            SubtyText("✓", fontSize = 8, weight = FontWeight.Bold, color = SubtyMocha)
+                        }
                     }
                 }
             }
 
-            Text(result.fileName, style = MaterialTheme.typography.bodySmall,
-                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // File name
+            SubtyText(
+                result.fileName,
+                fontSize = 12,
+                color = SubtyText2,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
 
-            // Stats row
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Icon(Icons.Default.Download, null, modifier = Modifier.size(12.dp))
-                    Text("${result.downloadCount}", style = MaterialTheme.typography.labelSmall)
-                }
+            // Stats
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                SubtyText(
+                    "↓ ${result.downloadCount}",
+                    fontSize = 10,
+                    color = SubtyText3,
+                )
                 result.rating?.let { r ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Icon(Icons.Default.Star, null, modifier = Modifier.size(12.dp))
-                        Text("${"%.1f".format(r)}", style = MaterialTheme.typography.labelSmall)
-                    }
+                    SubtyText(
+                        "★ ${"%.1f".format(r)}",
+                        fontSize = 10,
+                        color = SubtyText3,
+                    )
                 }
                 result.uploadedAt?.let {
-                    Text(it.take(10), style = MaterialTheme.typography.labelSmall)
+                    SubtyText(it.take(10), fontSize = 10, color = SubtyText3)
                 }
                 result.uploaderName?.let {
-                    Text("by $it", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    SubtyText(
+                        "by $it", fontSize = 10, color = SubtyText3,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
 
-            // ── Action buttons ───────────────────────────────────────────────
+            // Actions
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
             ) {
-                // Download button
-                OutlinedButton(
+                SubtyButton(
+                    text = when (downloadState) {
+                        DownloadState.DOWNLOADING -> "Saving…"
+                        DownloadState.DONE -> "Saved ✓"
+                        DownloadState.ERROR -> "Retry"
+                        else -> "Download"
+                    },
                     onClick = onDownload,
+                    style = SubtyButtonStyle.OUTLINE,
                     enabled = downloadState == DownloadState.IDLE || downloadState == DownloadState.ERROR,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    when (downloadState) {
-                        DownloadState.DOWNLOADING -> {
-                            CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
-                            Spacer(Modifier.width(6.dp))
-                            Text("Saving…")
-                        }
-                        DownloadState.DONE -> {
-                            Icon(Icons.Default.CheckCircle, null, Modifier.size(14.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Saved")
-                        }
-                        DownloadState.ERROR -> {
-                            Icon(Icons.Default.Error, null, Modifier.size(14.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Retry")
-                        }
-                        else -> {
-                            Icon(Icons.Default.Download, null, Modifier.size(14.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Download")
-                        }
-                    }
-                }
-
-                // Translate button
-                Button(
+                    loading = downloadState == DownloadState.DOWNLOADING,
+                    small = true,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width((-1).dp))
+                SubtyButton(
+                    text = "Translate",
                     onClick = onTranslate,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Translate, null, Modifier.size(14.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Translate")
-                }
+                    style = SubtyButtonStyle.MOCHA,
+                    small = true,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
-            // Download error message
             downloadError?.let { err ->
-                Text(err, style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error)
+                SubtyText("HTTP ${err}", fontSize = 10, color = SubtyError)
             }
         }
+        SubtyDivider()
     }
 }

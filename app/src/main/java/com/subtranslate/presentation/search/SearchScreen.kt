@@ -1,268 +1,310 @@
 package com.subtranslate.presentation.search
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.OPENSUBTITLES_SEARCH_LANGUAGES
 
 @Composable
 fun SearchScreen(
     onSearch: (String) -> Unit,
-    viewModel: SearchViewModel = hiltViewModel()
+    viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(SubtyBg)
+            .verticalScroll(rememberScrollState()),
     ) {
-        Text("Subty", style = MaterialTheme.typography.titleLarge)
+        // ── Page title ────────────────────────────────────────────────────────
+        SubtyPageTitle(
+            "Search",
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp),
+        )
+        SubtyLabel(
+            "Find subtitles by title or IMDB ID",
+            modifier = Modifier.padding(start = 24.dp, bottom = 20.dp),
+        )
 
-        // Search mode toggle
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SearchMode.values().forEach { mode ->
-                FilterChip(
-                    selected = state.searchMode == mode,
+        // ── Search mode tabs ──────────────────────────────────────────────────
+        Row(modifier = Modifier.padding(horizontal = 24.dp)) {
+            SearchMode.values().forEachIndexed { i, mode ->
+                val selected = state.searchMode == mode
+                SubtyChip(
+                    text = if (mode == SearchMode.TITLE) "Title" else "IMDB ID",
+                    selected = selected,
                     onClick = { viewModel.onSearchModeChange(mode) },
-                    label = { Text(if (mode == SearchMode.TITLE) "Title" else "IMDB ID") }
+                    modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
                 )
             }
         }
 
-        // Main search field with autocomplete (OpenSubtitles /features)
-        if (state.searchMode == SearchMode.TITLE) {
-            Column {
-                // Show selected poster as thumbnail inside the field row
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Spacer(Modifier.height(16.dp))
+
+        // ── Search field + autocomplete ───────────────────────────────────────
+        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            if (state.searchMode == SearchMode.TITLE) {
+                // Field row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, if (state.query.isNotEmpty()) SubtyMocha else SubtyBorderDim)
+                        .background(SubtyBg2)
+                        .padding(horizontal = 14.dp, vertical = 11.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     state.selectedPosterUrl?.let { url ->
                         AsyncImage(
                             model = url,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(MaterialTheme.shapes.small)
+                            modifier = Modifier.size(width = 24.dp, height = 36.dp),
                         )
+                        Spacer(Modifier.width(10.dp))
                     }
-                    OutlinedTextField(
+                    BasicTextField(
                         value = state.query,
                         onValueChange = viewModel::onQueryChange,
                         modifier = Modifier.weight(1f),
-                        label = { Text("Movie / Series name") },
-                        leadingIcon = { Icon(Icons.Default.Search, null) },
-                        trailingIcon = {
-                            if (state.suggestionsLoading) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            }
-                        },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = {
-                            viewModel.search()
-                            onSearch(state.query)
-                        })
+                            viewModel.search(); onSearch(state.query)
+                        }),
+                        textStyle = TextStyle(
+                            color = SubtyText1,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Normal,
+                        ),
+                        cursorBrush = SolidColor(SubtyMocha),
+                        decorationBox = { inner ->
+                            if (state.query.isEmpty()) {
+                                SubtyText("Movie / Series name…", color = SubtyText3, fontSize = 14)
+                            }
+                            inner()
+                        },
                     )
+                    Spacer(Modifier.width(8.dp))
+                    if (state.suggestionsLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 1.5.dp,
+                            color = SubtyMocha,
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = SubtyText3,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
 
-                // Autocomplete suggestions
+                // Autocomplete dropdown
                 if (state.showSuggestions && state.suggestions.isNotEmpty()) {
-                    Card(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 2.dp),
-                        elevation = CardDefaults.cardElevation(8.dp)
+                            .border(1.dp, SubtyBorder)
+                            .background(SubtyBg),
                     ) {
-                        Column {
-                            state.suggestions.forEach { result ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { viewModel.onSuggestionSelected(result) }
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    val title = result.attributes.title
-                                        ?: result.attributes.originalTitle ?: ""
-                                    val year = result.attributes.year?.toString() ?: ""
-                                    val isTv = result.type == "tv" ||
-                                        result.attributes.featureType?.lowercase() == "tvshow"
+                        state.suggestions.forEachIndexed { idx, result ->
+                            val title = result.attributes.title
+                                ?: result.attributes.originalTitle ?: ""
+                            val year  = result.attributes.year?.toString() ?: ""
+                            val isTv  = result.type == "tv" ||
+                                    result.attributes.featureType?.lowercase() == "tvshow"
 
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                    ) { viewModel.onSuggestionSelected(result) }
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(width = 32.dp, height = 48.dp)
+                                        .background(SubtyBg3),
+                                    contentAlignment = Alignment.Center,
+                                ) {
                                     result.attributes.imgUrl?.let { url ->
                                         AsyncImage(
                                             model = url,
                                             contentDescription = null,
                                             contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .size(width = 28.dp, height = 42.dp)
-                                                .clip(MaterialTheme.shapes.small)
+                                            modifier = Modifier.fillMaxSize(),
                                         )
-                                    } ?: Box(
-                                        modifier = Modifier.size(width = 28.dp, height = 42.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            title.take(1),
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            title,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            if (year.isNotEmpty()) {
-                                                Text(year, style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                            Text(
-                                                if (isTv) "Series" else "Movie",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                    }
+                                    } ?: SubtyText(
+                                        title.take(2).uppercase(),
+                                        fontSize = 10,
+                                        weight = FontWeight.Bold,
+                                        color = SubtyText3,
+                                    )
                                 }
-                                if (result != state.suggestions.last()) HorizontalDivider()
+                                Column(modifier = Modifier.weight(1f)) {
+                                    SubtyText(
+                                        title,
+                                        fontSize = 13,
+                                        weight = FontWeight.SemiBold,
+                                        color = SubtyText1,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    SubtyText(
+                                        buildString {
+                                            if (year.isNotEmpty()) { append(year); append(" · ") }
+                                            append(if (isTv) "Series" else "Movie")
+                                        },
+                                        fontSize = 11,
+                                        color = SubtyText3,
+                                    )
+                                }
                             }
+                            if (idx < state.suggestions.lastIndex) SubtyDividerDim()
                         }
                     }
                 }
 
-                // Show error if suggestions fetch failed
                 state.suggestionsError?.let { err ->
-                    Text(
-                        text = "Autocomplete error: $err",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                    Spacer(Modifier.height(4.dp))
+                    SubtyText("Autocomplete: $err", fontSize = 11, color = SubtyError)
+                }
+            } else {
+                SubtyTextField(
+                    value = state.imdbId,
+                    onValueChange = viewModel::onImdbIdChange,
+                    placeholder = "IMDB ID (e.g. 0133093)",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        // ── Season / Episode ──────────────────────────────────────────────────
+        if (state.seasonsCount > 0) {
+            Spacer(Modifier.height(16.dp))
+            SubtyLabel("Season", modifier = Modifier.padding(horizontal = 24.dp))
+            Spacer(Modifier.height(8.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                items(state.seasonsCount) { i ->
+                    val s = (i + 1).toString()
+                    SubtyChip(
+                        text = s, selected = state.season == s,
+                        onClick = { viewModel.onSeasonChange(s) },
+                        modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            SubtyLabel("Episode", modifier = Modifier.padding(horizontal = 24.dp))
+            Spacer(Modifier.height(8.dp))
+            val epCount = if (state.episodesCount in 1..50) state.episodesCount else 30
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                items(epCount) { i ->
+                    val e = (i + 1).toString()
+                    SubtyChip(
+                        text = e, selected = state.episode == e,
+                        onClick = { viewModel.onEpisodeChange(e) },
+                        modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
                     )
                 }
             }
         } else {
-            OutlinedTextField(
-                value = state.imdbId,
-                onValueChange = viewModel::onImdbIdChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("IMDB ID (e.g. 0133093)") },
-                singleLine = true
-            )
-        }
-
-        // Season / Episode
-        // Season / Episode
-        if (state.seasonsCount > 0) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Season", style = MaterialTheme.typography.labelSmall)
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(state.seasonsCount) { index ->
-                        val s = (index + 1).toString()
-                        FilterChip(
-                            selected = state.season == s,
-                            onClick = { viewModel.onSeasonChange(s) },
-                            label = { Text(s) }
-                        )
-                    }
-                }
-
-                Text("Episode", style = MaterialTheme.typography.labelSmall)
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // Use episodes_count as a guide, or default to a reasonable number
-                    val count = if (state.episodesCount > 0) {
-                        // If it's a huge number, it's probably total episodes across all seasons
-                        if (state.episodesCount > 50) 30 else state.episodesCount
-                    } else 30
-                    
-                    items(count) { index ->
-                        val e = (index + 1).toString()
-                        FilterChip(
-                            selected = state.episode == e,
-                            onClick = { viewModel.onEpisodeChange(e) },
-                            label = { Text(e) }
-                        )
-                    }
-                }
-            }
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+            Spacer(Modifier.height(16.dp))
+            Row(modifier = Modifier.padding(horizontal = 24.dp)) {
+                SubtyTextField(
                     value = state.season,
                     onValueChange = viewModel::onSeasonChange,
+                    placeholder = "Season",
                     modifier = Modifier.weight(1f),
-                    label = { Text("Season") },
-                    singleLine = true
                 )
-                OutlinedTextField(
+                Spacer(Modifier.width((-1).dp))
+                SubtyTextField(
                     value = state.episode,
                     onValueChange = viewModel::onEpisodeChange,
+                    placeholder = "Episode",
                     modifier = Modifier.weight(1f),
-                    label = { Text("Episode") },
-                    singleLine = true
                 )
             }
         }
 
-        // Language selection
-        Text("Languages", style = MaterialTheme.typography.labelMedium)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(OPENSUBTITLES_SEARCH_LANGUAGES) { (code, label) ->
-                FilterChip(
+        // ── Language chips ────────────────────────────────────────────────────
+        Spacer(Modifier.height(16.dp))
+        SubtyLabel("Languages", modifier = Modifier.padding(horizontal = 24.dp))
+        Spacer(Modifier.height(8.dp))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            items(OPENSUBTITLES_SEARCH_LANGUAGES) { (code, _) ->
+                val i = OPENSUBTITLES_SEARCH_LANGUAGES.indexOfFirst { it.first == code }
+                SubtyChip(
+                    text = code.uppercase(),
                     selected = code in state.selectedLanguages,
                     onClick = { viewModel.toggleLanguage(code) },
-                    label = { Text(label) }
+                    modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
                 )
             }
         }
 
-        Button(
+        // ── Search button ─────────────────────────────────────────────────────
+        Spacer(Modifier.height(24.dp))
+        SubtyButton(
+            text = "Search Subtitles",
             onClick = { viewModel.search(); onSearch(state.query) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isLoading && (state.query.isNotBlank() || state.imdbId.isNotBlank())
-        ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                Spacer(Modifier.width(8.dp))
-            }
-            Text("Search Subtitles")
-        }
+            style = SubtyButtonStyle.FILLED,
+            enabled = !state.isLoading && (state.query.isNotBlank() || state.imdbId.isNotBlank()),
+            loading = state.isLoading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+        )
 
         state.error?.let { err ->
-            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                Text(text = err, modifier = Modifier.padding(12.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer)
-            }
+            Spacer(Modifier.height(12.dp))
+            SubtyErrorBanner(err, modifier = Modifier.padding(horizontal = 24.dp))
         }
+
+        Spacer(Modifier.height(24.dp))
     }
 }

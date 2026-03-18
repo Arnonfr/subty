@@ -1,63 +1,66 @@
 package com.subtranslate.presentation.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
-// Warm mocha / amber palette matching preview design
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFB5926A),          // Mocha
-    onPrimary = Color(0xFF1A0E00),
-    primaryContainer = Color(0xFF3D2800),
-    onPrimaryContainer = Color(0xFFFFDDB8),
-    secondary = Color(0xFF9A8F86),         // Warm gray
-    onSecondary = Color(0xFF1A1210),
-    secondaryContainer = Color(0xFF2D2418),
-    onSecondaryContainer = Color(0xFFD6C8BC),
-    background = Color(0xFF0F0D0B),        // Near-black warm
-    surface = Color(0xFF1A1610),
-    surfaceVariant = Color(0xFF2D2920),
-    onBackground = Color(0xFFF5F0EB),      // Warm white
-    onSurface = Color(0xFFF5F0EB),
-    onSurfaceVariant = Color(0xFFB0A89F),
-    error = Color(0xFFFFB4AB),
-    errorContainer = Color(0xFF93000A),
-    onError = Color(0xFF690005),
-    onErrorContainer = Color(0xFFFFDAD6),
+// ── Design tokens ─────────────────────────────────────────────────────────────
+val SubtyBlack     = Color(0xFF0A0908)
+val SubtyWhite     = Color(0xFFF5F0EB)
+val SubtyMocha     = Color(0xFFB5926A)
+val SubtyMochaDark = Color(0xFF7A5C3A)
+val SubtyBg        = Color(0xFF0A0908)
+val SubtyBg2       = Color(0xFF1A1612)
+val SubtyBg3       = Color(0xFF241E18)
+val SubtyBorder    = Color(0xFFF5F0EB)   // 1px border in dark mode
+val SubtyBorderDim = Color(0xFF3A342E)   // subtle separator
+val SubtyText1     = Color(0xFFF5F0EB)
+val SubtyText2     = Color(0xFFC8BFB5)
+val SubtyText3     = Color(0xFF7A6E65)
+val SubtyError     = Color(0xFFFF6B6B)
+
+private val ColorScheme = darkColorScheme(
+    primary             = SubtyMocha,
+    onPrimary           = SubtyBlack,
+    primaryContainer    = Color(0xFF3D2800),
+    onPrimaryContainer  = SubtyWhite,
+    secondary           = SubtyText2,
+    onSecondary         = SubtyBlack,
+    background          = SubtyBg,
+    surface             = SubtyBg2,
+    surfaceVariant      = SubtyBg3,
+    onBackground        = SubtyText1,
+    onSurface           = SubtyText1,
+    onSurfaceVariant    = SubtyText3,
+    outline             = SubtyBorder,
+    error               = SubtyError,
+    onError             = SubtyBlack,
+    errorContainer      = Color(0xFF3D0000),
+    onErrorContainer    = SubtyError,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF8B6340),           // Darker mocha
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFFFDDB8),
-    onPrimaryContainer = Color(0xFF2E1600),
-    secondary = Color(0xFF6E5E54),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFF4DDD1),
-    onSecondaryContainer = Color(0xFF271914),
-    background = Color(0xFFFFF8F3),        // Warm white
-    surface = Color(0xFFFFF8F3),
-    surfaceVariant = Color(0xFFF0E6DA),
-    onBackground = Color(0xFF1A0E00),
-    onSurface = Color(0xFF1A0E00),
-    onSurfaceVariant = Color(0xFF52443B),
-    error = Color(0xFFBA1A1A),
-    errorContainer = Color(0xFFFFDAD6),
-    onError = Color(0xFFFFFFFF),
-    onErrorContainer = Color(0xFF410002),
+// Zero border radius everywhere — Swiss/Bauhaus aesthetic
+private val Shapes = Shapes(
+    extraSmall = RoundedCornerShape(0.dp),
+    small      = RoundedCornerShape(0.dp),
+    medium     = RoundedCornerShape(0.dp),
+    large      = RoundedCornerShape(0.dp),
+    extraLarge = RoundedCornerShape(0.dp),
 )
 
 @Composable
 fun SubTranslateTheme(
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = true,   // always dark — matches design
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
+        colorScheme = ColorScheme,
+        shapes      = Shapes,
+        typography  = Typography,
+        content     = content,
     )
 }

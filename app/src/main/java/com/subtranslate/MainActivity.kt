@@ -4,34 +4,35 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.subtranslate.presentation.navigation.NavGraph
 import com.subtranslate.presentation.navigation.Screen
-import com.subtranslate.presentation.theme.SubTranslateTheme
+import com.subtranslate.presentation.theme.*
 import dagger.hilt.android.AndroidEntryPoint
 
-private data class BottomNavItem(
-    val screen: Screen,
-    val label: String,
-    val icon: ImageVector
-)
+private data class NavItem(val screen: Screen, val label: String, val icon: ImageVector)
 
-private val BOTTOM_NAV_ITEMS = listOf(
-    BottomNavItem(Screen.Search, "Search", Icons.Default.Search),
-    BottomNavItem(Screen.History, "History", Icons.Default.History),
-    BottomNavItem(Screen.Settings, "Settings", Icons.Default.Settings),
+private val NAV_ITEMS = listOf(
+    NavItem(Screen.Settings, "Settings", Icons.Default.Settings),
+    NavItem(Screen.History,  "History",  Icons.Default.History),
+    NavItem(Screen.Search,   "Search",   Icons.Default.Search),
 )
 
 @AndroidEntryPoint
@@ -41,22 +42,44 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SubTranslateTheme(darkTheme = isSystemInDarkTheme()) {
+            SubTranslateTheme {
                 val navController = rememberNavController()
-                val backStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = backStackEntry?.destination?.route
+                val backStack by navController.currentBackStackEntryAsState()
+                val currentRoute = backStack?.destination?.route
+                val showBottomBar = NAV_ITEMS.any { it.screen.route == currentRoute }
 
-                // Only show bottom bar on top-level screens
-                val showBottomBar = BOTTOM_NAV_ITEMS.any { it.screen.route == currentRoute }
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(SubtyBg)
+                        .windowInsetsPadding(WindowInsets.systemBars),
+                ) {
+                    NavGraph(
+                        navController = navController,
+                        modifier = Modifier.weight(1f),
+                    )
 
-                Scaffold(
-                    bottomBar = {
-                        if (showBottomBar) {
-                            NavigationBar {
-                                BOTTOM_NAV_ITEMS.forEach { item ->
-                                    NavigationBarItem(
-                                        selected = currentRoute == item.screen.route,
-                                        onClick = {
+                    if (showBottomBar) {
+                        // Top border of nav bar
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(SubtyBorder))
+                        // Nav items
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .background(SubtyBg),
+                        ) {
+                            NAV_ITEMS.forEachIndexed { i, item ->
+                                val selected = currentRoute == item.screen.route
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                        .background(if (selected) SubtyBorder else SubtyBg)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) {
                                             navController.navigate(item.screen.route) {
                                                 popUpTo(navController.graph.findStartDestination().id) {
                                                     saveState = true
@@ -65,18 +88,30 @@ class MainActivity : ComponentActivity() {
                                                 restoreState = true
                                             }
                                         },
-                                        icon = { Icon(item.icon, item.label) },
-                                        label = { Text(item.label) }
-                                    )
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        Icon(
+                                            imageVector = item.icon,
+                                            contentDescription = item.label,
+                                            tint = if (selected) SubtyBlack else SubtyText3,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                        SubtyLabel(
+                                            item.label,
+                                            color = if (selected) SubtyBlack else SubtyText3,
+                                        )
+                                    }
+                                }
+                                if (i < NAV_ITEMS.lastIndex) {
+                                    Box(Modifier.width(1.dp).fillMaxHeight().background(SubtyBorder))
                                 }
                             }
                         }
                     }
-                ) { innerPadding ->
-                    NavGraph(
-                        navController = navController,
-                        modifier = Modifier.padding(innerPadding)
-                    )
                 }
             }
         }

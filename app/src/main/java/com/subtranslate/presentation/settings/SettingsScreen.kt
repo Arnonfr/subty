@@ -1,25 +1,35 @@
 package com.subtranslate.presentation.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 private val MODELS = listOf(
-    "google" to "Google Translate",
+    "google"          to "Google Translate",
     "gemini-1.5-flash" to "Gemini 1.5 Flash",
-    "gemini-2.0-flash" to "Gemini 2.0 Flash"
+    "gemini-2.0-flash" to "Gemini 2.0 Flash",
 )
 
 private val FORMATS = listOf("srt" to "SRT", "vtt" to "VTT", "ass" to "ASS")
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
@@ -27,139 +37,159 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(SubtyBg)
+            .verticalScroll(rememberScrollState()),
     ) {
-        Text("Settings", style = MaterialTheme.typography.titleLarge)
+        SubtyPageTitle(
+            "Settings",
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp),
+        )
 
-        // ── Display ──────────────────────────────────────────────────────────
-        Card {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Display", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(4.dp))
-                ToggleRow(
-                    label = "Show movie posters",
-                    description = "Display cover art in search results",
-                    checked = state.showPosters,
-                    onCheckedChange = viewModel::onShowPostersChange
-                )
-                HorizontalDivider()
-                ToggleRow(
-                    label = "Compact results",
-                    description = "Smaller cards, more results on screen",
-                    checked = state.compactResults,
-                    onCheckedChange = viewModel::onCompactResultsChange
-                )
-            }
-        }
+        Spacer(Modifier.height(16.dp))
+
+        // ── Display ───────────────────────────────────────────────────────────
+        SubtyLabel(
+            "Display",
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        )
+        SubtyDivider()
+        SubtyToggleRow(
+            label = "Show movie posters",
+            description = "Display cover art in search results",
+            checked = state.showPosters,
+            onCheckedChange = viewModel::onShowPostersChange,
+        )
+        SubtyDividerDim()
+        SubtyToggleRow(
+            label = "Compact results",
+            description = "Smaller cards, more results on screen",
+            checked = state.compactResults,
+            onCheckedChange = viewModel::onCompactResultsChange,
+        )
+        SubtyDivider()
+
+        Spacer(Modifier.height(16.dp))
 
         // ── Translation ───────────────────────────────────────────────────────
-        Card {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Translation", style = MaterialTheme.typography.titleMedium)
+        SubtyLabel(
+            "Translation",
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        )
+        SubtyDivider()
+        SettingsDropdown(
+            label = "Default target language",
+            selected = state.defaultTargetLang,
+            options = GOOGLE_TRANSLATE_LANGUAGES,
+            onSelect = viewModel::onTargetLangChange,
+        )
+        SubtyDividerDim()
+        SettingsDropdown(
+            label = "Model",
+            selected = state.translationModel,
+            options = MODELS,
+            onSelect = viewModel::onModelChange,
+        )
+        SubtyDividerDim()
+        SubtyToggleRow(
+            label = "Auto-translate on download",
+            description = "Start translation immediately after downloading",
+            checked = state.autoTranslate,
+            onCheckedChange = viewModel::onAutoTranslateChange,
+        )
+        SubtyDivider()
 
-                SimpleDropdown(
-                    label = "Default target language",
-                    selected = state.defaultTargetLang,
-                    options = GOOGLE_TRANSLATE_LANGUAGES,
-                    onSelect = viewModel::onTargetLangChange
-                )
+        Spacer(Modifier.height(16.dp))
 
-                SimpleDropdown(
-                    label = "Model",
-                    selected = state.translationModel,
-                    options = MODELS,
-                    onSelect = viewModel::onModelChange
-                )
+        // ── Save ──────────────────────────────────────────────────────────────
+        SubtyLabel(
+            "Save",
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        )
+        SubtyDivider()
+        SettingsDropdown(
+            label = "Preferred format",
+            selected = state.preferredSaveFormat,
+            options = FORMATS,
+            onSelect = viewModel::onSaveFormatChange,
+        )
+        SubtyDividerDim()
+        SubtyToggleRow(
+            label = "Auto-save translated files",
+            description = "Save to Downloads automatically when done",
+            checked = state.autoSave,
+            onCheckedChange = viewModel::onAutoSaveChange,
+        )
+        SubtyDivider()
 
-                ToggleRow(
-                    label = "Auto-translate on download",
-                    description = "Start translation immediately after downloading",
-                    checked = state.autoTranslate,
-                    onCheckedChange = viewModel::onAutoTranslateChange
-                )
-            }
-        }
+        Spacer(Modifier.height(24.dp))
 
-        // ── Save ─────────────────────────────────────────────────────────────
-        Card {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Save", style = MaterialTheme.typography.titleMedium)
-
-                SimpleDropdown(
-                    label = "Preferred format",
-                    selected = state.preferredSaveFormat,
-                    options = FORMATS,
-                    onSelect = viewModel::onSaveFormatChange
-                )
-
-                ToggleRow(
-                    label = "Auto-save translated files",
-                    description = "Save to Downloads automatically when done",
-                    checked = state.autoSave,
-                    onCheckedChange = viewModel::onAutoSaveChange
-                )
-            }
-        }
-
-        Button(
+        SubtyButton(
+            text = "Save",
             onClick = viewModel::save,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Save")
-        }
+            style = SubtyButtonStyle.FILLED,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+        )
 
         if (state.saved) {
-            Text("Saved!", color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(12.dp))
+            SubtySuccessBanner(
+                "Settings saved",
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
         }
+
+        Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun ToggleRow(
-    label: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-            Text(label, style = MaterialTheme.typography.bodyMedium)
-            Text(description, style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SimpleDropdown(
+private fun SettingsDropdown(
     label: String,
     selected: String,
     options: List<Pair<String, String>>,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = options.find { it.first == selected }?.second ?: selected,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+    Box {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { expanded = true }
+                .padding(horizontal = 24.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                SubtyLabel(label)
+                Spacer(Modifier.height(4.dp))
+                SubtyText(
+                    options.find { it.first == selected }?.second ?: selected,
+                    fontSize = 14,
+                    weight = FontWeight.Medium,
+                    color = SubtyText1,
+                )
+            }
+            Icon(
+                Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = SubtyText3,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
             options.forEach { (code, name) ->
-                DropdownMenuItem(text = { Text(name) }, onClick = { onSelect(code); expanded = false })
+                DropdownMenuItem(
+                    text = { SubtyText(name, fontSize = 13) },
+                    onClick = { onSelect(code); expanded = false },
+                )
             }
         }
     }

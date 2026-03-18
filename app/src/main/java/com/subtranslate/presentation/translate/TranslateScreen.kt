@@ -2,351 +2,324 @@ package com.subtranslate.presentation.translate
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.domain.model.TranslationStatus
+import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
-// "google" = Google Translate (default, free). Gemini models start with "gemini-".
 private const val MODEL_GOOGLE = "google"
 private val GEMINI_MODELS = listOf(
     "gemini-1.5-flash" to "Gemini 1.5 Flash",
-    "gemini-2.0-flash" to "Gemini 2.0 Flash"
+    "gemini-2.0-flash" to "Gemini 2.0 Flash",
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TranslateScreen(
     fileId: Int,
     fileName: String,
     languageCode: String,
     onBack: () -> Unit,
-    viewModel: TranslateViewModel = hiltViewModel()
+    viewModel: TranslateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val progress = state.progress
 
-    // Load the subtitle and auto-set source language once
     LaunchedEffect(fileId, languageCode) {
         viewModel.downloadAndLoad(fileId, languageCode)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Translate") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } }
-            )
-        },
-        floatingActionButton = {
-            if (progress.status == TranslationStatus.COMPLETE && state.translatedFile != null) {
-                FloatingActionButton(onClick = viewModel::save) {
-                    Icon(Icons.Default.Save, "Save")
-                }
-            }
-        }
-    ) { padding ->
-        // Show loading spinner while subtitle file is being downloaded
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SubtyBg),
+    ) {
+        SubtyTopBar(title = "Translate", onBack = onBack)
+
         if (state.isLoadingFile) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircularProgressIndicator()
-                    Text("Loading subtitle…", style = MaterialTheme.typography.bodyMedium)
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CircularProgressIndicator(color = SubtyMocha, strokeWidth = 1.5.dp)
+                    SubtyText("Loading subtitle…", color = SubtyText3)
                 }
             }
-            return@Scaffold
-        }
-
-        LazyColumn(
-            modifier = Modifier.padding(padding).fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        } else LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 32.dp),
         ) {
+            // ── Language + Engine selector ────────────────────────────────────
             item {
-                // Unified Premium Engine & Language Selector Card
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = if (state.selectedModel.startsWith("gemini"))
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-                    else
-                        MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp),
-                    shadowElevation = 2.dp
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(width = 0.dp, color = SubtyBg) // just for structure
+                        .background(SubtyBg2)
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        // Language Selection Row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                    // Source / Target row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Source
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.End,
                         ) {
-                            // Source Selector
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    "ממקור",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                LanguageDropdownMinimal(
-                                    selected = state.sourceLang,
-                                    options = GOOGLE_TRANSLATE_LANGUAGES,
-                                    onSelect = viewModel::onSourceLangChange
-                                )
-                            }
-
-                            // Elegant Glass Divider / Arrow
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            // Target Selector
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    "ליעד",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                LanguageDropdownMinimal(
-                                    selected = state.targetLang,
-                                    options = GOOGLE_TRANSLATE_LANGUAGES,
-                                    onSelect = viewModel::onTargetLangChange
-                                )
-                            }
-                        }
-
-                        Spacer(Modifier.height(24.dp)) // Separator for engine selection
-
-                        // Engine Selector
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            val useGemini = state.selectedModel.startsWith("gemini")
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    if (useGemini) "Gemini AI" else "Google Translate",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    if (useGemini) "תרגום חכם מבוסס הקשר" else "תרגום מהיר וחינמי",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = useGemini,
-                                onCheckedChange = { on ->
-                                    viewModel.onModelChange(if (on) "gemini-1.5-flash" else MODEL_GOOGLE)
-                                }
+                            SubtyLabel("ממקור", color = SubtyMocha)
+                            Spacer(Modifier.height(6.dp))
+                            LanguageSelector(
+                                selected = state.sourceLang,
+                                options = GOOGLE_TRANSLATE_LANGUAGES,
+                                onSelect = viewModel::onSourceLangChange,
                             )
                         }
 
-                        // Gemini Model Options
-                        val isGemini = state.selectedModel.startsWith("gemini")
-                        AnimatedVisibility(visible = isGemini) {
-                            Column {
-                                Spacer(Modifier.height(12.dp))
-                                var geminiExpanded by remember { mutableStateOf(false) }
-                                ExposedDropdownMenuBox(
-                                    expanded = geminiExpanded,
-                                    onExpandedChange = { geminiExpanded = it },
-                                    modifier = Modifier.fillMaxWidth()
+                        // Arrow
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp)
+                                .size(32.dp)
+                                .border(1.dp, SubtyBorderDim)
+                                .background(SubtyBg3),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
+                        }
+
+                        // Target
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.Start,
+                        ) {
+                            SubtyLabel("ליעד", color = SubtyMocha)
+                            Spacer(Modifier.height(6.dp))
+                            LanguageSelector(
+                                selected = state.targetLang,
+                                options = GOOGLE_TRANSLATE_LANGUAGES,
+                                onSelect = viewModel::onTargetLangChange,
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+                    SubtyDividerDim()
+                    Spacer(Modifier.height(20.dp))
+
+                    // Engine row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        val useGemini = state.selectedModel.startsWith("gemini")
+                        Column(modifier = Modifier.weight(1f)) {
+                            SubtyText(
+                                if (useGemini) "Gemini AI" else "Google Translate",
+                                fontSize = 13,
+                                weight = FontWeight.Bold,
+                                color = SubtyText1,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            SubtyText(
+                                if (useGemini) "תרגום חכם מבוסס הקשר" else "תרגום מהיר וחינמי",
+                                fontSize = 11,
+                                color = SubtyText3,
+                            )
+                        }
+                        SubtySwitch(
+                            checked = useGemini,
+                            onCheckedChange = { on ->
+                                viewModel.onModelChange(if (on) "gemini-1.5-flash" else MODEL_GOOGLE)
+                            },
+                        )
+                    }
+
+                    // Gemini model selector
+                    AnimatedVisibility(visible = state.selectedModel.startsWith("gemini")) {
+                        var expanded by remember { mutableStateOf(false) }
+                        Column {
+                            Spacer(Modifier.height(12.dp))
+                            Box {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(1.dp, SubtyBorderDim)
+                                        .background(SubtyBg3)
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null,
+                                        ) { expanded = true }
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
-                                    OutlinedTextField(
-                                        value = GEMINI_MODELS.find { it.first == state.selectedModel }?.second ?: "Gemini 1.5 Flash",
-                                        onValueChange = {},
-                                        readOnly = true,
-                                        shape = RoundedCornerShape(16.dp),
-                                        textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = geminiExpanded) },
-                                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                                    SubtyText(
+                                        GEMINI_MODELS.find { it.first == state.selectedModel }?.second
+                                            ?: "Gemini 1.5 Flash",
+                                        fontSize = 13,
+                                        color = SubtyText1,
                                     )
-                                    ExposedDropdownMenu(
-                                        expanded = geminiExpanded,
-                                        onDismissRequest = { geminiExpanded = false }
-                                    ) {
-                                        GEMINI_MODELS.forEach { (id, label) ->
-                                            DropdownMenuItem(
-                                                text = { Text(label, style = MaterialTheme.typography.bodySmall) },
-                                                onClick = {
-                                                    viewModel.onModelChange(id)
-                                                    geminiExpanded = false
-                                                }
-                                            )
-                                        }
+                                    Icon(
+                                        Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        tint = SubtyText3,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false },
+                                ) {
+                                    GEMINI_MODELS.forEach { (id, label) ->
+                                        DropdownMenuItem(
+                                            text = { SubtyText(label, fontSize = 13) },
+                                            onClick = { viewModel.onModelChange(id); expanded = false },
+                                        )
                                     }
                                 }
                             }
                         }
                     }
                 }
+                SubtyDivider()
             }
 
+            // ── Start button ──────────────────────────────────────────────────
             item {
-                // Start / Action Button (Premium Pulse/Gradient)
                 val isTranslating = progress.status == TranslationStatus.TRANSLATING
-                
-                Button(
+                SubtyButton(
+                    text = when {
+                        isTranslating -> "מתרגם כרגע…"
+                        state.translatedFile != null -> "תרגם מחדש"
+                        else -> "התחל תרגום"
+                    },
                     onClick = {
                         val file = viewModel.pendingFile
-                        if (file != null) {
-                            viewModel.startTranslation(file)
-                        }
+                        if (file != null) viewModel.startTranslation(file)
                     },
+                    style = SubtyButtonStyle.FILLED,
+                    enabled = !isTranslating && viewModel.pendingFile != null,
+                    loading = isTranslating,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(64.dp)
-                        .padding(horizontal = 4.dp),
-                    enabled = !isTranslating && (viewModel.pendingFile != null),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isTranslating) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text("מתרגם כרגע...", fontWeight = FontWeight.Bold)
-                        } else {
-                            Icon(
-                                if (state.translatedFile != null) Icons.Default.Refresh else Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Text(
-                                if (state.translatedFile != null) "תרגם מחדש" else "התחל תרגום",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-                    }
-                }
+                        .padding(24.dp),
+                )
             }
 
+            // ── Progress bar ──────────────────────────────────────────────────
             if (progress.status == TranslationStatus.TRANSLATING) {
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        LinearProgressIndicator(
-                            progress = { progress.progressFraction },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Text(
-                            text = "Translating... ${(progress.progressFraction * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelSmall
+                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                        SubtyProgressBar(progress = progress.progressFraction)
+                        Spacer(Modifier.height(6.dp))
+                        SubtyText(
+                            "${(progress.progressFraction * 100).toInt()}% translated",
+                            fontSize = 10,
+                            color = SubtyText3,
+                            uppercase = true,
+                            letterSpacing = 0.06f,
                         )
                     }
                 }
             }
 
+            // ── Error ─────────────────────────────────────────────────────────
             progress.errorMessage?.let { err ->
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = err,
-                            modifier = Modifier.padding(12.dp),
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    SubtyErrorBanner(
+                        err,
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
                 }
             }
 
-            // Saved confirmation
+            // ── Saved path ────────────────────────────────────────────────────
             state.savedPath?.let { path ->
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Saved to: $path", Modifier.padding(12.dp))
-                    }
+                    SubtySuccessBanner(
+                        "Saved: $path",
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
                 }
             }
 
-            // Live translated preview
+            // ── Save FAB-equivalent ───────────────────────────────────────────
+            if (progress.status == TranslationStatus.COMPLETE && state.translatedFile != null) {
+                item {
+                    SubtyButton(
+                        text = "Save",
+                        onClick = viewModel::save,
+                        style = SubtyButtonStyle.MOCHA,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
+                    )
+                }
+            }
+
+            // ── Translated preview ────────────────────────────────────────────
             if (state.translatedFile != null) {
                 item {
-                    Column {
-                        HorizontalDivider()
-                        Spacer(Modifier.height(8.dp))
-                        Text("Translated preview", style = MaterialTheme.typography.titleMedium)
-                    }
+                    Spacer(Modifier.height(8.dp))
+                    SubtyDivider()
+                    SubtyLabel(
+                        "Translated preview",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    )
                 }
 
                 items(state.translatedFile!!.entries.take(50)) { entry ->
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
+                        SubtyText(
                             entry.startTimeRaw,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.width(80.dp)
+                            fontSize = 10,
+                            weight = FontWeight.Bold,
+                            color = SubtyMocha,
+                            modifier = Modifier.width(52.dp),
                         )
-                        Text(
+                        SubtyText(
                             entry.text,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f)
+                            fontSize = 13,
+                            color = SubtyText1,
+                            modifier = Modifier.weight(1f),
                         )
                     }
+                    SubtyDividerDim()
                 }
 
                 if (state.translatedFile!!.entries.size > 50) {
                     item {
-                        Text(
+                        SubtyText(
                             "… and ${state.translatedFile!!.entries.size - 50} more lines",
-                            style = MaterialTheme.typography.labelSmall
+                            fontSize = 10,
+                            color = SubtyText3,
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
                         )
                     }
                 }
@@ -357,47 +330,46 @@ fun TranslateScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LanguageDropdownMinimal(
+fun LanguageSelector(
     selected: String,
     options: List<Pair<String, String>>,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        Surface(
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
-            modifier = Modifier.height(44.dp).padding(horizontal = 4.dp)
+        Row(
+            modifier = Modifier
+                .border(1.dp, SubtyBorderDim)
+                .background(SubtyBg3)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Row(
-                Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = options.find { it.first == selected }?.second ?: selected,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(4.dp))
-                Icon(
-                    Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
+            SubtyText(
+                options.find { it.first == selected }?.second ?: selected,
+                fontSize = 13,
+                weight = FontWeight.Bold,
+                color = SubtyText1,
+            )
+            Icon(
+                Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = SubtyText3,
+                modifier = Modifier.size(16.dp),
+            )
         }
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
         ) {
             options.forEach { (code, name) ->
                 DropdownMenuItem(
-                    text = { Text(name, style = MaterialTheme.typography.bodyMedium) },
-                    onClick = { onSelect(code); expanded = false }
+                    text = { SubtyText(name, fontSize = 13) },
+                    onClick = { onSelect(code); expanded = false },
                 )
             }
         }
