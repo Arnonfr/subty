@@ -74,7 +74,7 @@ class ResultsViewModel @Inject constructor(
         viewModelScope.launch {
             val fileResult = downloadUseCase(fileId, languageCode)
             val file = fileResult.getOrElse {
-                setDownloadState(fileId, DownloadState.ERROR, it.message)
+                setDownloadState(fileId, DownloadState.ERROR, friendlyError(it))
                 return@launch
             }
             val ext = file.format.name.lowercase()
@@ -86,6 +86,16 @@ class ResultsViewModel @Inject constructor(
                 setDownloadState(fileId, DownloadState.ERROR, saveResult.exceptionOrNull()?.message)
             }
         }
+    }
+
+    private fun friendlyError(e: Throwable): String = when {
+        e.message?.contains("503") == true ->
+            "Download quota exceeded (5/day on free plan). Try again in 24 hours."
+        e.message?.contains("401") == true || e.message?.contains("403") == true ->
+            "API key error. Contact app support."
+        e.message?.contains("429") == true ->
+            "Too many requests. Please wait a moment and try again."
+        else -> e.message ?: "Download failed"
     }
 
     private fun setDownloadState(fileId: Int, state: DownloadState, error: String? = null) {

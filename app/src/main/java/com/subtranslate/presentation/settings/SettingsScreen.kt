@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
@@ -100,43 +99,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     description = "Save to Downloads automatically when done",
                     checked = state.autoSave,
                     onCheckedChange = viewModel::onAutoSaveChange
-                )
-            }
-        }
-
-        // ── API Keys ─────────────────────────────────────────────────────────────
-        Card {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("API Keys", style = MaterialTheme.typography.titleMedium)
-                
-                OutlinedTextField(
-                    value = state.geminiApiKey,
-                    onValueChange = viewModel::onGeminiApiKeyChange,
-                    label = { Text("Gemini API Key") },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
-                    placeholder = { Text("Enter your Gemini API key") }
-                )
-                Text(
-                    "Used for AI translation. Get one at Google AI Studio.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = state.openSubtitlesApiKey,
-                    onValueChange = viewModel::onOpenSubtitlesApiKeyChange,
-                    label = { Text("OpenSubtitles Api-Key") },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
-                    placeholder = { Text("Enter your OpenSubtitles Api-Key") }
-                )
-                Text(
-                    "Used for searching and downloading subtitles.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

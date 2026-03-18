@@ -1,6 +1,7 @@
 package com.subtranslate.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,8 +14,8 @@ import com.subtranslate.presentation.settings.SettingsScreen
 import com.subtranslate.presentation.translate.TranslateScreen
 
 @Composable
-fun NavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = Screen.Search.route) {
+fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
+    NavHost(navController = navController, startDestination = Screen.Search.route, modifier = modifier) {
 
         composable(Screen.Search.route) {
             SearchScreen(

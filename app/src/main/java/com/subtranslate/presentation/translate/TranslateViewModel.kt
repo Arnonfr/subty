@@ -67,10 +67,18 @@ class TranslateViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoadingFile = false)
             result.getOrNull()?.let { loadSubtitle(it) }
                 ?: run {
+                    val err = result.exceptionOrNull()
+                    val msg = when {
+                        err?.message?.contains("503") == true ->
+                            "Download quota exceeded (5/day on free plan). Try again in 24 hours."
+                        err?.message?.contains("401") == true || err?.message?.contains("403") == true ->
+                            "API key error. Contact app support."
+                        else -> err?.message ?: "Download failed"
+                    }
                     _uiState.value = _uiState.value.copy(
                         progress = _uiState.value.progress.copy(
                             status = com.subtranslate.domain.model.TranslationStatus.ERROR,
-                            errorMessage = result.exceptionOrNull()?.message ?: "Download failed"
+                            errorMessage = msg
                         )
                     )
                 }
