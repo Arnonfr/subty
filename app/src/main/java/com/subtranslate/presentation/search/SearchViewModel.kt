@@ -92,12 +92,13 @@ class SearchViewModel @Inject constructor(
                     )
                 }
                 .onFailure { throwable ->
-                    Log.e("SearchViewModel", "Suggestions fetch failed", throwable)
+                    Log.e("SearchViewModel", "Suggestions fetch failed: ${throwable.message}")
+                    // Silently collapse — never show parse/network errors to the user
                     _uiState.value = _uiState.value.copy(
                         suggestions = emptyList(),
                         showSuggestions = false,
                         suggestionsLoading = false,
-                        suggestionsError = throwable.message ?: "Failed to load suggestions"
+                        suggestionsError = null,
                     )
                 }
         }

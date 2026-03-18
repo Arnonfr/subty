@@ -71,7 +71,10 @@ class ResultsViewModel @Inject constructor(
                         imdbId = imdbIdStr,
                         season = season,
                         episode = episode,
-                        languages = languages,
+                        // SubDL requires uppercase language codes ("EN,HE" not "en,he")
+                        languages = languages?.uppercase(),
+                        // Pass content type so SubDL can narrow results to movie vs tv
+                        type = searchSession.contentType,
                     )
                 } catch (_: Exception) { emptyList() }
             }

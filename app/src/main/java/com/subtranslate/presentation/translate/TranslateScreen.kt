@@ -17,7 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.domain.model.TranslationStatus
@@ -76,49 +78,51 @@ fun TranslateScreen(
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
-                    // Source / Target row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        // Source
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.End,
+                    // Source / Target row — forced LTR so layout never flips on RTL devices
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            SubtyLabel("SOURCE", color = SubtyMocha)
-                            Spacer(Modifier.height(6.dp))
-                            LanguageSelector(
-                                selected = state.sourceLang,
-                                options = GOOGLE_TRANSLATE_LANGUAGES,
-                                onSelect = viewModel::onSourceLangChange,
-                            )
-                        }
+                            // Source (always left)
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.Start,
+                            ) {
+                                SubtyLabel("SOURCE", color = SubtyMocha)
+                                Spacer(Modifier.height(6.dp))
+                                LanguageSelector(
+                                    selected = state.sourceLang,
+                                    options = GOOGLE_TRANSLATE_LANGUAGES,
+                                    onSelect = viewModel::onSourceLangChange,
+                                )
+                            }
 
-                        // Arrow
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 8.dp)
-                                .size(32.dp)
-                                .border(1.dp, SubtyBorderDim)
-                                .background(SubtyBg3),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
-                        }
+                            // Arrow
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 8.dp)
+                                    .size(32.dp)
+                                    .border(1.dp, SubtyBorderDim)
+                                    .background(SubtyBg3),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
+                            }
 
-                        // Target
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.Start,
-                        ) {
-                            SubtyLabel("TARGET", color = SubtyMocha)
-                            Spacer(Modifier.height(6.dp))
-                            LanguageSelector(
-                                selected = state.targetLang,
-                                options = GOOGLE_TRANSLATE_LANGUAGES,
-                                onSelect = viewModel::onTargetLangChange,
-                            )
+                            // Target (always right)
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.End,
+                            ) {
+                                SubtyLabel("TARGET", color = SubtyMocha)
+                                Spacer(Modifier.height(6.dp))
+                                LanguageSelector(
+                                    selected = state.targetLang,
+                                    options = GOOGLE_TRANSLATE_LANGUAGES,
+                                    onSelect = viewModel::onTargetLangChange,
+                                )
+                            }
                         }
                     }
 

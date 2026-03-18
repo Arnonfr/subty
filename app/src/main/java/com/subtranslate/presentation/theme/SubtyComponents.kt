@@ -243,10 +243,10 @@ fun SubtyChip(
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 18.dp, vertical = 11.dp),
+            .padding(horizontal = 22.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
-        SubtyText(text, fontSize = 12, weight = FontWeight.Bold,
+        SubtyText(text, fontSize = 13, weight = FontWeight.Bold,
             letterSpacing = 0.06f, uppercase = true, color = fg)
     }
 }
@@ -266,20 +266,20 @@ fun SubtyLangChip(
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 20.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         SubtyText(
             text,
-            fontSize = 9,
+            fontSize = 11,
             weight = FontWeight.Bold,
-            letterSpacing = 0.1f,
+            letterSpacing = 0.08f,
             uppercase = true,
             color = if (selected) SubtyText1 else SubtyText3,
         )
         if (selected) {
-            Spacer(Modifier.height(3.dp))
-            Box(Modifier.height(2.dp).width(24.dp).background(SubtyMocha))
+            Spacer(Modifier.height(4.dp))
+            Box(Modifier.height(2.dp).width(28.dp).background(SubtyMocha))
         }
     }
 }
