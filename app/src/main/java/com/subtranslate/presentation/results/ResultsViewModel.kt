@@ -89,12 +89,14 @@ class ResultsViewModel @Inject constructor(
     }
 
     private fun friendlyError(e: Throwable): String = when {
-        e.message?.contains("503") == true ->
-            "Download quota exceeded (5/day on free plan). Try again in 24 hours."
+        e.message?.contains("406") == true ->
+            "Daily download limit reached (5/day free). Try again tomorrow."
         e.message?.contains("401") == true || e.message?.contains("403") == true ->
-            "API key error. Contact app support."
+            "Invalid API key — contact support."
         e.message?.contains("429") == true ->
-            "Too many requests. Please wait a moment and try again."
+            "Too many requests — wait a moment and retry."
+        e.message?.contains("503") == true ->
+            "Server temporarily unavailable — try again in a moment."
         else -> e.message ?: "Download failed"
     }
 

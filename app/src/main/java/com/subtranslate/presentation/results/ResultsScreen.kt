@@ -259,7 +259,7 @@ fun SubtitleResultRow(
             }
 
             downloadError?.let { err ->
-                SubtyText("HTTP ${err}", fontSize = 10, color = SubtyError)
+                SubtyText(err, fontSize = 10, color = SubtyError)
             }
         }
         SubtyDivider()

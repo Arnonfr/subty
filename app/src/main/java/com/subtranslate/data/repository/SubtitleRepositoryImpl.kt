@@ -50,6 +50,7 @@ class SubtitleRepositoryImpl @Inject constructor(
 
         val request = Request.Builder().url(url).build()
         val content = okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) error("HTTP ${response.code}: ${response.message}")
             response.body?.string() ?: error("Empty subtitle file")
         }
 

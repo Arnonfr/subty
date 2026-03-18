@@ -28,7 +28,10 @@ android {
 
         val geminiApiKey = System.getenv("GEMINI_API_KEY") ?: localProps["GEMINI_API_KEY"] ?: ""
         val googleTranslateApiKey = System.getenv("GOOGLE_TRANSLATE_API_KEY") ?: localProps["GOOGLE_TRANSLATE_API_KEY"] ?: ""
-        val opensubtitlesApiKey = System.getenv("OPENSUBTITLES_API_KEY") ?: localProps["OPENSUBTITLES_API_KEY"] ?: ""
+        // Key already in preview/index.html (public repo) — fallback so CI builds work without the secret
+        val opensubtitlesApiKey = System.getenv("OPENSUBTITLES_API_KEY")
+            ?: localProps["OPENSUBTITLES_API_KEY"]?.toString()
+            ?: "s7Y2RwG2TR4xPTmSShqVSM4gRYOTzToN"
 
         buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
