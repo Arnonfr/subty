@@ -7,7 +7,6 @@ import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.dto.FeatureDto
 import com.subtranslate.data.remote.tmdb.SearchSession
 import com.subtranslate.domain.model.SubtitleSearchResult
-import com.subtranslate.domain.usecase.SearchSubtitlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -42,9 +41,8 @@ enum class SearchMode { TITLE, IMDB_ID }
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val searchUseCase: SearchSubtitlesUseCase,
     private val openSubtitlesApi: OpenSubtitlesApi,
-    private val searchSession: SearchSession
+    private val searchSession: SearchSession,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
@@ -148,34 +146,17 @@ class SearchViewModel @Inject constructor(
 
     fun search() {
         val state = _uiState.value
-        // Persist search params to session so ResultsViewModel can use them
+        // Persist search params to session — ResultsViewModel runs the actual search
         searchSession.season = state.season.toIntOrNull()
         searchSession.episode = state.episode.toIntOrNull()
         searchSession.languages = state.selectedLanguages.joinToString(",")
         if (state.searchMode == SearchMode.IMDB_ID) {
             searchSession.imdbId = state.imdbId.ifBlank { null }
         }
+        // Collapse autocomplete and clear stale results; the caller navigates to ResultsScreen
         _uiState.value = state.copy(
-            isLoading = true,
-            error = null,
-            results = emptyList(),
             showSuggestions = false,
-            suggestionsLoading = false
+            suggestionsLoading = false,
         )
-        viewModelScope.launch {
-            val result = searchUseCase(
-                query = if (state.searchMode == SearchMode.TITLE) state.query.ifBlank { null } else null,
-                imdbId = if (state.searchMode == SearchMode.IMDB_ID) state.imdbId.toIntOrNull() else null,
-                languages = searchSession.languages,
-                season = searchSession.season,
-                episode = searchSession.episode
-            )
-            val posterUrl = searchSession.posterUrl
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                results = result.getOrNull()?.map { it.copy(posterUrl = posterUrl) } ?: emptyList(),
-                error = result.exceptionOrNull()?.message
-            )
-        }
     }
 }

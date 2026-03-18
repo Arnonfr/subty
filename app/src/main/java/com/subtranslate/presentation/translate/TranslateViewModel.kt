@@ -69,10 +69,12 @@ class TranslateViewModel @Inject constructor(
                 ?: run {
                     val err = result.exceptionOrNull()
                     val msg = when {
-                        err?.message?.contains("503") == true ->
-                            "Download quota exceeded (5/day on free plan). Try again in 24 hours."
+                        err?.message?.contains("406") == true ->
+                            "Daily download limit reached (5/day free plan). Try again tomorrow."
                         err?.message?.contains("401") == true || err?.message?.contains("403") == true ->
                             "API key error. Contact app support."
+                        err?.message?.contains("503") == true ->
+                            "Server temporarily unavailable. Try again in a moment."
                         else -> err?.message ?: "Download failed"
                     }
                     _uiState.value = _uiState.value.copy(
