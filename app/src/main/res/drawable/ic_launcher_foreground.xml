@@ -1,33 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Subty adaptive icon foreground — "S" monogram on transparent background -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!--
-        SUBTY — app icon foreground
-        Swiss/Bauhaus bold geometric "S" monogram
-        5 rectangular segments (7-segment display style)
-        Color: #B5926A (SubtyMocha) · Background: #0A0908 (in colors.xml)
-        Safe zone 18–90 · Glyph x=28–80, y=20–88 · verticals 19dp each
-    -->
+    <!-- Mocha border rectangle -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#B5926A"
+        android:strokeWidth="3"
+        android:pathData="M18,18 L90,18 L90,90 L18,90 Z" />
 
-    <!-- Top bar -->
-    <path android:fillColor="#B5926A" android:pathData="M28,20 L80,20 L80,30 L28,30 Z"/>
+    <!-- Bold "S" letterform in mocha -->
+    <path
+        android:fillColor="#B5926A"
+        android:pathData="
+M54,28
+C44,28 36,34 36,42
+C36,50 42,53 54,56
+C66,59 72,62 72,70
+C72,78 64,82 54,82
+C44,82 37,77 36,70
+L42,70
+C43,74 48,77 54,77
+C60,77 66,74 66,70
+C66,66 62,63 54,60
+C42,57 30,53 30,42
+C30,34 40,23 54,23
+C64,23 71,27 74,34
+L68,36
+C66,31 61,28 54,28 Z" />
 
-    <!-- Top-left vertical -->
-    <path android:fillColor="#B5926A" android:pathData="M28,30 L40,30 L40,49 L28,49 Z"/>
-
-    <!-- Middle bar -->
-    <path android:fillColor="#B5926A" android:pathData="M28,49 L80,49 L80,59 L28,59 Z"/>
-
-    <!-- Bottom-right vertical -->
-    <path android:fillColor="#B5926A" android:pathData="M68,59 L80,59 L80,78 L68,78 Z"/>
-
-    <!-- Bottom bar -->
-    <path android:fillColor="#B5926A" android:pathData="M28,78 L80,78 L80,88 L28,88 Z"/>
-
-    <!-- Subtitle cursor dot – dim mocha square under the S -->
-    <path android:fillColor="#4A3018" android:pathData="M50,94 L58,94 L58,100 L50,100 Z"/>
+    <!-- Subtitle line decoration -->
+    <path
+        android:fillColor="#B5926A"
+        android:pathData="M28,88 L80,88 L80,91 L28,91 Z" />
 
 </vector>
