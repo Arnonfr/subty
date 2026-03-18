@@ -188,9 +188,9 @@ fun SubtyButton(
         style == SubtyButtonStyle.MOCHA -> SubtyMocha
         else -> SubtyBorder
     }
-    val hPad = if (small) 14.dp else 20.dp
-    val vPad = if (small) 8.dp else 13.dp
-    val fSize = if (small) 9 else 10
+    val hPad = if (small) 16.dp else 20.dp
+    val vPad = if (small) 11.dp else 13.dp
+    val fSize = if (small) 11 else 12
 
     Row(
         modifier = modifier
@@ -243,10 +243,10 @@ fun SubtyChip(
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 14.dp, vertical = 6.dp),
+            .padding(horizontal = 18.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center,
     ) {
-        SubtyText(text, fontSize = 10, weight = FontWeight.Bold,
+        SubtyText(text, fontSize = 12, weight = FontWeight.Bold,
             letterSpacing = 0.06f, uppercase = true, color = fg)
     }
 }
