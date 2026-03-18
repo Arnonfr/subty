@@ -69,6 +69,7 @@ android {
                 artifactType = "APK"
                 val creds = System.getenv("FIREBASE_SERVICE_ACCOUNT").orEmpty()
                 if (creds.isNotBlank()) serviceCredentialsFile = creds
+                testers = "arnon7700@gmail.com"
             }
         }
     }
