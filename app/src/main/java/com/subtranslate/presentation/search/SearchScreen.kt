@@ -214,57 +214,59 @@ fun SearchScreen(
             }
         }
 
-        // ── Season / Episode ──────────────────────────────────────────────────
-        if (state.seasonsCount > 0) {
-            Spacer(Modifier.height(16.dp))
-            SubtyLabel("Season", modifier = Modifier.padding(horizontal = 24.dp))
-            Spacer(Modifier.height(8.dp))
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
-            ) {
-                items(state.seasonsCount) { i ->
-                    val s = (i + 1).toString()
-                    SubtyChip(
-                        text = s, selected = state.season == s,
-                        onClick = { viewModel.onSeasonChange(s) },
-                        modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
+        // ── Season / Episode — only for TV series ─────────────────────────────
+        if (!state.isMovie) {
+            if (state.seasonsCount > 0) {
+                Spacer(Modifier.height(16.dp))
+                SubtyLabel("Season", modifier = Modifier.padding(horizontal = 24.dp))
+                Spacer(Modifier.height(8.dp))
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    items(state.seasonsCount) { i ->
+                        val s = (i + 1).toString()
+                        SubtyChip(
+                            text = s, selected = state.season == s,
+                            onClick = { viewModel.onSeasonChange(s) },
+                            modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                SubtyLabel("Episode", modifier = Modifier.padding(horizontal = 24.dp))
+                Spacer(Modifier.height(8.dp))
+                val epCount = if (state.episodesCount in 1..50) state.episodesCount else 30
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    items(epCount) { i ->
+                        val e = (i + 1).toString()
+                        SubtyChip(
+                            text = e, selected = state.episode == e,
+                            onClick = { viewModel.onEpisodeChange(e) },
+                            modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
+                        )
+                    }
+                }
+            } else {
+                Spacer(Modifier.height(16.dp))
+                Row(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    SubtyTextField(
+                        value = state.season,
+                        onValueChange = viewModel::onSeasonChange,
+                        placeholder = "Season",
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width((-1).dp))
+                    SubtyTextField(
+                        value = state.episode,
+                        onValueChange = viewModel::onEpisodeChange,
+                        placeholder = "Episode",
+                        modifier = Modifier.weight(1f),
                     )
                 }
-            }
-            Spacer(Modifier.height(12.dp))
-            SubtyLabel("Episode", modifier = Modifier.padding(horizontal = 24.dp))
-            Spacer(Modifier.height(8.dp))
-            val epCount = if (state.episodesCount in 1..50) state.episodesCount else 30
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
-            ) {
-                items(epCount) { i ->
-                    val e = (i + 1).toString()
-                    SubtyChip(
-                        text = e, selected = state.episode == e,
-                        onClick = { viewModel.onEpisodeChange(e) },
-                        modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
-                    )
-                }
-            }
-        } else {
-            Spacer(Modifier.height(16.dp))
-            Row(modifier = Modifier.padding(horizontal = 24.dp)) {
-                SubtyTextField(
-                    value = state.season,
-                    onValueChange = viewModel::onSeasonChange,
-                    placeholder = "Season",
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width((-1).dp))
-                SubtyTextField(
-                    value = state.episode,
-                    onValueChange = viewModel::onEpisodeChange,
-                    placeholder = "Episode",
-                    modifier = Modifier.weight(1f),
-                )
             }
         }
 

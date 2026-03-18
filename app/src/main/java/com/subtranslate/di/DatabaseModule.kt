@@ -3,6 +3,7 @@ package com.subtranslate.di
 import android.content.Context
 import androidx.room.Room
 import com.subtranslate.data.local.SubTranslateDatabase
+import com.subtranslate.data.local.dao.SearchHistoryDao
 import com.subtranslate.data.local.dao.SubtitleHistoryDao
 import dagger.Module
 import dagger.Provides
@@ -22,9 +23,15 @@ object DatabaseModule {
             context,
             SubTranslateDatabase::class.java,
             "subtranslate.db"
-        ).build()
+        )
+            .addMigrations(SubTranslateDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideHistoryDao(db: SubTranslateDatabase): SubtitleHistoryDao =
         db.historyDao()
+
+    @Provides
+    fun provideSearchHistoryDao(db: SubTranslateDatabase): SearchHistoryDao =
+        db.searchHistoryDao()
 }

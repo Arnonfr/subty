@@ -86,7 +86,7 @@ fun TranslateScreen(
                             modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.End,
                         ) {
-                            SubtyLabel("ממקור", color = SubtyMocha)
+                            SubtyLabel("SOURCE", color = SubtyMocha)
                             Spacer(Modifier.height(6.dp))
                             LanguageSelector(
                                 selected = state.sourceLang,
@@ -112,7 +112,7 @@ fun TranslateScreen(
                             modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.Start,
                         ) {
-                            SubtyLabel("ליעד", color = SubtyMocha)
+                            SubtyLabel("TARGET", color = SubtyMocha)
                             Spacer(Modifier.height(6.dp))
                             LanguageSelector(
                                 selected = state.targetLang,
@@ -142,7 +142,7 @@ fun TranslateScreen(
                             )
                             Spacer(Modifier.height(2.dp))
                             SubtyText(
-                                if (useGemini) "תרגום חכם מבוסס הקשר" else "תרגום מהיר וחינמי",
+                                if (useGemini) "Smart context-aware translation" else "Fast and free",
                                 fontSize = 11,
                                 color = SubtyText3,
                             )
@@ -210,9 +210,9 @@ fun TranslateScreen(
                 val isTranslating = progress.status == TranslationStatus.TRANSLATING
                 SubtyButton(
                     text = when {
-                        isTranslating -> "מתרגם כרגע…"
-                        state.translatedFile != null -> "תרגם מחדש"
-                        else -> "התחל תרגום"
+                        isTranslating -> "Translating…"
+                        state.translatedFile != null -> "Re-translate"
+                        else -> "Start translation"
                     },
                     onClick = {
                         val file = viewModel.pendingFile

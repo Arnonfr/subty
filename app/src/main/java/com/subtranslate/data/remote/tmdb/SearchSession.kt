@@ -3,11 +3,6 @@ package com.subtranslate.data.remote.tmdb
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Singleton that carries the currently-selected movie's metadata between
- * SearchScreen → ResultsScreen so we can show the poster without encoding
- * a URL in nav args.
- */
 @Singleton
 class SearchSession @Inject constructor() {
     var posterUrl: String? = null
@@ -16,4 +11,6 @@ class SearchSession @Inject constructor() {
     var season: Int? = null
     var episode: Int? = null
     var languages: String? = null
+    /** "movie" | "tv" | null — set from autocomplete suggestion */
+    var contentType: String? = null
 }
