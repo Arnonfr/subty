@@ -3,10 +3,31 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M31,63.928c0,0 6.49,-13.174 13.174,-13.174c6.684,0 13.174,13.174 13.174,13.174L31,63.928z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M44.5,44.5m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0" />
+
+    <!--
+        SUBTY — app icon foreground
+        Swiss/Bauhaus bold geometric "S" monogram
+        5 rectangular segments (7-segment display style)
+        Color: #B5926A (SubtyMocha) · Background: #0A0908 (in colors.xml)
+        Safe zone 18–90 · Glyph x=28–80, y=20–88 · verticals 19dp each
+    -->
+
+    <!-- Top bar -->
+    <path android:fillColor="#B5926A" android:pathData="M28,20 L80,20 L80,30 L28,30 Z"/>
+
+    <!-- Top-left vertical -->
+    <path android:fillColor="#B5926A" android:pathData="M28,30 L40,30 L40,49 L28,49 Z"/>
+
+    <!-- Middle bar -->
+    <path android:fillColor="#B5926A" android:pathData="M28,49 L80,49 L80,59 L28,59 Z"/>
+
+    <!-- Bottom-right vertical -->
+    <path android:fillColor="#B5926A" android:pathData="M68,59 L80,59 L80,78 L68,78 Z"/>
+
+    <!-- Bottom bar -->
+    <path android:fillColor="#B5926A" android:pathData="M28,78 L80,78 L80,88 L28,88 Z"/>
+
+    <!-- Subtitle cursor dot – dim mocha square under the S -->
+    <path android:fillColor="#4A3018" android:pathData="M50,94 L58,94 L58,100 L50,100 Z"/>
+
 </vector>
