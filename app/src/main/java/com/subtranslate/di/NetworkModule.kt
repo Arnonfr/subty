@@ -63,6 +63,14 @@ object NetworkModule {
     @Named("subdl")
     fun provideSubDLOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                // dl.subdl.com requires a Referer header or it returns 403
+                val req = chain.request().newBuilder()
+                    .header("Referer", "https://subdl.com/")
+                    .header("User-Agent", "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36")
+                    .build()
+                chain.proceed(req)
+            }
             .addInterceptor(loggingInterceptor())
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
