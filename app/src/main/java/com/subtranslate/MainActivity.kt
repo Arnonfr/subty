@@ -18,6 +18,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -62,7 +64,8 @@ class MainActivity : ComponentActivity() {
                     if (showBottomBar) {
                         // Top border of nav bar
                         Box(Modifier.fillMaxWidth().height(1.dp).background(SubtyBorder))
-                        // Nav items
+                        // Nav items — forced LTR so Search is always on the left regardless of device language
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -111,6 +114,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+                        } // end CompositionLocalProvider
                     }
                 }
             }

@@ -10,6 +10,7 @@ sdk.dir=/Users/<שם-משתמש>/Library/Android/sdk
 OPENSUBTITLES_API_KEY=<המפתח שלך>
 GEMINI_API_KEY=<המפתח שלך>
 GOOGLE_TRANSLATE_API_KEY=<המפתח שלך>
+SUBDL_API_KEY=<המפתח שלך>
 ```
 
 ## GitHub Actions (CI/CD)
@@ -21,8 +22,12 @@ GOOGLE_TRANSLATE_API_KEY=<המפתח שלך>
 | שם Secret | מה למלא | מאיפה מקבלים |
 |-----------|---------|---------------|
 | `OPENSUBTITLES_API_KEY` | מפתח OpenSubtitles | opensubtitles.com/consumer |
+| `OPENSUBTITLES_USERNAME` | **שם המשתמש / אימייל ב-opensubtitles.com** | חשבון אישי — נדרש לקבלת JWT לצורך הורדה |
+| `OPENSUBTITLES_PASSWORD` | **סיסמת opensubtitles.com** | חשבון אישי — ללא זה: 5 הורדות/יום בלבד |
 | `GEMINI_API_KEY` | מפתח Gemini | aistudio.google.com |
 | `GOOGLE_TRANSLATE_API_KEY` | מפתח Google Translate | console.cloud.google.com |
+| `SUBDL_API` | מפתח SubDL | subdl.com |
+| `KEYSTORE_B64` | keystore בקידוד base64 | ראה למטה |
 | `KEYSTORE_B64` | keystore בקידוד base64 | ראה למטה |
 | `KEYSTORE_PASS` | סיסמת keystore | שלך |
 | `KEY_ALIAS` | alias של המפתח | שלך |
