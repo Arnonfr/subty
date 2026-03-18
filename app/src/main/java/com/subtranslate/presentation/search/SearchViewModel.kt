@@ -148,6 +148,13 @@ class SearchViewModel @Inject constructor(
 
     fun search() {
         val state = _uiState.value
+        // Persist search params to session so ResultsViewModel can use them
+        searchSession.season = state.season.toIntOrNull()
+        searchSession.episode = state.episode.toIntOrNull()
+        searchSession.languages = state.selectedLanguages.joinToString(",")
+        if (state.searchMode == SearchMode.IMDB_ID) {
+            searchSession.imdbId = state.imdbId.ifBlank { null }
+        }
         _uiState.value = state.copy(
             isLoading = true,
             error = null,
@@ -159,9 +166,9 @@ class SearchViewModel @Inject constructor(
             val result = searchUseCase(
                 query = if (state.searchMode == SearchMode.TITLE) state.query.ifBlank { null } else null,
                 imdbId = if (state.searchMode == SearchMode.IMDB_ID) state.imdbId.toIntOrNull() else null,
-                languages = state.selectedLanguages.joinToString(","),
-                season = state.season.toIntOrNull(),
-                episode = state.episode.toIntOrNull()
+                languages = searchSession.languages,
+                season = searchSession.season,
+                episode = searchSession.episode
             )
             val posterUrl = searchSession.posterUrl
             _uiState.value = _uiState.value.copy(

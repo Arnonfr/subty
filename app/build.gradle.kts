@@ -33,7 +33,12 @@ android {
             ?: localProps["OPENSUBTITLES_API_KEY"]?.toString()
             ?: "s7Y2RwG2TR4xPTmSShqVSM4gRYOTzToN"
 
+        val subdlApiKey = System.getenv("SUBDL_API_KEY")
+            ?: localProps["SUBDL_API_KEY"]?.toString()
+            ?: ""
+
         buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
+        buildConfigField("String", "SUBDL_API_KEY", "\"$subdlApiKey\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "GOOGLE_TRANSLATE_API_KEY", "\"$googleTranslateApiKey\"")
 

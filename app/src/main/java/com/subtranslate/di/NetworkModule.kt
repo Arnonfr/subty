@@ -4,6 +4,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesAuthInterceptor
+import com.subtranslate.data.remote.subdl.SubDLApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -54,5 +55,29 @@ object NetworkModule {
         .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()
         .create(OpenSubtitlesApi::class.java)
+
+    // ── SubDL ─────────────────────────────────────────────────────────────────
+
+    @Provides
+    @Singleton
+    @Named("subdl")
+    fun provideSubDLOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor())
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideSubDLApi(
+        @Named("subdl") client: OkHttpClient,
+        moshi: Moshi
+    ): SubDLApi = Retrofit.Builder()
+        .baseUrl("https://api.subdl.com/api/v1/")
+        .client(client)
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .build()
+        .create(SubDLApi::class.java)
 
 }

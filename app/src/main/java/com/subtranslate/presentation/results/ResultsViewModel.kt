@@ -2,13 +2,15 @@ package com.subtranslate.presentation.results
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.remote.tmdb.SearchSession
+import com.subtranslate.data.repository.SubtitleRepositoryImpl
 import com.subtranslate.domain.model.SubtitleSearchResult
 import com.subtranslate.domain.usecase.DownloadSubtitleUseCase
 import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.SearchSubtitlesUseCase
-import com.subtranslate.data.local.datastore.SettingsDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -32,6 +34,7 @@ class ResultsViewModel @Inject constructor(
     private val searchUseCase: SearchSubtitlesUseCase,
     private val downloadUseCase: DownloadSubtitleUseCase,
     private val saveUseCase: SaveSubtitleUseCase,
+    private val repository: SubtitleRepositoryImpl,
     private val searchSession: SearchSession,
     private val settings: SettingsDataStore
 ) : ViewModel() {
@@ -46,16 +49,42 @@ class ResultsViewModel @Inject constructor(
             posterUrl = if (settings.showPosters) searchSession.posterUrl else null
         )
         viewModelScope.launch {
-            val result = searchUseCase(query = query.ifBlank { null })
             val posterUrl = searchSession.posterUrl
-            val items = result.getOrNull()
-                ?.map { it.copy(posterUrl = posterUrl) }
-                ?: emptyList()
+            val imdbIdStr = searchSession.imdbId
+            val season = searchSession.season
+            val episode = searchSession.episode
+            val languages = searchSession.languages
+
+            val osDeferred = async {
+                searchUseCase(
+                    query = query.ifBlank { null },
+                    imdbId = imdbIdStr?.toIntOrNull(),
+                    languages = languages,
+                    season = season,
+                    episode = episode,
+                ).getOrNull()?.map { it.copy(posterUrl = posterUrl) } ?: emptyList()
+            }
+            val sdDeferred = async {
+                try {
+                    repository.searchSubDL(
+                        title = query.ifBlank { null },
+                        imdbId = imdbIdStr,
+                        season = season,
+                        episode = episode,
+                        languages = languages,
+                    )
+                } catch (_: Exception) { emptyList() }
+            }
+
+            val osItems = osDeferred.await()
+            val sdItems = sdDeferred.await()
+            val combined = osItems + sdItems
+
             _uiState.value = _uiState.value.copy(
-                results = items,
-                filteredResults = items,
+                results = combined,
+                filteredResults = applyFilter(combined, _uiState.value.languageFilter),
                 isLoading = false,
-                error = result.exceptionOrNull()?.message
+                error = if (combined.isEmpty()) "No subtitles found" else null,
             )
         }
     }
@@ -64,9 +93,12 @@ class ResultsViewModel @Inject constructor(
         val all = _uiState.value.results
         _uiState.value = _uiState.value.copy(
             languageFilter = lang,
-            filteredResults = if (lang == null) all else all.filter { it.languageCode == lang }
+            filteredResults = applyFilter(all, lang),
         )
     }
+
+    private fun applyFilter(results: List<SubtitleSearchResult>, lang: String?) =
+        if (lang == null) results else results.filter { it.languageCode == lang }
 
     /** Download-only: downloads the file and saves it directly — no translation */
     fun downloadAndSave(fileId: Int, languageCode: String, fileName: String) {
