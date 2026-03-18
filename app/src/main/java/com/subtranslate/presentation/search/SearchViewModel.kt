@@ -80,7 +80,7 @@ class SearchViewModel @Inject constructor(
         }
         _uiState.value = _uiState.value.copy(suggestionsLoading = true)
         suggestJob = viewModelScope.launch {
-            delay(200)
+            delay(100)
             runCatching { openSubtitlesApi.searchFeatures(query) }
                 .onSuccess { response ->
                     val results = response.data.take(6)

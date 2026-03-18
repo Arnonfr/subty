@@ -20,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -28,7 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.OPENSUBTITLES_SEARCH_LANGUAGES
 
@@ -38,6 +36,16 @@ fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    var langFilter by remember { mutableStateOf("") }
+
+    // Filtered language list — if user types in lang filter field, narrow the chips
+    val visibleLanguages = remember(langFilter) {
+        if (langFilter.isBlank()) OPENSUBTITLES_SEARCH_LANGUAGES
+        else OPENSUBTITLES_SEARCH_LANGUAGES.filter { (code, name) ->
+            code.contains(langFilter, ignoreCase = true) ||
+            name.contains(langFilter, ignoreCase = true)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -73,7 +81,6 @@ fun SearchScreen(
         // ── Search field + autocomplete ───────────────────────────────────────
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             if (state.searchMode == SearchMode.TITLE) {
-                // Field row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -82,15 +89,6 @@ fun SearchScreen(
                         .padding(horizontal = 14.dp, vertical = 11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    state.selectedPosterUrl?.let { url ->
-                        AsyncImage(
-                            model = url,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(width = 24.dp, height = 36.dp),
-                        )
-                        Spacer(Modifier.width(10.dp))
-                    }
                     BasicTextField(
                         value = state.query,
                         onValueChange = viewModel::onQueryChange,
@@ -130,7 +128,7 @@ fun SearchScreen(
                     }
                 }
 
-                // Autocomplete dropdown
+                // Autocomplete dropdown — no posters, just text (faster)
                 if (state.showSuggestions && state.suggestions.isNotEmpty()) {
                     Column(
                         modifier = Modifier
@@ -152,28 +150,23 @@ fun SearchScreen(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null,
                                     ) { viewModel.onSuggestionSelected(result) }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    .padding(horizontal = 14.dp, vertical = 11.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
+                                // Initials badge instead of poster (much faster — no extra network request)
                                 Box(
                                     modifier = Modifier
-                                        .size(width = 32.dp, height = 48.dp)
-                                        .background(SubtyBg3),
+                                        .size(width = 28.dp, height = 28.dp)
+                                        .background(SubtyBg3)
+                                        .border(1.dp, SubtyBorderDim),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    result.attributes.imgUrl?.let { url ->
-                                        AsyncImage(
-                                            model = url,
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
-                                    } ?: SubtyText(
-                                        title.take(2).uppercase(),
-                                        fontSize = 10,
+                                    SubtyText(
+                                        title.take(1).uppercase(),
+                                        fontSize = 11,
                                         weight = FontWeight.Bold,
-                                        color = SubtyText3,
+                                        color = SubtyMocha,
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
@@ -199,8 +192,6 @@ fun SearchScreen(
                         }
                     }
                 }
-
-                // Autocomplete errors are silently ignored — no UI clutter
             } else {
                 SubtyTextField(
                     value = state.imdbId,
@@ -267,16 +258,41 @@ fun SearchScreen(
             }
         }
 
-        // ── Language chips ────────────────────────────────────────────────────
+        // ── Language selector ─────────────────────────────────────────────────
         Spacer(Modifier.height(16.dp))
-        SubtyLabel("Languages", modifier = Modifier.padding(horizontal = 24.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            SubtyLabel("Languages")
+            // Language search field
+            BasicTextField(
+                value = langFilter,
+                onValueChange = { langFilter = it },
+                singleLine = true,
+                textStyle = TextStyle(color = SubtyText2, fontSize = 12.sp),
+                cursorBrush = SolidColor(SubtyMocha),
+                modifier = Modifier
+                    .width(100.dp)
+                    .border(1.dp, SubtyBorderDim)
+                    .background(SubtyBg2)
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
+                decorationBox = { inner ->
+                    if (langFilter.isEmpty()) SubtyText("Filter…", color = SubtyText3, fontSize = 12)
+                    inner()
+                },
+            )
+        }
         Spacer(Modifier.height(8.dp))
         LazyRow(
             contentPadding = PaddingValues(horizontal = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            items(OPENSUBTITLES_SEARCH_LANGUAGES) { (code, _) ->
-                val i = OPENSUBTITLES_SEARCH_LANGUAGES.indexOfFirst { it.first == code }
+            items(visibleLanguages) { (code, _) ->
+                val i = visibleLanguages.indexOfFirst { it.first == code }
                 SubtyChip(
                     text = code.uppercase(),
                     selected = code in state.selectedLanguages,

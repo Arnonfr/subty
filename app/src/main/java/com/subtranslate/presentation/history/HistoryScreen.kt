@@ -1,6 +1,8 @@
 package com.subtranslate.presentation.history
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,9 +23,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
+fun HistoryScreen(
+    onSearchAgain: (SearchHistoryEntity) -> Unit = {},
+    viewModel: HistoryViewModel = hiltViewModel(),
+) {
     val downloads by viewModel.history.collectAsState()
-    val searches by viewModel.searchHistory.collectAsState()
+    val searches  by viewModel.searchHistory.collectAsState()
     val hasAny = downloads.isNotEmpty() || searches.isNotEmpty()
 
     Column(
@@ -64,26 +69,25 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                 // ── Search history ────────────────────────────────────────────
                 if (searches.isNotEmpty()) {
                     item {
-                        Row(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(SubtyBg2)
                                 .padding(horizontal = 24.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             SubtyLabel("Recent Searches")
-                            SubtyButton(
-                                text = "Clear",
-                                onClick = { viewModel.clearAllSearches() },
-                                style = SubtyButtonStyle.OUTLINE,
-                                small = true,
-                            )
                         }
                         SubtyDividerDim()
                     }
                     items(searches, key = { "s${it.id}" }) { item ->
-                        SearchHistoryRow(item = item, onDelete = { viewModel.deleteSearch(item.id) })
+                        SearchHistoryRow(
+                            item = item,
+                            onClick = {
+                                viewModel.restoreSession(item)
+                                onSearchAgain(item)
+                            },
+                            onDelete = { viewModel.deleteSearch(item.id) },
+                        )
                         SubtyDividerDim()
                     }
                 }
@@ -91,21 +95,13 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                 // ── Download history ──────────────────────────────────────────
                 if (downloads.isNotEmpty()) {
                     item {
-                        Row(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(SubtyBg2)
                                 .padding(horizontal = 24.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             SubtyLabel("Downloads")
-                            SubtyButton(
-                                text = "Clear",
-                                onClick = { viewModel.clearAllDownloads() },
-                                style = SubtyButtonStyle.OUTLINE,
-                                small = true,
-                            )
                         }
                         SubtyDividerDim()
                     }
@@ -120,12 +116,21 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun SearchHistoryRow(item: SearchHistoryEntity, onDelete: () -> Unit) {
+private fun SearchHistoryRow(
+    item: SearchHistoryEntity,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val sdf = remember { SimpleDateFormat("dd MMM yyyy  HH:mm", Locale.getDefault()) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(SubtyBg)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            )
             .padding(start = 24.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -143,7 +148,12 @@ private fun SearchHistoryRow(item: SearchHistoryEntity, onDelete: () -> Unit) {
             SubtyText(sdf.format(Date(item.searchedAt)), fontSize = 10, color = SubtyText3)
         }
         IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = SubtyText3, modifier = Modifier.size(18.dp))
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Delete",
+                tint = SubtyText3,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
@@ -171,7 +181,12 @@ private fun DownloadHistoryRow(item: HistoryItem, onDelete: () -> Unit) {
             SubtyText(sdf.format(Date(item.downloadedAt)), fontSize = 10, color = SubtyText3)
         }
         IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = SubtyText3, modifier = Modifier.size(18.dp))
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = "Delete",
+                tint = SubtyText3,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

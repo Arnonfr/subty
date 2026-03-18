@@ -30,3 +30,14 @@ cp .env.example .env
 1. פתחו ב-Android Studio.
 2. ודאו שה-SDK מותקן.
 3. סנכרנו את ה-Gradle.
+
+## בדיקה בלייב בלי Android Studio
+אפשר להריץ פריוויו בדפדפן:
+
+```bash
+/Users/hyh/Documents/translate-sub/preview/live-preview.sh
+```
+
+- כתובת: `http://localhost:7890`
+- כולל Live Reload בשמירת קבצים תחת `preview/`
+- פירוט מלא: [LIVE_PREVIEW_FLOW.md](./LIVE_PREVIEW_FLOW.md)

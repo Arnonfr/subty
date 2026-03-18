@@ -1,5 +1,7 @@
 package com.subtranslate.presentation.results
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.subtranslate.domain.model.SubtitleSearchResult
 import com.subtranslate.presentation.theme.*
+import java.net.URLEncoder
 
 @Composable
 fun ResultsScreen(
@@ -167,19 +171,59 @@ fun ResultsScreen(
                 SubtyText("No subtitles found", color = SubtyText3)
             }
 
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.filteredResults, key = { it.fileId }) { result ->
-                    SubtitleResultRow(
-                        result = result,
-                        downloadState = state.downloadStates[result.fileId] ?: DownloadState.IDLE,
-                        downloadError = state.downloadErrors[result.fileId],
-                        onDownload = {
-                            viewModel.downloadAndSave(result.fileId, result.languageCode, result.fileName)
-                        },
-                        onTranslate = {
-                            onTranslate(result.fileId, result.fileName, result.languageCode)
-                        },
-                    )
+            else -> {
+                val ctx = LocalContext.current
+                val encodedQuery = remember(query) {
+                    runCatching { URLEncoder.encode(query, "UTF-8") }.getOrDefault(query)
+                }
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(state.filteredResults, key = { it.fileId }) { result ->
+                        SubtitleResultRow(
+                            result = result,
+                            downloadState = state.downloadStates[result.fileId] ?: DownloadState.IDLE,
+                            downloadError = state.downloadErrors[result.fileId],
+                            onDownload = {
+                                viewModel.downloadAndSave(result.fileId, result.languageCode, result.fileName)
+                            },
+                            onTranslate = {
+                                onTranslate(result.fileId, result.fileName, result.languageCode)
+                            },
+                        )
+                    }
+                    // ── WebHunt: search more on external sites ────────────────
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(SubtyBg2)
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            SubtyLabel("Search more online")
+                            val sites = listOf(
+                                "Podnapisi"     to "https://www.podnapisi.net/en/subtitles/search/?keywords=$encodedQuery",
+                                "Addic7ed"      to "https://www.addic7ed.com/search.php?search=$encodedQuery",
+                                "OpenSubtitles" to "https://www.opensubtitles.org/en/search/sublanguageid-all/moviename-$encodedQuery",
+                                "YIFY"          to "https://yifysubtitles.ch/search?q=$encodedQuery",
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
+                                sites.forEachIndexed { i, (name, url) ->
+                                    SubtyChip(
+                                        text = name,
+                                        selected = false,
+                                        onClick = {
+                                            ctx.startActivity(
+                                                Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            )
+                                        },
+                                        modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
+                                    )
+                                }
+                            }
+                        }
+                        SubtyDivider()
+                    }
                 }
             }
         }

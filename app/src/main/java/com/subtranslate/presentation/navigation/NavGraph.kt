@@ -1,5 +1,7 @@
 package com.subtranslate.presentation.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -14,8 +16,17 @@ import com.subtranslate.presentation.settings.SettingsScreen
 import com.subtranslate.presentation.translate.TranslateScreen
 
 @Composable
-fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
-    NavHost(navController = navController, startDestination = Screen.Search.route, modifier = modifier) {
+fun NavGraph(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+) {
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Search.route,
+        modifier = modifier,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+    ) {
 
         composable(Screen.Search.route) {
             SearchScreen(
@@ -30,7 +41,6 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
             val query = backStack.arguments?.getString("query") ?: ""
             ResultsScreen(
                 query = query,
-                // Results navigate directly to Translate — language code passed so VM can auto-detect
                 onTranslate = { fileId, fileName, languageCode ->
                     navController.navigate(Screen.Translate.createRoute(fileId, fileName, languageCode))
                 },
@@ -58,7 +68,11 @@ fun NavGraph(navController: NavHostController, modifier: Modifier = Modifier) {
         }
 
         composable(Screen.History.route) {
-            HistoryScreen()
+            HistoryScreen(
+                onSearchAgain = { item ->
+                    navController.navigate(Screen.Results.createRoute(item.query))
+                }
+            )
         }
 
         composable(Screen.Settings.route) {

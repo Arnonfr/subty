@@ -429,6 +429,70 @@ body{
 .se-pill:last-child{border-right:var(--rule);}
 .se-pill.on{background:var(--accent2);color:var(--black);border-color:var(--accent2);}
 .se-pill:hover:not(.on){background:var(--bg2);}
+
+/* ── Hidden web hunt (separate from normal search) ── */
+.stealth-panel{
+  margin:0 24px 16px;
+  border:var(--rule);
+  background:var(--bg2);
+  padding:14px;
+}
+.stealth-title{
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--accent2);
+}
+.stealth-sub{
+  font-size:10px;
+  color:var(--text3);
+  margin-top:5px;
+  line-height:1.45;
+}
+.stealth-row{
+  display:flex;
+  gap:0;
+  margin-top:12px;
+}
+.stealth-row .field{
+  border-right:none;
+}
+.stealth-row .btn{
+  flex-shrink:0;
+}
+.webhunt-list{
+  margin-top:12px;
+  border-top:var(--rule);
+}
+.webhunt-empty{
+  font-size:10px;
+  color:var(--text3);
+  padding:10px 0 2px;
+}
+.webhunt-item{
+  border-bottom:1px solid var(--border2);
+  padding:10px 0;
+}
+.webhunt-meta{
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--accent2);
+}
+.webhunt-name{
+  margin-top:3px;
+  font-size:12px;
+  color:var(--text);
+}
+.webhunt-link{
+  margin-top:5px;
+  display:inline-block;
+  font-size:10px;
+  color:var(--text3);
+  text-decoration:underline;
+}
 </style>
 </head>
 <body>
@@ -458,8 +522,19 @@ body{
 
       <!-- Expanded form -->
       <div id="search-expanded" style="overflow-y:auto;flex:1;">
-        <div class="page-title">Subty</div>
+        <div class="page-title" id="home-title" onclick="onHomeTitleTap()">Subty</div>
         <div class="page-sub">Search · Download · Translate</div>
+        <div id="stealth-webhunt" class="stealth-panel" style="display:none;">
+          <div class="stealth-title">Web Hunt</div>
+          <div class="stealth-sub">Hidden mode: website scraping search. Separate from the regular subtitle search.</div>
+          <div class="stealth-row">
+            <input id="webhunt-input" class="field" type="text" placeholder="e.g. Breaking Bad S01E01" />
+            <button class="btn btn-sm" id="webhunt-btn" onclick="runWebHunt()">Scan Sites</button>
+          </div>
+          <div id="webhunt-results" class="webhunt-list">
+            <div class="webhunt-empty">No web-hunt results yet.</div>
+          </div>
+        </div>
 
         <div class="section-label">Search by</div>
         <div style="display:flex;gap:0;padding:0 24px 16px;" id="mode-chips">
@@ -944,6 +1019,9 @@ let selLangs = new Set(['en']), searchMode = 'title', currentTab = 'search';
 let activeResult = null;
 let tlStep = 0, tlTimer = null, prevOpen = false, isLight = false, histItems = [];
 let acTimer = null;
+let homeTapCount = 0;
+let homeTapTimer = null;
+let webHuntUnlocked = false;
 
 // ── Init ──
 function init(){
@@ -1183,6 +1261,66 @@ function updateSearchBtn(){
     btn.textContent=label;
   } else {
     btn.textContent='Search Subtitles';
+  }
+}
+
+// ── Hidden web-hunt mode ──
+function onHomeTitleTap(){
+  clearTimeout(homeTapTimer);
+  homeTapCount += 1;
+  if(homeTapCount >= 5){
+    homeTapCount = 0;
+    webHuntUnlocked = !webHuntUnlocked;
+    document.getElementById('stealth-webhunt').style.display = webHuntUnlocked ? 'block' : 'none';
+  }
+  homeTapTimer = setTimeout(()=>{ homeTapCount = 0; }, 1800);
+}
+
+function escHtml(v){
+  return String(v||'')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#39;");
+}
+
+async function runWebHunt(){
+  const q=document.getElementById('webhunt-input').value.trim();
+  const box=document.getElementById('webhunt-results');
+  const btn=document.getElementById('webhunt-btn');
+  if(!q){
+    box.innerHTML='<div class="webhunt-empty">Enter a query first.</div>';
+    return;
+  }
+
+  btn.disabled=true;
+  btn.textContent='Scanning...';
+  box.innerHTML='<div class="webhunt-empty">Scraping providers...</div>';
+  try{
+    const res=await fetch(`/webhunt/search?query=${encodeURIComponent(q)}`);
+    if(!res.ok){
+      const txt=await res.text().catch(()=>'');
+      throw new Error(`HTTP ${res.status}: ${txt.slice(0,120)}`);
+    }
+    const json=await res.json();
+    const items=(json.results||[]);
+    if(!items.length){
+      box.innerHTML='<div class="webhunt-empty">No matches from scrape providers.</div>';
+      return;
+    }
+    box.innerHTML=items.map(it=>`
+      <div class="webhunt-item">
+        <div class="webhunt-meta">${escHtml(it.provider||'WEB')}</div>
+        <div class="webhunt-name">${escHtml(it.title||'Untitled')}</div>
+        <a class="webhunt-link" href="${escHtml(it.url||'#')}" target="_blank" rel="noopener noreferrer">Open source page</a>
+      </div>
+    `).join('');
+  }catch(e){
+    box.innerHTML=`<div class="webhunt-empty">Web-hunt error: ${escHtml(e.message)}</div>`;
+  }finally{
+    btn.disabled=false;
+    btn.textContent='Scan Sites';
   }
 }
 
