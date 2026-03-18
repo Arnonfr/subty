@@ -200,10 +200,7 @@ fun SearchScreen(
                     }
                 }
 
-                state.suggestionsError?.let { err ->
-                    Spacer(Modifier.height(4.dp))
-                    SubtyText("Autocomplete: $err", fontSize = 11, color = SubtyError)
-                }
+                // Autocomplete errors are silently ignored — no UI clutter
             } else {
                 SubtyTextField(
                     value = state.imdbId,

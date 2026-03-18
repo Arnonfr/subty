@@ -6,7 +6,9 @@ import com.subtranslate.data.parser.AssParser
 import com.subtranslate.data.parser.SrtParser
 import com.subtranslate.data.parser.VttParser
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
+import com.subtranslate.data.remote.opensubtitles.SessionStore
 import com.subtranslate.data.remote.opensubtitles.dto.DownloadRequest
+import com.subtranslate.data.remote.opensubtitles.dto.LoginRequest
 import com.subtranslate.data.remote.opensubtitles.mapper.toDomain
 import com.subtranslate.data.remote.subdl.SubDLApi
 import com.subtranslate.data.remote.subdl.SubDLSubtitleDto
@@ -34,11 +36,29 @@ class SubtitleRepositoryImpl @Inject constructor(
     private val subDLApi: SubDLApi,
     @Named("opensubtitles") private val osHttpClient: OkHttpClient,
     @Named("subdl")         private val subDLHttpClient: OkHttpClient,
+    private val session: SessionStore,
 ) : SubtitleRepository {
 
     // Negative IDs are SubDL results; OpenSubtitles always uses positive ints.
     private val subDLIdGen    = AtomicInteger(-1)
     private val subDLRegistry = mutableMapOf<Int, SubDLSubtitleDto>()
+
+    /** Login with VIP credentials from BuildConfig if not already logged in. */
+    private suspend fun ensureLoggedIn() {
+        if (session.jwtToken != null) return
+        val user = BuildConfig.OPENSUBTITLES_USERNAME
+        val pass = BuildConfig.OPENSUBTITLES_PASSWORD
+        if (user.isBlank() || pass.isBlank()) return
+        try {
+            val resp = osApi.login(LoginRequest(username = user, password = pass))
+            resp.token?.let {
+                session.jwtToken = it
+                Log.d(TAG, "OS login ok — VIP=${resp.user?.vip}, quota=${resp.user?.allowedDownloads}")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "OS auto-login failed: ${e.message}")
+        }
+    }
 
     // ── OpenSubtitles search ──────────────────────────────────────────────────
 
@@ -115,6 +135,7 @@ class SubtitleRepositoryImpl @Inject constructor(
     // ── OpenSubtitles download ────────────────────────────────────────────────
 
     private suspend fun downloadFromOpenSubtitles(fileId: Int, languageCode: String?): SubtitleFile {
+        ensureLoggedIn()
         val dlResponse = osApi.requestDownload(DownloadRequest(fileId = fileId))
         Log.d(TAG, "OS download link: ${dlResponse.link}  remaining=${dlResponse.remaining}")
 

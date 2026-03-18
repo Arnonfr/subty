@@ -22,8 +22,8 @@ android {
         applicationId = "com.subtranslate"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val geminiApiKey = System.getenv("GEMINI_API_KEY") ?: localProps["GEMINI_API_KEY"] ?: ""
@@ -37,10 +37,19 @@ android {
             ?: localProps["SUBDL_API_KEY"]?.toString()
             ?: ""
 
+        val osUsername = System.getenv("OPENSUBTITLES_USERNAME")
+            ?: localProps["OPENSUBTITLES_USERNAME"]?.toString()
+            ?: ""
+        val osPassword = System.getenv("OPENSUBTITLES_PASSWORD")
+            ?: localProps["OPENSUBTITLES_PASSWORD"]?.toString()
+            ?: ""
+
         buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
         buildConfigField("String", "SUBDL_API_KEY", "\"$subdlApiKey\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "GOOGLE_TRANSLATE_API_KEY", "\"$googleTranslateApiKey\"")
+        buildConfigField("String", "OPENSUBTITLES_USERNAME", "\"$osUsername\"")
+        buildConfigField("String", "OPENSUBTITLES_PASSWORD", "\"$osPassword\"")
 
     }
 

@@ -2,11 +2,15 @@ package com.subtranslate.presentation.results
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,28 +85,67 @@ fun ResultsScreen(
         }
 
         // ── Language filter bar ───────────────────────────────────────────────
-        val languages = state.results.map { it.languageCode }.distinct()
+        val languages = state.results.map { it.languageCode }.distinct().sorted()
         if (languages.isNotEmpty()) {
-            LazyRow(
+            var langMenuExpanded by remember { mutableStateOf(false) }
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(SubtyBg),
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(0.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                item {
-                    SubtyLangChip(
-                        "All",
-                        selected = state.languageFilter == null,
-                        onClick = { viewModel.filterByLanguage(null) },
-                    )
+                // Scrollable language pills
+                LazyRow(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(start = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    item {
+                        SubtyLangChip(
+                            "All",
+                            selected = state.languageFilter == null,
+                            onClick = { viewModel.filterByLanguage(null) },
+                        )
+                    }
+                    items(languages) { lang ->
+                        SubtyLangChip(
+                            lang.uppercase(),
+                            selected = state.languageFilter == lang,
+                            onClick = { viewModel.filterByLanguage(lang) },
+                        )
+                    }
                 }
-                items(languages) { lang ->
-                    SubtyLangChip(
-                        lang.uppercase(),
-                        selected = state.languageFilter == lang,
-                        onClick = { viewModel.filterByLanguage(lang) },
-                    )
+
+                // Dropdown search button
+                Box(modifier = Modifier.padding(end = 8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .border(1.dp, SubtyBorderDim)
+                            .background(if (langMenuExpanded) SubtyBg3 else SubtyBg)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { langMenuExpanded = true }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        SubtyText("▾", fontSize = 14, color = SubtyText2)
+                    }
+                    DropdownMenu(
+                        expanded = langMenuExpanded,
+                        onDismissRequest = { langMenuExpanded = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { SubtyText("All", fontSize = 13, color = SubtyText1) },
+                            onClick = { viewModel.filterByLanguage(null); langMenuExpanded = false },
+                        )
+                        languages.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { SubtyText(lang.uppercase(), fontSize = 13, color = SubtyText1) },
+                                onClick = { viewModel.filterByLanguage(lang); langMenuExpanded = false },
+                            )
+                        }
+                    }
                 }
             }
             SubtyDivider()

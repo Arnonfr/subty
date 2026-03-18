@@ -30,9 +30,9 @@ import dagger.hilt.android.AndroidEntryPoint
 private data class NavItem(val screen: Screen, val label: String, val icon: ImageVector)
 
 private val NAV_ITEMS = listOf(
-    NavItem(Screen.Settings, "Settings", Icons.Default.Settings),
-    NavItem(Screen.History,  "History",  Icons.Default.History),
     NavItem(Screen.Search,   "Search",   Icons.Default.Search),
+    NavItem(Screen.History,  "History",  Icons.Default.History),
+    NavItem(Screen.Settings, "Settings", Icons.Default.Settings),
 )
 
 @AndroidEntryPoint

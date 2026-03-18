@@ -266,20 +266,20 @@ fun SubtyLangChip(
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = 22.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         SubtyText(
             text,
-            fontSize = 11,
+            fontSize = 13,
             weight = FontWeight.Bold,
             letterSpacing = 0.08f,
             uppercase = true,
             color = if (selected) SubtyText1 else SubtyText3,
         )
         if (selected) {
-            Spacer(Modifier.height(4.dp))
-            Box(Modifier.height(2.dp).width(28.dp).background(SubtyMocha))
+            Spacer(Modifier.height(5.dp))
+            Box(Modifier.height(2.dp).width(32.dp).background(SubtyMocha))
         }
     }
 }
