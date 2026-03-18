@@ -17,6 +17,7 @@ import com.subtranslate.domain.model.SubtitleFormat
 import com.subtranslate.domain.model.SubtitleSearchResult
 import com.subtranslate.domain.repository.SubtitleRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -148,7 +149,23 @@ class SubtitleRepositoryImpl @Inject constructor(
 
     private suspend fun downloadFromOpenSubtitles(fileId: Int, languageCode: String?): SubtitleFile {
         ensureLoggedIn()
-        val dlResponse = osApi.requestDownload(DownloadRequest(fileId = fileId))
+
+        // Varnish sometimes returns 503 "Guru Meditation" transiently — retry up to 3×
+        var dlResponse = run {
+            var lastEx: Exception? = null
+            repeat(3) { attempt ->
+                try {
+                    return@run osApi.requestDownload(DownloadRequest(fileId = fileId))
+                } catch (e: retrofit2.HttpException) {
+                    if (e.code() == 503) {
+                        lastEx = e
+                        Log.w(TAG, "OS download 503 (attempt ${attempt + 1}/3) — retrying…")
+                        delay(1500L * (attempt + 1))
+                    } else throw e
+                }
+            }
+            throw lastEx!!
+        }
         Log.d(TAG, "OS download link: ${dlResponse.link}  remaining=${dlResponse.remaining}")
 
         val content = withContext(Dispatchers.IO) {

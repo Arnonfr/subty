@@ -7,7 +7,7 @@ import com.subtranslate.domain.model.TranslationProgress
 import com.subtranslate.domain.model.TranslationStatus
 import com.subtranslate.domain.repository.TranslationRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,8 +24,10 @@ class TranslationRepositoryImpl @Inject constructor(
         sourceLang: String,
         targetLang: String,
         modelId: String
-    ): Flow<TranslationProgress> = flow {
-        emit(TranslationProgress(
+    ): Flow<TranslationProgress> = channelFlow {
+        // channelFlow allows send() from any thread/coroutine context,
+        // fixing the "Flow invariant is violated" crash caused by runBlocking inside flow{}
+        send(TranslationProgress(
             totalEntries = subtitleFile.entries.size,
             status = TranslationStatus.TRANSLATING
         ))
@@ -40,15 +42,13 @@ class TranslationRepositoryImpl @Inject constructor(
                     title = subtitleFile.title,
                     modelId = modelId
                 ) { translated, total, batch, totalBatches ->
-                    kotlinx.coroutines.runBlocking {
-                        emit(TranslationProgress(
-                            totalEntries = total,
-                            translatedEntries = translated,
-                            currentBatch = batch,
-                            totalBatches = totalBatches,
-                            status = TranslationStatus.TRANSLATING
-                        ))
-                    }
+                    trySend(TranslationProgress(
+                        totalEntries = total,
+                        translatedEntries = translated,
+                        currentBatch = batch,
+                        totalBatches = totalBatches,
+                        status = TranslationStatus.TRANSLATING
+                    ))
                 }
             } else {
                 // Default: Google Translate (fast, cheap, no context)
@@ -57,21 +57,19 @@ class TranslationRepositoryImpl @Inject constructor(
                     sourceLang = sourceLang,
                     targetLang = targetLang
                 ) { translated, total ->
-                    kotlinx.coroutines.runBlocking {
-                        emit(TranslationProgress(
-                            totalEntries = total,
-                            translatedEntries = translated,
-                            currentBatch = 1,
-                            totalBatches = 1,
-                            status = TranslationStatus.TRANSLATING
-                        ))
-                    }
+                    trySend(TranslationProgress(
+                        totalEntries = total,
+                        translatedEntries = translated,
+                        currentBatch = 1,
+                        totalBatches = 1,
+                        status = TranslationStatus.TRANSLATING
+                    ))
                 }
             }
 
             lastTranslatedFile = subtitleFile.copy(entries = translatedEntries)
 
-            emit(TranslationProgress(
+            send(TranslationProgress(
                 totalEntries = subtitleFile.entries.size,
                 translatedEntries = subtitleFile.entries.size,
                 currentBatch = 0,
@@ -79,7 +77,7 @@ class TranslationRepositoryImpl @Inject constructor(
                 status = TranslationStatus.COMPLETE
             ))
         } catch (e: Exception) {
-            emit(TranslationProgress(
+            send(TranslationProgress(
                 totalEntries = subtitleFile.entries.size,
                 status = TranslationStatus.ERROR,
                 errorMessage = e.message

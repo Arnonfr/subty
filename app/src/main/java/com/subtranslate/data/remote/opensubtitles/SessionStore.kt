@@ -6,5 +6,5 @@ import javax.inject.Singleton
 /** Holds the OpenSubtitles JWT obtained after login. In-memory only — no persistence needed. */
 @Singleton
 class SessionStore @Inject constructor() {
-    var jwtToken: String? = null
+    @Volatile var jwtToken: String? = null
 }

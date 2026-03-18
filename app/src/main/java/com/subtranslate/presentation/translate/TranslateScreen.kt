@@ -28,8 +28,9 @@ import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 private const val MODEL_GOOGLE = "google"
 private val GEMINI_MODELS = listOf(
-    "gemini-1.5-flash" to "Gemini 1.5 Flash",
+    "gemini-2.5-flash" to "Gemini 2.5 Flash",
     "gemini-2.0-flash" to "Gemini 2.0 Flash",
+    "gemini-1.5-flash" to "Gemini 1.5 Flash",
 )
 
 @Composable
@@ -154,7 +155,7 @@ fun TranslateScreen(
                         SubtySwitch(
                             checked = useGemini,
                             onCheckedChange = { on ->
-                                viewModel.onModelChange(if (on) "gemini-1.5-flash" else MODEL_GOOGLE)
+                                viewModel.onModelChange(if (on) "gemini-2.5-flash" else MODEL_GOOGLE)
                             },
                         )
                     }
