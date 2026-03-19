@@ -68,7 +68,7 @@ class TranslateViewModel @Inject constructor(
     init {
         _uiState.value = _uiState.value.copy(
             targetLang = settings.defaultTargetLanguage,
-            selectedModel = settings.translationModel
+            selectedModel = "google"
         )
     }
 
@@ -127,10 +127,6 @@ class TranslateViewModel @Inject constructor(
 
     fun onTargetLangChange(lang: String) {
         _uiState.value = _uiState.value.copy(targetLang = lang)
-    }
-
-    fun onModelChange(model: String) {
-        _uiState.value = _uiState.value.copy(selectedModel = model)
     }
 
     fun startTranslation(file: SubtitleFile) {

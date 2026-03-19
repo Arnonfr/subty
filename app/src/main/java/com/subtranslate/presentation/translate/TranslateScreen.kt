@@ -1,6 +1,5 @@
 package com.subtranslate.presentation.translate
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,13 +27,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.domain.model.TranslationStatus
 import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
-
-private const val MODEL_GOOGLE = "google"
-private val GEMINI_MODELS = listOf(
-    "gemini-3-flash-preview"     to "Gemini 3 Flash",
-    "gemini-2.5-flash"           to "Gemini 2.5 Flash",
-    "gemini-2.0-flash"           to "Gemini 2.0 Flash",
-)
 
 @Composable
 fun TranslateScreen(
@@ -163,85 +155,6 @@ fun TranslateScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(20.dp))
-                    SubtyDividerDim()
-                    Spacer(Modifier.height(20.dp))
-
-                    // Engine row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        val useGemini = state.selectedModel.startsWith("gemini")
-                        Column(modifier = Modifier.weight(1f)) {
-                            SubtyText(
-                                if (useGemini) "Gemini AI" else "Google Translate",
-                                fontSize = 13,
-                                weight = FontWeight.Bold,
-                                color = SubtyText1,
-                            )
-                            Spacer(Modifier.height(2.dp))
-                            SubtyText(
-                                if (useGemini) "Smart context-aware translation" else "Fast and free",
-                                fontSize = 11,
-                                color = SubtyText3,
-                            )
-                        }
-                        SubtySwitch(
-                            checked = useGemini,
-                            onCheckedChange = { on ->
-                                viewModel.onModelChange(if (on) "gemini-3-flash-preview" else MODEL_GOOGLE)
-                            },
-                        )
-                    }
-
-                    // Gemini model selector
-                    AnimatedVisibility(visible = state.selectedModel.startsWith("gemini")) {
-                        var expanded by remember { mutableStateOf(false) }
-                        Column {
-                            Spacer(Modifier.height(12.dp))
-                            Box {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .border(1.dp, SubtyBorderDim)
-                                        .background(SubtyBg3)
-                                        .clickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null,
-                                        ) { expanded = true }
-                                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    SubtyText(
-                                        GEMINI_MODELS.find { it.first == state.selectedModel }?.second
-                                            ?: "Gemini 1.5 Flash",
-                                        fontSize = 13,
-                                        color = SubtyText1,
-                                    )
-                                    Icon(
-                                        Icons.Default.ArrowDropDown,
-                                        contentDescription = null,
-                                        tint = SubtyText3,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false },
-                                ) {
-                                    GEMINI_MODELS.forEach { (id, label) ->
-                                        DropdownMenuItem(
-                                            text = { SubtyText(label, fontSize = 13) },
-                                            onClick = { viewModel.onModelChange(id); expanded = false },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
                 SubtyDivider()
             }
