@@ -22,10 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.presentation.navigation.NavGraph
 import com.subtranslate.presentation.navigation.Screen
 import com.subtranslate.presentation.theme.*
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 private data class NavItem(val screen: Screen, val label: String, val icon: ImageVector)
 
@@ -38,11 +40,14 @@ private val NAV_ITEMS = listOf(
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject lateinit var settingsDataStore: SettingsDataStore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SubTranslateTheme {
+            val isDark by settingsDataStore.isDarkThemeFlow.collectAsState()
+            SubTranslateTheme(darkTheme = isDark) {
                 val navController = rememberNavController()
                 val backStack by navController.currentBackStackEntryAsState()
                 val currentRoute = backStack?.destination?.route

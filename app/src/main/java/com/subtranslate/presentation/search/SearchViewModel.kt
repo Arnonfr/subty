@@ -93,7 +93,7 @@ class SearchViewModel @Inject constructor(
                 .getOrDefault(emptyList())
             runCatching { openSubtitlesApi.searchFeatures(query) }
                 .onSuccess { response ->
-                    val remoteResults = response.data.take(6)
+                    val remoteResults = rankSuggestions(response.data, query).take(8)
                     val historySuggestions = historyItems.map { Suggestion.History(it) }
                     val remoteSuggestions = remoteResults.map { Suggestion.Remote(it) }
                     val combined = (historySuggestions + remoteSuggestions).take(8)
@@ -117,6 +117,29 @@ class SearchViewModel @Inject constructor(
                         suggestionsError = null,
                     )
                 }
+        }
+    }
+
+    private fun rankSuggestions(results: List<FeatureDto>, query: String): List<FeatureDto> {
+        val q = query.lowercase().trim()
+        return results.sortedByDescending { feature ->
+            val title = feature.attributes.title?.lowercase() ?: ""
+            val attrs = feature.attributes
+            var score = 0
+            // 1. Exact prefix match is highest signal
+            if (title.startsWith(q)) score += 100
+            // 2. Query matches at word boundary
+            if (title.split(" ").any { it.startsWith(q) }) score += 50
+            // 3. Popular TV shows (many seasons/episodes)
+            score += (attrs.seasonsCount ?: 0) * 10
+            score += minOf((attrs.episodesCount ?: 0) / 10, 50)
+            // 4. Recent content (2010+ gets bonus)
+            val year = attrs.year ?: 2000
+            if (year >= 2010) score += 20
+            if (year >= 2015) score += 10
+            // 5. Movies get slight boost for recency (higher IMDB ID = more recent)
+            if (attrs.featureType == "Movie") score += 5
+            score
         }
     }
 

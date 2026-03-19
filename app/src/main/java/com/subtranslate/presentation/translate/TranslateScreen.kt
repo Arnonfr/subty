@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import android.app.DownloadManager
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material.icons.Icons
@@ -53,12 +54,20 @@ fun TranslateScreen(
                 actionLabel = "Open Folder",
             )
             if (result == SnackbarResult.ActionPerformed) {
-                val downloadsUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
+                // Open Downloads folder — try document tree URI first, fallback to generic
+                val docUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(downloadsUri, "*/*")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    setDataAndType(docUri, "vnd.android.document/directory")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                runCatching { context.startActivity(intent) }
+                runCatching { context.startActivity(intent) }.onFailure {
+                    // fallback
+                    runCatching {
+                        context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        })
+                    }
+                }
             }
         }
     }

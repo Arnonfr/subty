@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
@@ -59,6 +60,13 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
         )
         SubtyDivider()
+        SubtyToggleRow(
+            label = "Dark mode",
+            description = "Switch between dark and light appearance",
+            checked = state.isDarkTheme,
+            onCheckedChange = viewModel::onDarkThemeChange,
+        )
+        SubtyDividerDim()
         SubtyToggleRow(
             label = "Show movie posters",
             description = "Display cover art in search results",
@@ -230,7 +238,7 @@ private fun SettingsDropdown(
     onSelect: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    Box {
+    Box(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -262,11 +270,23 @@ private fun SettingsDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .background(SubtyBg2)
+                .border(1.dp, SubtyBorderDim),
         ) {
             options.forEach { (code, name) ->
                 DropdownMenuItem(
-                    text = { SubtyText(name, fontSize = 13) },
+                    text = {
+                        SubtyText(
+                            name,
+                            fontSize = 14,
+                            color = if (code == selected) SubtyMocha else SubtyText1,
+                            weight = if (code == selected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
                     onClick = { onSelect(code); expanded = false },
+                    modifier = Modifier.background(SubtyBg2),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
                 )
             }
         }

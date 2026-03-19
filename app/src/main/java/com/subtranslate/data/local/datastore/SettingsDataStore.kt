@@ -3,6 +3,9 @@ package com.subtranslate.data.local.datastore
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class SettingsDataStore(context: Context) {
 
@@ -37,6 +40,16 @@ class SettingsDataStore(context: Context) {
         set(value) = prefs.edit().putBoolean(KEY_AUTO_TRANSLATE, value).apply()
 
     // ── Display ──────────────────────────────────────────────────────────────
+
+    private val _isDarkThemeFlow = MutableStateFlow(prefs.getBoolean("is_dark_theme", true))
+    val isDarkThemeFlow: StateFlow<Boolean> = _isDarkThemeFlow.asStateFlow()
+
+    var isDarkTheme: Boolean
+        get() = prefs.getBoolean("is_dark_theme", true)
+        set(v) {
+            prefs.edit().putBoolean("is_dark_theme", v).apply()
+            _isDarkThemeFlow.value = v
+        }
 
     var showPosters: Boolean
         get() = prefs.getBoolean(KEY_SHOW_POSTERS, true)
