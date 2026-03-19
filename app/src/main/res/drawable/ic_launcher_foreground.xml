@@ -1,41 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Subty adaptive icon foreground — "S" monogram on transparent background -->
+<!-- Subty adaptive icon foreground — movie screen with subtitle bars -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Mocha border rectangle -->
+    <!-- Screen card (dark fill, lighter than background) -->
+    <path
+        android:fillColor="#1C1510"
+        android:pathData="
+M20,14
+L88,14
+Q94,14 94,20
+L94,88
+Q94,94 88,94
+L20,94
+Q14,94 14,88
+L14,20
+Q14,14 20,14 Z" />
+
+    <!-- Subtitle strip (bottom 32% of card) -->
+    <path
+        android:fillColor="#22180F"
+        android:pathData="
+M14,64
+L94,64
+L94,88
+Q94,94 88,94
+L20,94
+Q14,94 14,88
+L14,64 Z" />
+
+    <!-- Divider line -->
+    <path
+        android:fillColor="#7A5C38"
+        android:pathData="M20,64 L88,64 L88,65.5 L20,65.5 Z" />
+
+    <!-- Subtitle bar 1 — full width -->
+    <path
+        android:fillColor="#C49568"
+        android:pathData="
+M22,70
+L86,70
+Q88,70 88,72
+L88,76
+Q88,78 86,78
+L22,78
+Q20,78 20,76
+L20,72
+Q20,70 22,70 Z" />
+
+    <!-- Subtitle bar 2 — shorter, centered -->
+    <path
+        android:fillColor="#7A5C38"
+        android:pathData="
+M33,82
+L75,82
+Q77,82 77,84
+L77,88
+Q77,90 75,90
+L33,90
+Q31,90 31,88
+L31,84
+Q31,82 33,82 Z" />
+
+    <!-- Play button circle (outline only) -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#B5926A"
-        android:strokeWidth="3"
-        android:pathData="M18,18 L90,18 L90,90 L18,90 Z" />
+        android:strokeColor="#C49568"
+        android:strokeWidth="2.5"
+        android:pathData="M54,37 m-11,0 a11,11 0,1,0 22,0 a11,11 0,1,0 -22,0" />
 
-    <!-- Bold "S" letterform in mocha -->
+    <!-- Play triangle -->
     <path
-        android:fillColor="#B5926A"
+        android:fillColor="#D8AC7E"
         android:pathData="
-M54,28
-C44,28 36,34 36,42
-C36,50 42,53 54,56
-C66,59 72,62 72,70
-C72,78 64,82 54,82
-C44,82 37,77 36,70
-L42,70
-C43,74 48,77 54,77
-C60,77 66,74 66,70
-C66,66 62,63 54,60
-C42,57 30,53 30,42
-C30,34 40,23 54,23
-C64,23 71,27 74,34
-L68,36
-C66,31 61,28 54,28 Z" />
+M51,31
+L51,43
+L62,37 Z" />
 
-    <!-- Subtitle line decoration -->
+    <!-- Screen border -->
     <path
-        android:fillColor="#B5926A"
-        android:pathData="M28,88 L80,88 L80,91 L28,91 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#C49568"
+        android:strokeWidth="2"
+        android:pathData="
+M20,14
+L88,14
+Q94,14 94,20
+L94,88
+Q94,94 88,94
+L20,94
+Q14,94 14,88
+L14,20
+Q14,14 20,14 Z" />
 
 </vector>
