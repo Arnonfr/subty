@@ -173,7 +173,11 @@ private fun DownloadHistoryRow(item: HistoryItem, onDelete: () -> Unit) {
             SubtyText(
                 buildString {
                     append(item.originalLanguage.uppercase())
-                    item.translatedLanguage?.let { append(" → ${it.uppercase()}") }
+                    if (item.translatedLanguage != null) {
+                        append(" → ${item.translatedLanguage.uppercase()}")
+                    } else {
+                        append("  ·  Downloaded")
+                    }
                     append("  ·  ${item.format.uppercase()}")
                 },
                 fontSize = 11, color = SubtyMocha, letterSpacing = 0.04f,

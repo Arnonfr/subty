@@ -8,6 +8,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.PlayArrow
@@ -17,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
@@ -43,15 +46,48 @@ fun TranslateScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val progress = state.progress
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(fileId, languageCode) {
         viewModel.downloadAndLoad(fileId, languageCode)
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.saveDoneEvents.collect { savedName ->
+            val result = snackbarHostState.showSnackbar(
+                message = "Saved: $savedName",
+                actionLabel = "Open Folder",
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                val downloadsUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(downloadsUri, "*/*")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                runCatching { context.startActivity(intent) }
+            }
+        }
+    }
+
+    Scaffold(
+        containerColor = SubtyBg,
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = SubtyBg2,
+                    contentColor = SubtyText1,
+                    actionColor = SubtyMocha,
+                )
+            }
+        }
+    ) { innerPadding ->
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SubtyBg),
+            .background(SubtyBg)
+            .padding(bottom = innerPadding.calculateBottomPadding()),
     ) {
         SubtyTopBar(title = "Translate", onBack = onBack)
 
@@ -330,7 +366,8 @@ fun TranslateScreen(
                 }
             }
         }
-    }
+    } // end Column
+    } // end Scaffold
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

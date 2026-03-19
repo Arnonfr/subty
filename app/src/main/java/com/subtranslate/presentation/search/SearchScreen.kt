@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -129,66 +130,114 @@ fun SearchScreen(
                 }
 
                 // Autocomplete dropdown — no posters, just text (faster)
-                if (state.showSuggestions && state.suggestions.isNotEmpty()) {
+                if (state.showSuggestions && state.combinedSuggestions.isNotEmpty()) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(1.dp, SubtyBorder)
                             .background(SubtyBg),
                     ) {
-                        state.suggestions.forEachIndexed { idx, result ->
-                            val title = result.attributes.title
-                                ?: result.attributes.originalTitle ?: ""
-                            val year  = result.attributes.year?.toString() ?: ""
-                            val isTv  = result.type == "tv" ||
-                                    result.attributes.featureType?.lowercase() == "tvshow"
-
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                    ) { viewModel.onSuggestionSelected(result) }
-                                    .padding(horizontal = 14.dp, vertical = 11.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                // Initials badge instead of poster (much faster — no extra network request)
-                                Box(
-                                    modifier = Modifier
-                                        .size(width = 28.dp, height = 28.dp)
-                                        .background(SubtyBg3)
-                                        .border(1.dp, SubtyBorderDim),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    SubtyText(
-                                        title.take(1).uppercase(),
-                                        fontSize = 11,
-                                        weight = FontWeight.Bold,
-                                        color = SubtyMocha,
-                                    )
+                        state.combinedSuggestions.forEachIndexed { idx, suggestion ->
+                            when (suggestion) {
+                                is Suggestion.History -> {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) { viewModel.onHistorySuggestionSelected(suggestion.item) }
+                                            .padding(horizontal = 14.dp, vertical = 11.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(width = 28.dp, height = 28.dp)
+                                                .background(SubtyBg3)
+                                                .border(1.dp, SubtyBorderDim),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Icon(
+                                                Icons.Default.History,
+                                                contentDescription = "History",
+                                                tint = SubtyText3,
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            SubtyText(
+                                                suggestion.item.query,
+                                                fontSize = 13,
+                                                weight = FontWeight.SemiBold,
+                                                color = SubtyText1,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                            SubtyText(
+                                                "Recent search",
+                                                fontSize = 11,
+                                                color = SubtyText3,
+                                            )
+                                        }
+                                    }
                                 }
-                                Column(modifier = Modifier.weight(1f)) {
-                                    SubtyText(
-                                        title,
-                                        fontSize = 13,
-                                        weight = FontWeight.SemiBold,
-                                        color = SubtyText1,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                    SubtyText(
-                                        buildString {
-                                            if (year.isNotEmpty()) { append(year); append(" · ") }
-                                            append(if (isTv) "Series" else "Movie")
-                                        },
-                                        fontSize = 11,
-                                        color = SubtyText3,
-                                    )
+                                is Suggestion.Remote -> {
+                                    val result = suggestion.result
+                                    val title = result.attributes.title
+                                        ?: result.attributes.originalTitle ?: ""
+                                    val year  = result.attributes.year?.toString() ?: ""
+                                    val isTv  = result.type == "tv" ||
+                                            result.attributes.featureType?.lowercase() == "tvshow"
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null,
+                                            ) { viewModel.onSuggestionSelected(result) }
+                                            .padding(horizontal = 14.dp, vertical = 11.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        // Initials badge instead of poster (much faster — no extra network request)
+                                        Box(
+                                            modifier = Modifier
+                                                .size(width = 28.dp, height = 28.dp)
+                                                .background(SubtyBg3)
+                                                .border(1.dp, SubtyBorderDim),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            SubtyText(
+                                                title.take(1).uppercase(),
+                                                fontSize = 11,
+                                                weight = FontWeight.Bold,
+                                                color = SubtyMocha,
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            SubtyText(
+                                                title,
+                                                fontSize = 13,
+                                                weight = FontWeight.SemiBold,
+                                                color = SubtyText1,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                            SubtyText(
+                                                buildString {
+                                                    if (year.isNotEmpty()) { append(year); append(" · ") }
+                                                    append(if (isTv) "Series" else "Movie")
+                                                },
+                                                fontSize = 11,
+                                                color = SubtyText3,
+                                            )
+                                        }
+                                    }
                                 }
                             }
-                            if (idx < state.suggestions.lastIndex) SubtyDividerDim()
+                            if (idx < state.combinedSuggestions.lastIndex) SubtyDividerDim()
                         }
                     }
                 }

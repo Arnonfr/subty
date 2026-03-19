@@ -17,6 +17,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed class Suggestion {
+    data class Remote(val result: FeatureDto) : Suggestion()
+    data class History(val item: SearchHistoryEntity) : Suggestion()
+}
+
 data class SearchUiState(
     val query: String = "",
     val imdbId: String = "",
@@ -29,6 +34,7 @@ data class SearchUiState(
     val error: String? = null,
     // Autocomplete
     val suggestions: List<FeatureDto> = emptyList(),
+    val combinedSuggestions: List<Suggestion> = emptyList(),
     val showSuggestions: Boolean = false,
     val suggestionsLoading: Boolean = false,
     val suggestionsError: String? = null,
@@ -59,6 +65,7 @@ class SearchViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             query = query,
             suggestions = if (query.length < 2) emptyList() else _uiState.value.suggestions,
+            combinedSuggestions = if (query.length < 2) emptyList() else _uiState.value.combinedSuggestions,
             showSuggestions = query.length >= 2,
             suggestionsError = null,
             selectedPosterUrl = null,
@@ -81,22 +88,31 @@ class SearchViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(suggestionsLoading = true)
         suggestJob = viewModelScope.launch {
             delay(100)
+            // Fetch history suggestions in parallel
+            val historyItems = runCatching { searchHistoryDao.searchByPrefix(query) }
+                .getOrDefault(emptyList())
             runCatching { openSubtitlesApi.searchFeatures(query) }
                 .onSuccess { response ->
-                    val results = response.data.take(6)
+                    val remoteResults = response.data.take(6)
+                    val historySuggestions = historyItems.map { Suggestion.History(it) }
+                    val remoteSuggestions = remoteResults.map { Suggestion.Remote(it) }
+                    val combined = (historySuggestions + remoteSuggestions).take(8)
                     _uiState.value = _uiState.value.copy(
-                        suggestions = results,
-                        showSuggestions = results.isNotEmpty(),
+                        suggestions = remoteResults,
+                        combinedSuggestions = combined,
+                        showSuggestions = combined.isNotEmpty(),
                         suggestionsLoading = false,
                         suggestionsError = null
                     )
                 }
                 .onFailure { throwable ->
                     Log.e("SearchViewModel", "Suggestions fetch failed: ${throwable.message}")
-                    // Silently collapse — never show parse/network errors to the user
+                    // Fall back to history-only suggestions
+                    val historySuggestions = historyItems.map { Suggestion.History(it) }
                     _uiState.value = _uiState.value.copy(
                         suggestions = emptyList(),
-                        showSuggestions = false,
+                        combinedSuggestions = historySuggestions,
+                        showSuggestions = historySuggestions.isNotEmpty(),
                         suggestionsLoading = false,
                         suggestionsError = null,
                     )
@@ -128,6 +144,27 @@ class SearchViewModel @Inject constructor(
             seasonsCount = feature.attributes.seasonsCount ?: 0,
             episodesCount = feature.attributes.episodesCount ?: 0,
             isMovie = !isTv,
+        )
+    }
+
+    fun onHistorySuggestionSelected(item: SearchHistoryEntity) {
+        searchSession.movieTitle  = item.query
+        searchSession.season      = item.season
+        searchSession.episode     = item.episode
+        searchSession.languages   = item.languages
+        searchSession.contentType = item.contentType
+        searchSession.imdbId      = null
+        searchSession.posterUrl   = null
+        _uiState.value = _uiState.value.copy(
+            query = item.query,
+            showSuggestions = false,
+            combinedSuggestions = emptyList(),
+            suggestions = emptyList(),
+            suggestionsLoading = false,
+            suggestionsError = null,
+            selectedPosterUrl = null,
+            selectedMovieTitle = item.query,
+            isMovie = item.contentType == "movie",
         )
     }
 

@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.remote.tmdb.SearchSession
 import com.subtranslate.data.repository.SubtitleRepositoryImpl
+import com.subtranslate.domain.model.HistoryItem
 import com.subtranslate.domain.model.SubtitleSearchResult
+import com.subtranslate.domain.repository.HistoryRepository
 import com.subtranslate.domain.usecase.DownloadSubtitleUseCase
 import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.SearchSubtitlesUseCase
@@ -39,7 +41,8 @@ class ResultsViewModel @Inject constructor(
     private val saveUseCase: SaveSubtitleUseCase,
     private val repository: SubtitleRepositoryImpl,
     private val searchSession: SearchSession,
-    private val settings: SettingsDataStore
+    private val settings: SettingsDataStore,
+    private val historyRepository: HistoryRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ResultsUiState())
@@ -124,6 +127,25 @@ class ResultsViewModel @Inject constructor(
             if (saveResult.isSuccess) {
                 setDownloadState(fileId, DownloadState.DONE)
                 _downloadDoneEvents.tryEmit(saveName)
+                // Save to history DB
+                viewModelScope.launch {
+                    runCatching {
+                        historyRepository.save(
+                            HistoryItem(
+                                id = 0,
+                                movieTitle = saveName.substringBeforeLast("."),
+                                originalLanguage = languageCode,
+                                translatedLanguage = null,
+                                format = ext,
+                                openSubtitlesFileId = fileId,
+                                originalFilePath = saveName,
+                                translatedFilePath = null,
+                                downloadedAt = System.currentTimeMillis(),
+                                translatedAt = null
+                            )
+                        )
+                    }
+                }
             } else {
                 setDownloadState(fileId, DownloadState.ERROR, saveResult.exceptionOrNull()?.message)
             }

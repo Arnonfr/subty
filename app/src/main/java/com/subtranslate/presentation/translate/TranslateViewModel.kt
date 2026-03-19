@@ -7,9 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.repository.TranslationRepositoryImpl
+import com.subtranslate.domain.model.HistoryItem
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
 import com.subtranslate.domain.model.TranslationStatus
+import com.subtranslate.domain.repository.HistoryRepository
 import com.subtranslate.domain.usecase.DownloadSubtitleUseCase
 import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.TranslateSubtitleUseCase
@@ -18,8 +20,11 @@ import com.subtranslate.service.TranslationStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -45,11 +50,15 @@ class TranslateViewModel @Inject constructor(
     private val translationRepo: TranslationRepositoryImpl,
     private val settings: SettingsDataStore,
     private val stateHolder: TranslationStateHolder,
+    private val historyRepository: HistoryRepository,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TranslateUiState())
     val uiState: StateFlow<TranslateUiState> = _uiState
+
+    private val _saveDoneEvents = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val saveDoneEvents: SharedFlow<String> = _saveDoneEvents.asSharedFlow()
 
     // The subtitle file to translate - set by the owning screen via shared ViewModel or nav args
     var pendingFile: SubtitleFile? = null
@@ -160,6 +169,26 @@ class TranslateViewModel @Inject constructor(
                 savedPath = result.getOrNull()?.absolutePath,
                 saveError = result.exceptionOrNull()?.message
             )
+            if (result.isSuccess) {
+                _saveDoneEvents.tryEmit(name)
+                // Save to history DB
+                runCatching {
+                    historyRepository.save(
+                        HistoryItem(
+                            id = 0,
+                            movieTitle = file.title?.substringBeforeLast(".") ?: name.substringBeforeLast("."),
+                            originalLanguage = _uiState.value.sourceLang,
+                            translatedLanguage = _uiState.value.targetLang,
+                            format = ext,
+                            openSubtitlesFileId = null,
+                            originalFilePath = null,
+                            translatedFilePath = name,
+                            downloadedAt = System.currentTimeMillis(),
+                            translatedAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+            }
         }
     }
 

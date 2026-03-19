@@ -36,6 +36,7 @@ class SaveSubtitleUseCase @Inject constructor(
                     SubtitleFormat.ASS, SubtitleFormat.SSA -> "text/x-ass"
                 }
                 put(MediaStore.Downloads.MIME_TYPE, mimeType)
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/")
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
