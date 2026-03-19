@@ -1,6 +1,7 @@
 package com.subtranslate.data.remote.translation
 
 import com.subtranslate.BuildConfig
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.domain.model.SubtitleEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,7 +16,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GoogleTranslateService @Inject constructor() {
+class GoogleTranslateService @Inject constructor(
+    private val settingsDataStore: SettingsDataStore,
+) {
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -66,8 +69,10 @@ class GoogleTranslateService @Inject constructor() {
             put("format", "text")
         }
 
+        val apiKey = settingsDataStore.googleTranslateApiKey?.ifBlank { null }
+            ?: BuildConfig.GOOGLE_TRANSLATE_API_KEY
         val request = Request.Builder()
-            .url("https://translation.googleapis.com/language/translate/v2?key=${BuildConfig.GOOGLE_TRANSLATE_API_KEY}")
+            .url("https://translation.googleapis.com/language/translate/v2?key=$apiKey")
             .post(body.toString().toRequestBody("application/json".toMediaType()))
             .build()
 

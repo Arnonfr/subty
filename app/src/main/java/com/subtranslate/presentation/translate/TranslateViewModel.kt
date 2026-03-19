@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.subtranslate.BuildConfig
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.repository.TranslationRepositoryImpl
 import com.subtranslate.domain.model.HistoryItem
@@ -186,6 +187,11 @@ class TranslateViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun hasTranslateApiKey(): Boolean {
+        return !settings.googleTranslateApiKey.isNullOrBlank() ||
+               BuildConfig.GOOGLE_TRANSLATE_API_KEY.isNotBlank()
     }
 
     fun cancelTranslation() {

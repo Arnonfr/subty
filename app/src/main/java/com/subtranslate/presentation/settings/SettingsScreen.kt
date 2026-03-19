@@ -1,5 +1,7 @@
 package com.subtranslate.presentation.settings
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,7 +18,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.presentation.theme.*
@@ -33,6 +38,7 @@ private val FORMATS = listOf("srt" to "SRT", "vtt" to "VTT", "ass" to "ASS")
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -121,6 +127,25 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
         SubtyDivider()
 
+        Spacer(Modifier.height(16.dp))
+
+        // ── API Keys ──────────────────────────────────────────────────────────
+        SubtyLabel(
+            "API Keys",
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        )
+        SubtyDivider()
+        ApiKeyRow(
+            label = "Google Translate API Key",
+            value = state.googleTranslateApiKey,
+            placeholder = "Enter your Google Translate API key",
+            onValueChange = viewModel::onGoogleTranslateApiKeyChange,
+            getLinkUrl = "https://console.cloud.google.com/apis/library/translate.googleapis.com",
+            getLinkLabel = "Get free API key →",
+            context = context,
+        )
+        SubtyDivider()
+
         Spacer(Modifier.height(24.dp))
 
         SubtyButton(
@@ -141,6 +166,59 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun ApiKeyRow(
+    label: String,
+    value: String,
+    placeholder: String,
+    onValueChange: (String) -> Unit,
+    getLinkUrl: String,
+    getLinkLabel: String,
+    context: android.content.Context,
+) {
+    var showKey by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SubtyText(label, fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+        SubtyTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = placeholder,
+            visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                SubtyText(
+                    text = if (showKey) "Hide" else "Show",
+                    fontSize = 11,
+                    weight = FontWeight.Bold,
+                    color = SubtyMocha,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { showKey = !showKey },
+                )
+            },
+        )
+        SubtyText(
+            text = getLinkLabel,
+            fontSize = 11,
+            weight = FontWeight.Bold,
+            color = SubtyMocha,
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getLinkUrl))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                runCatching { context.startActivity(intent) }
+            },
+        )
     }
 }
 

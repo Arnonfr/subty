@@ -314,6 +314,7 @@ fun SubtyTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     trailingIcon: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
     val borderColor = if (value.isNotEmpty()) SubtyMocha else SubtyBorderDim
     Column(modifier = modifier) {
@@ -336,6 +337,7 @@ fun SubtyTextField(
                 singleLine = singleLine,
                 keyboardOptions = keyboardOptions,
                 keyboardActions = keyboardActions,
+                visualTransformation = visualTransformation,
                 textStyle = TextStyle(
                     color = SubtyText1,
                     fontSize = 14.sp,

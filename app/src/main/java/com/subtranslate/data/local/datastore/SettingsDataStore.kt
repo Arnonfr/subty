@@ -66,6 +66,10 @@ class SettingsDataStore(context: Context) {
         get() = prefs.getString(KEY_OPENSUBTITLES_API_KEY, null)
         set(value) = prefs.edit().putString(KEY_OPENSUBTITLES_API_KEY, value).apply()
 
+    var googleTranslateApiKey: String?
+        get() = prefs.getString("google_translate_api_key", null)
+        set(v) = prefs.edit().putString("google_translate_api_key", v).apply()
+
     companion object {
         private const val KEY_SOURCE_LANG = "source_lang"
         private const val KEY_TARGET_LANG = "target_lang"

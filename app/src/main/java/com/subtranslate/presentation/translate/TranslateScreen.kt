@@ -40,6 +40,7 @@ fun TranslateScreen(
     val progress = state.progress
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    var showApiKeyDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(fileId, languageCode) {
         viewModel.downloadAndLoad(fileId, languageCode)
@@ -169,8 +170,12 @@ fun TranslateScreen(
                         else -> "Start translation"
                     },
                     onClick = {
-                        val file = viewModel.pendingFile
-                        if (file != null) viewModel.startTranslation(file)
+                        if (!viewModel.hasTranslateApiKey()) {
+                            showApiKeyDialog = true
+                        } else {
+                            val file = viewModel.pendingFile
+                            if (file != null) viewModel.startTranslation(file)
+                        }
                     },
                     style = SubtyButtonStyle.FILLED,
                     enabled = !isTranslating && viewModel.pendingFile != null,
@@ -280,6 +285,27 @@ fun TranslateScreen(
             }
         }
     } // end Column
+
+    if (showApiKeyDialog) {
+        AlertDialog(
+            onDismissRequest = { showApiKeyDialog = false },
+            title = { androidx.compose.material3.Text("Google Translate API Key Required") },
+            text = { androidx.compose.material3.Text("To translate subtitles, you need a free Google Translate API key. Go to Settings to enter yours.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    showApiKeyDialog = false
+                    onBack()
+                }) {
+                    androidx.compose.material3.Text("Go to Settings")
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showApiKeyDialog = false }) {
+                    androidx.compose.material3.Text("Cancel")
+                }
+            },
+        )
+    }
     } // end Scaffold
 }
 

@@ -18,6 +18,8 @@ data class SettingsUiState(
     // Save
     val preferredSaveFormat: String = "srt",
     val autoSave: Boolean = false,
+    // API Keys
+    val googleTranslateApiKey: String = "",
     val saved: Boolean = false
 )
 
@@ -34,7 +36,8 @@ class SettingsViewModel @Inject constructor(
             showPosters = settings.showPosters,
             compactResults = settings.compactResults,
             preferredSaveFormat = settings.preferredSaveFormat,
-            autoSave = settings.autoSaveTranslated
+            autoSave = settings.autoSaveTranslated,
+            googleTranslateApiKey = settings.googleTranslateApiKey ?: "",
         )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -46,6 +49,7 @@ class SettingsViewModel @Inject constructor(
     fun onCompactResultsChange(v: Boolean) = update { copy(compactResults = v, saved = false) }
     fun onSaveFormatChange(v: String) = update { copy(preferredSaveFormat = v, saved = false) }
     fun onAutoSaveChange(v: Boolean) = update { copy(autoSave = v, saved = false) }
+    fun onGoogleTranslateApiKeyChange(v: String) = update { copy(googleTranslateApiKey = v, saved = false) }
 
     fun save() {
         val s = _uiState.value
@@ -56,6 +60,7 @@ class SettingsViewModel @Inject constructor(
         settings.compactResults = s.compactResults
         settings.preferredSaveFormat = s.preferredSaveFormat
         settings.autoSaveTranslated = s.autoSave
+        settings.googleTranslateApiKey = s.googleTranslateApiKey.ifBlank { null }
         update { copy(saved = true) }
     }
 
