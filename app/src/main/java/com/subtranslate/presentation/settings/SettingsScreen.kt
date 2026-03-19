@@ -90,7 +90,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
         )
         SubtyDivider()
-        SettingsDropdown(
+        SubtyLanguagePickerRow(
             label = "Default target language",
             selected = state.defaultTargetLang,
             options = GOOGLE_TRANSLATE_LANGUAGES,

@@ -101,12 +101,12 @@ class MainActivity : ComponentActivity() {
                                         Icon(
                                             imageVector = item.icon,
                                             contentDescription = item.label,
-                                            tint = if (selected) SubtyBlack else SubtyText3,
+                                            tint = if (selected) SubtyBg else SubtyText3,
                                             modifier = Modifier.size(20.dp),
                                         )
                                         SubtyLabel(
                                             item.label,
-                                            color = if (selected) SubtyBlack else SubtyText3,
+                                            color = if (selected) SubtyBg else SubtyText3,
                                         )
                                     }
                                 }

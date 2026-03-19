@@ -38,6 +38,7 @@ fun SearchScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var langFilter by remember { mutableStateOf("") }
+    var langSearchOpen by remember { mutableStateOf(false) }
 
     // Filtered language list — if user types in lang filter field, narrow the chips
     val visibleLanguages = remember(langFilter) {
@@ -317,20 +318,44 @@ fun SearchScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             SubtyLabel("Languages")
-            // Language search field
+            // Magnifying glass toggle — tap to open/close search field
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        langSearchOpen = !langSearchOpen
+                        if (!langSearchOpen) langFilter = ""
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search languages",
+                    tint = if (langSearchOpen) SubtyMocha else SubtyText3,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+        // Expandable language search row
+        if (langSearchOpen) {
+            Spacer(Modifier.height(8.dp))
             BasicTextField(
                 value = langFilter,
                 onValueChange = { langFilter = it },
                 singleLine = true,
-                textStyle = TextStyle(color = SubtyText2, fontSize = 12.sp),
+                textStyle = TextStyle(color = SubtyText1, fontSize = 13.sp),
                 cursorBrush = SolidColor(SubtyMocha),
                 modifier = Modifier
-                    .width(100.dp)
-                    .border(1.dp, SubtyBorderDim)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .border(1.dp, SubtyMocha)
                     .background(SubtyBg2)
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
                 decorationBox = { inner ->
-                    if (langFilter.isEmpty()) SubtyText("Filter…", color = SubtyText3, fontSize = 12)
+                    if (langFilter.isEmpty()) SubtyText("Search languages…", color = SubtyText3, fontSize = 13)
                     inner()
                 },
             )

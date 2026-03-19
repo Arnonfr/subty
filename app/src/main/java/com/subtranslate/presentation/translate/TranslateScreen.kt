@@ -15,7 +15,14 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -318,50 +325,51 @@ fun TranslateScreen(
     } // end Scaffold
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LanguageSelector(
     selected: String,
     options: List<Pair<String, String>>,
     onSelect: (String) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        Row(
-            modifier = Modifier
-                .border(1.dp, SubtyBorderDim)
-                .background(SubtyBg3)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) { expanded = true }
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            SubtyText(
-                options.find { it.first == selected }?.second ?: selected,
-                fontSize = 13,
-                weight = FontWeight.Bold,
-                color = SubtyText1,
-            )
-            Icon(
-                Icons.Default.ArrowDropDown,
-                contentDescription = null,
-                tint = SubtyText3,
-                modifier = Modifier.size(16.dp),
-            )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            options.forEach { (code, name) ->
-                DropdownMenuItem(
-                    text = { SubtyText(name, fontSize = 13) },
-                    onClick = { onSelect(code); expanded = false },
-                )
-            }
-        }
+    var showDialog by remember { mutableStateOf(false) }
+    val displayName = options.find { it.first == selected }?.second ?: selected
+
+    Row(
+        modifier = Modifier
+            .border(1.dp, SubtyBorderDim)
+            .background(SubtyBg3)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { showDialog = true }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        SubtyText(
+            displayName,
+            fontSize = 13,
+            weight = FontWeight.Bold,
+            color = SubtyText1,
+            maxLines = 1,
+        )
+        Icon(
+            Icons.Default.ArrowDropDown,
+            contentDescription = null,
+            tint = SubtyText3,
+            modifier = Modifier.size(16.dp),
+        )
+    }
+
+    if (showDialog) {
+        com.subtranslate.presentation.theme.LanguagePickerDialogPublic(
+            options = options,
+            selected = selected,
+            onSelect = { code ->
+                onSelect(code)
+                showDialog = false
+            },
+            onDismiss = { showDialog = false },
+        )
     }
 }

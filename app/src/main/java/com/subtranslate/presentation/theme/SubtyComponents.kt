@@ -130,10 +130,11 @@ fun SubtyTopBar(
                         .clickable(onClick = onBack),
                     contentAlignment = Alignment.Center,
                 ) {
+                    val arrowColor = SubtyText1
                     Canvas(modifier = Modifier.size(18.dp)) {
                         val cx = size.width / 2f
                         val cy = size.height / 2f
-                        val color = SubtyWhite
+                        val color = arrowColor
                         drawLine(color, Offset(cx, 2f), Offset(4f, cy), strokeWidth = 1.5f)
                         drawLine(color, Offset(4f, cy), Offset(cx, size.height - 2f), strokeWidth = 1.5f)
                         drawLine(color, Offset(4f, cy), Offset(size.width - 2f, cy), strokeWidth = 1.5f)
@@ -179,8 +180,8 @@ fun SubtyButton(
     }
     val fg = when {
         !enabled -> SubtyText3
-        style == SubtyButtonStyle.FILLED -> SubtyBlack
-        style == SubtyButtonStyle.MOCHA -> SubtyBlack
+        style == SubtyButtonStyle.FILLED -> SubtyBg
+        style == SubtyButtonStyle.MOCHA -> SubtyBg
         else -> SubtyText1
     }
     val borderColor = when {
@@ -233,7 +234,7 @@ fun SubtyChip(
     modifier: Modifier = Modifier,
 ) {
     val bg    = if (selected) SubtyText1 else Color.Transparent
-    val fg    = if (selected) SubtyBlack else SubtyText2
+    val fg    = if (selected) SubtyBg else SubtyText2
     Box(
         modifier = modifier
             .border(1.dp, if (selected) SubtyBorder else SubtyBorderDim)
