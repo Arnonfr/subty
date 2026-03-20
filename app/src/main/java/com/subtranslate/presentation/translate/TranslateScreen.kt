@@ -42,6 +42,8 @@ fun TranslateScreen(
     fileName: String,
     languageCode: String,
     onBack: () -> Unit,
+    translateEnabled: Boolean = true,
+    maintenanceMessage: String = "",
     viewModel: TranslateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -99,6 +101,24 @@ fun TranslateScreen(
             .padding(bottom = innerPadding.calculateBottomPadding()),
     ) {
         SubtyTopBar(title = "Translate", onBack = onBack)
+
+        // ── Feature-disabled banner ────────────────────────────────────────────
+        if (!translateEnabled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SubtyMocha)
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                SubtyText(
+                    text = maintenanceMessage.ifBlank { "Translation is temporarily unavailable." },
+                    color = androidx.compose.ui.graphics.Color.White,
+                    fontSize = 13,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
 
         if (state.isLoadingFile) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -194,7 +214,7 @@ fun TranslateScreen(
                         }
                     },
                     style = SubtyButtonStyle.FILLED,
-                    enabled = !isTranslating && viewModel.pendingFile != null,
+                    enabled = translateEnabled && !isTranslating && viewModel.pendingFile != null,
                     loading = isTranslating,
                     modifier = Modifier
                         .fillMaxWidth()

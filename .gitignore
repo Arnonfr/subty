@@ -5,6 +5,9 @@ local.properties
 *.keystore
 *-release.jks
 SECRETS_FILLED.md
+google-services.json
+*-adminsdk-*.json
+service-account-*.json
 
 # Android build
 *.iml

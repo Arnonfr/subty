@@ -34,6 +34,8 @@ import com.subtranslate.util.OPENSUBTITLES_SEARCH_LANGUAGES
 @Composable
 fun SearchScreen(
     onSearch: (String) -> Unit,
+    searchEnabled: Boolean = true,
+    maintenanceMessage: String = "",
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -55,6 +57,24 @@ fun SearchScreen(
             .background(SubtyBg)
             .verticalScroll(rememberScrollState()),
     ) {
+        // ── Feature-disabled banner ────────────────────────────────────────────
+        if (!searchEnabled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(SubtyMocha)
+                    .padding(12.dp),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                SubtyText(
+                    text = maintenanceMessage.ifBlank { "Search is temporarily unavailable." },
+                    color = androidx.compose.ui.graphics.Color.White,
+                    fontSize = 13,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
         // ── Page title ────────────────────────────────────────────────────────
         SubtyPageTitle(
             "Search",
@@ -382,7 +402,7 @@ fun SearchScreen(
             text = "Search Subtitles",
             onClick = { viewModel.search(); onSearch(state.query) },
             style = SubtyButtonStyle.FILLED,
-            enabled = !state.isLoading && (state.query.isNotBlank() || state.imdbId.isNotBlank()),
+            enabled = searchEnabled && !state.isLoading && (state.query.isNotBlank() || state.imdbId.isNotBlank()),
             loading = state.isLoading,
             modifier = Modifier
                 .fillMaxWidth()

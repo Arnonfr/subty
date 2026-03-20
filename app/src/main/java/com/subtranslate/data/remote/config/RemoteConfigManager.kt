@@ -10,6 +10,8 @@ import javax.inject.Singleton
 data class AppConfig(
     val appEnabled: Boolean,
     val maintenanceMessage: String,
+    val searchEnabled: Boolean = true,
+    val translateEnabled: Boolean = true,
 )
 
 @Singleton
@@ -18,11 +20,15 @@ class RemoteConfigManager @Inject constructor() {
     companion object {
         private const val KEY_APP_ENABLED        = "app_enabled"
         private const val KEY_MAINTENANCE_MESSAGE = "maintenance_message"
+        private const val KEY_SEARCH_ENABLED      = "search_enabled"
+        private const val KEY_TRANSLATE_ENABLED   = "translate_enabled"
 
         // Default values — app works normally if Firebase is unreachable
         private val DEFAULTS = mapOf(
             KEY_APP_ENABLED        to true,
             KEY_MAINTENANCE_MESSAGE to "We'll be back shortly. Thanks for your patience!",
+            KEY_SEARCH_ENABLED     to true,
+            KEY_TRANSLATE_ENABLED  to true,
         )
 
         // In production: 1 hour cache. During dev you can lower this.
@@ -51,5 +57,7 @@ class RemoteConfigManager @Inject constructor() {
     fun current(): AppConfig = AppConfig(
         appEnabled        = remoteConfig.getBoolean(KEY_APP_ENABLED),
         maintenanceMessage = remoteConfig.getString(KEY_MAINTENANCE_MESSAGE),
+        searchEnabled     = remoteConfig.getBoolean(KEY_SEARCH_ENABLED),
+        translateEnabled  = remoteConfig.getBoolean(KEY_TRANSLATE_ENABLED),
     )
 }

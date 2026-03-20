@@ -9,6 +9,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.subtranslate.data.remote.config.AppConfig
 import com.subtranslate.presentation.history.HistoryScreen
 import com.subtranslate.presentation.results.ResultsScreen
 import com.subtranslate.presentation.search.SearchScreen
@@ -18,6 +19,7 @@ import com.subtranslate.presentation.translate.TranslateScreen
 @Composable
 fun NavGraph(
     navController: NavHostController,
+    appConfig: AppConfig,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -30,7 +32,9 @@ fun NavGraph(
 
         composable(Screen.Search.route) {
             SearchScreen(
-                onSearch = { query -> navController.navigate(Screen.Results.createRoute(query)) }
+                onSearch = { query -> navController.navigate(Screen.Results.createRoute(query)) },
+                searchEnabled = appConfig.searchEnabled,
+                maintenanceMessage = appConfig.maintenanceMessage,
             )
         }
 
@@ -63,7 +67,9 @@ fun NavGraph(
                 fileId = fileId,
                 fileName = fileName,
                 languageCode = languageCode,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                translateEnabled = appConfig.translateEnabled,
+                maintenanceMessage = appConfig.maintenanceMessage,
             )
         }
 

@@ -106,6 +106,7 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 NavGraph(
                                     navController = navController,
+                                    appConfig = state.config,
                                     modifier = Modifier.weight(1f),
                                 )
 

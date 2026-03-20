@@ -24,8 +24,16 @@ jobs:
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" | base64 -d > firebase-service-account.json
           echo "FIREBASE_SERVICE_ACCOUNT=$GITHUB_WORKSPACE/firebase-service-account.json" >> $GITHUB_ENV
 
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug
+      - name: Decode google-services.json
+        run: |
+          if [ -n "${{ secrets.GOOGLE_SERVICES_JSON_B64 }}" ]; then
+            echo "${{ secrets.GOOGLE_SERVICES_JSON_B64 }}" | base64 -d > app/google-services.json
+          else
+            echo "Skipping google-services.json: Secret GOOGLE_SERVICES_JSON_B64 not found."
+          fi
+
+      - name: Build Stable
+        run: ./gradlew assembleStableDebug
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
@@ -35,8 +43,30 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
 
-      - name: Upload to Firebase App Distribution
-        run: ./gradlew appDistributionUploadDebug
+      - name: Upload Stable to Firebase
+        run: ./gradlew appDistributionUploadStableDebug
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ env.FIREBASE_SERVICE_ACCOUNT }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
+          OPENSUBTITLES_API_KEY: ${{ secrets.OPENSUBTITLES_API_KEY }}
+          OPENSUBTITLES_USERNAME: ${{ secrets.OPENSUBTITLES_USERNAME }}
+          OPENSUBTITLES_PASSWORD: ${{ secrets.OPENSUBTITLES_PASSWORD }}
+          SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
+
+      - name: Build Lab
+        run: ./gradlew assembleLabDebug
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
+          OPENSUBTITLES_API_KEY: ${{ secrets.OPENSUBTITLES_API_KEY }}
+          OPENSUBTITLES_USERNAME: ${{ secrets.OPENSUBTITLES_USERNAME }}
+          OPENSUBTITLES_PASSWORD: ${{ secrets.OPENSUBTITLES_PASSWORD }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
+
+      - name: Upload Lab to Firebase
+        run: ./gradlew appDistributionUploadLabDebug
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ env.FIREBASE_SERVICE_ACCOUNT }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

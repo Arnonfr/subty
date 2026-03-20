@@ -1,0 +1,38 @@
+Subty is the easiest way to find, download, and translate subtitles for any movie or TV show — right on your Android phone.
+
+🔍 FIND SUBTITLES IN SECONDS
+Search by movie title or paste the IMDB ID for exact results. Subty searches millions of subtitles from OpenSubtitles, the world's largest subtitle database. Filter by language, sort by popularity, and download in one tap.
+
+🌍 TRANSLATE TO YOUR LANGUAGE
+Once downloaded, translate any subtitle file to over 100 languages using Google Translate. The translation runs in the background — you can keep using your phone while Subty works. Preview every line before saving to make sure the translation is accurate.
+
+📁 SAVED TO YOUR DOWNLOADS FOLDER
+All subtitle files (.srt, .vtt, .ass) are saved directly to your Downloads folder, where your media player can find them easily.
+
+📋 FULL HISTORY
+Every search and download is saved in your history tab. Re-run a previous search with one tap, or pick up where you left off.
+
+⚡ FAST & LIGHTWEIGHT
+No accounts required for basic search. Clean dark interface designed for readability. No ads, no clutter.
+
+KEY FEATURES:
+• Search millions of subtitles by title or IMDB ID
+• Filter by language (English, Hebrew, Arabic, French, Spanish, and 100+ more)
+• Filter for TV shows by season and episode
+• Download subtitle files directly to your Downloads folder
+• Translate subtitles to any language with Google Translate
+• Preview translated subtitles before saving
+• Background translation — use your phone while it works
+• Full download & search history
+• Open subtitle files directly from your file manager
+• Supports .srt, .vtt, and .ass subtitle formats
+
+SUPPORTED LANGUAGES:
+English, Hebrew, Arabic, French, Spanish, German, Italian, Portuguese, Russian, Japanese, Korean, Chinese, Turkish, Polish, Dutch, and 100+ more.
+
+SUBTITLE SOURCES:
+Powered by OpenSubtitles — the world's largest open subtitle database with over 4 million subtitle files across 60+ languages.
+
+---
+
+Subty is free to download. Google Translate is used for translation — the free tier includes 500,000 characters per month (approximately 8 full movies). No in-app purchases required for basic use.
