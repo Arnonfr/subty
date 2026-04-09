@@ -173,13 +173,12 @@ fun ResultsScreen(
                     // Dropdown search button
                     Box(
                         modifier = Modifier
-                            .fillMaxHeight()
                             .background(if (langMenuExpanded) SubtyBg3 else SubtyBg)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                             ) { langMenuExpanded = true }
-                            .padding(horizontal = 14.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         SubtyText("▾", fontSize = 20, color = SubtyText2)
