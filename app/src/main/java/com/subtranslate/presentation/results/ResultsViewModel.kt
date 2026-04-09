@@ -13,6 +13,7 @@ import com.subtranslate.domain.usecase.SaveSubtitleUseCase
 import com.subtranslate.domain.usecase.SearchSubtitlesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -86,14 +87,21 @@ class ResultsViewModel @Inject constructor(
                 } catch (_: Exception) { emptyList() }
             }
 
+            // Show OS results immediately (~289ms), don't wait for SubDL
             val osItems = osDeferred.await()
-            val sdItems = sdDeferred.await()
-            val combined = osItems + sdItems
+            _uiState.value = _uiState.value.copy(
+                results = osItems,
+                filteredResults = applyFilter(osItems, _uiState.value.languageFilter),
+                isLoading = false,
+                error = if (osItems.isEmpty()) "Searching more sources…" else null,
+            )
 
+            // Append SubDL results when ready (5s timeout)
+            val sdItems = withTimeoutOrNull(5_000) { sdDeferred.await() } ?: emptyList()
+            val combined = osItems + sdItems
             _uiState.value = _uiState.value.copy(
                 results = combined,
                 filteredResults = applyFilter(combined, _uiState.value.languageFilter),
-                isLoading = false,
                 error = if (combined.isEmpty()) "No subtitles found" else null,
             )
         }
