@@ -2,7 +2,7 @@ name: Firebase App Distribution
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
@@ -32,7 +32,9 @@ jobs:
             echo "Skipping google-services.json: Secret GOOGLE_SERVICES_JSON_B64 not found."
           fi
 
+      # Stable is distributed only from main — never from develop
       - name: Build Stable
+        if: github.ref == 'refs/heads/main'
         run: ./gradlew assembleStableDebug
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -44,6 +46,7 @@ jobs:
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
 
       - name: Upload Stable to Firebase
+        if: github.ref == 'refs/heads/main'
         run: ./gradlew appDistributionUploadStableDebug
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ env.FIREBASE_SERVICE_ACCOUNT }}
@@ -54,6 +57,7 @@ jobs:
           OPENSUBTITLES_PASSWORD: ${{ secrets.OPENSUBTITLES_PASSWORD }}
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
 
+      # Lab is distributed from both main and develop
       - name: Build Lab
         run: ./gradlew assembleLabDebug
         env:

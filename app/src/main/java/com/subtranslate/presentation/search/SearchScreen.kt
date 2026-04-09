@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -134,14 +135,24 @@ fun SearchScreen(
                         },
                     )
                     Spacer(Modifier.width(8.dp))
-                    if (state.suggestionsLoading) {
-                        CircularProgressIndicator(
+                    when {
+                        state.suggestionsLoading -> CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
                             strokeWidth = 1.5.dp,
                             color = SubtyMocha,
                         )
-                    } else {
-                        Icon(
+                        state.query.isNotEmpty() -> Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Clear",
+                            tint = SubtyText3,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { viewModel.onQueryChange("") },
+                        )
+                        else -> Icon(
                             Icons.Default.Search,
                             contentDescription = null,
                             tint = SubtyText3,

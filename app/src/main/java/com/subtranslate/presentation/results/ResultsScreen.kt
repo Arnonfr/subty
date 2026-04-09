@@ -171,20 +171,18 @@ fun ResultsScreen(
                     }
 
                     // Dropdown search button
-                    Box(modifier = Modifier.padding(end = 8.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .border(1.dp, SubtyBorderDim)
-                                .background(if (langMenuExpanded) SubtyBg3 else SubtyBg)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) { langMenuExpanded = true }
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            SubtyText("▾", fontSize = 14, color = SubtyText2)
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .background(if (langMenuExpanded) SubtyBg3 else SubtyBg)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { langMenuExpanded = true }
+                            .padding(horizontal = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        SubtyText("▾", fontSize = 20, color = SubtyText2)
                         DropdownMenu(
                             expanded = langMenuExpanded,
                             onDismissRequest = { langMenuExpanded = false },

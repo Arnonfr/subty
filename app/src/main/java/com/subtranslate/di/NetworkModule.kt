@@ -1,5 +1,8 @@
 package com.subtranslate.di
 
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.JsonReader
+import com.squareup.moshi.JsonWriter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
@@ -21,9 +24,28 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    /**
+     * Moshi adapter for nullable Int that gracefully handles empty strings and
+     * unexpected types (e.g. OpenSubtitles returns `"year": ""` for some entries).
+     */
+    private val lenientNullableIntAdapter = object : JsonAdapter<Int?>() {
+        override fun fromJson(reader: JsonReader): Int? {
+            if (reader.peek() == JsonReader.Token.NULL) return reader.nextNull()
+            if (reader.peek() == JsonReader.Token.STRING) {
+                val s = reader.nextString()
+                return s.toIntOrNull()
+            }
+            return reader.nextInt()
+        }
+        override fun toJson(writer: JsonWriter, value: Int?) {
+            writer.value(value)
+        }
+    }.nullSafe()
+
     @Provides
     @Singleton
     fun provideMoshi(): Moshi = Moshi.Builder()
+        .add(Int::class.javaObjectType, lenientNullableIntAdapter)
         .addLast(KotlinJsonAdapterFactory())
         .build()
 

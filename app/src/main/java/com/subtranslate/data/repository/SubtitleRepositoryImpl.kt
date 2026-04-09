@@ -104,19 +104,24 @@ class SubtitleRepositoryImpl @Inject constructor(
         type: String?      = null,
     ): List<SubtitleSearchResult> {
         val apiKey = BuildConfig.SUBDL_API_KEY.ifBlank { return emptyList() }
-        // SubDL requires an IMDB ID — title-only queries return nothing
-        if (imdbId.isNullOrBlank()) return emptyList()
-        val formattedImdbId = formatImdbId(imdbId)
+        
+        // Use IMDB ID if available, otherwise fallback to title search
+        val formattedImdbId = imdbId?.let { formatImdbId(it) }
+        
         return try {
             val resp = subDLApi.searchSubtitles(
                 apiKey    = apiKey,
-                title     = null,          // SubDL ignores title when imdb_id is given
+                title     = if (formattedImdbId == null) title else null,
                 imdbId    = formattedImdbId,
                 season    = season,
                 episode   = episode,
                 languages = languages,
                 type      = type,
             )
+            
+            // SubDL can return results either in 'subtitles' (when imdb_id is used)
+            // or 'results' (when title is used, which might be movies instead of subtitles)
+            // For now, we only handle direct subtitle results.
             (resp.subtitles ?: emptyList()).map { dto ->
                 val id = subDLIdGen.getAndDecrement()
                 subDLRegistry[id] = dto
@@ -227,11 +232,59 @@ class SubtitleRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun SubDLSubtitleDto.toSearchResult(id: Int) = SubtitleSearchResult(
+    private fun subdlLangToIsoCode(lang: String): String = when (lang.lowercase().trim()) {
+        "english"                                        -> "en"
+        "arabic"                                         -> "ar"
+        "hebrew"                                         -> "he"
+        "french"                                         -> "fr"
+        "spanish"                                        -> "es"
+        "german"                                         -> "de"
+        "portuguese"                                     -> "pt"
+        "brazillian portuguese", "brazilian portuguese",
+        "portuguese (brazil)", "portuguese-br"           -> "pt-br"
+        "italian"                                        -> "it"
+        "dutch"                                          -> "nl"
+        "russian"                                        -> "ru"
+        "chinese", "simplified chinese"                  -> "zh"
+        "traditional chinese", "big 5 code"              -> "zh-tw"
+        "japanese"                                       -> "ja"
+        "korean"                                         -> "ko"
+        "turkish"                                        -> "tr"
+        "polish"                                         -> "pl"
+        "czech"                                          -> "cs"
+        "hungarian"                                      -> "hu"
+        "romanian"                                       -> "ro"
+        "bulgarian"                                      -> "bg"
+        "greek"                                          -> "el"
+        "swedish"                                        -> "sv"
+        "norwegian", "norwegian bokmål"                  -> "no"
+        "danish"                                         -> "da"
+        "finnish"                                        -> "fi"
+        "indonesian"                                     -> "id"
+        "malay"                                          -> "ms"
+        "thai"                                           -> "th"
+        "vietnamese"                                     -> "vi"
+        "ukrainian"                                      -> "uk"
+        "croatian"                                       -> "hr"
+        "serbian"                                        -> "sr"
+        "slovenian"                                      -> "sl"
+        "slovak"                                         -> "sk"
+        "farsi/persian", "persian", "farsi"              -> "fa"
+        "hindi"                                          -> "hi"
+        else -> {
+            Log.d(TAG, "subdlLangToIsoCode: unmapped lang='$lang' → fallback '${lang.lowercase().take(2)}'")
+            lang.lowercase().take(2)
+        }
+    }
+
+    private fun SubDLSubtitleDto.toSearchResult(id: Int): SubtitleSearchResult {
+        val isoCode = lang?.let { subdlLangToIsoCode(it) } ?: "?"
+        Log.d(TAG, "SubDL result: lang='$lang' → isoCode='$isoCode'  file=${releaseName ?: name}")
+        return SubtitleSearchResult(
         fileId            = id,
         fileName          = releaseName ?: name ?: "subtitle",
         language          = lang ?: "?",
-        languageCode      = lang?.lowercase() ?: "?",
+        languageCode      = isoCode,
         downloadCount     = 0,
         rating            = ratings,
         format            = "srt",
@@ -242,5 +295,6 @@ class SubtitleRepositoryImpl @Inject constructor(
         isHearingImpaired = hi ?: false,
         isTrusted         = false,
         uploaderName      = author,
-    )
+        )
+    }
 }

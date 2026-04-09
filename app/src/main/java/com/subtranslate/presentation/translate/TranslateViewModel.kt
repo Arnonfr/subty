@@ -35,7 +35,7 @@ data class TranslateUiState(
     // sourceLang is auto-detected from the subtitle file — never entered manually
     val sourceLang: String = "en",
     val targetLang: String = "he",
-    val selectedModel: String = "google",
+    val selectedModel: String = "gemini-3.1-flash-lite-preview",
     val isLoadingFile: Boolean = false,
     val progress: TranslationProgress = TranslationProgress(),
     val translatedFile: SubtitleFile? = null,
@@ -69,7 +69,7 @@ class TranslateViewModel @Inject constructor(
     init {
         _uiState.value = _uiState.value.copy(
             targetLang = settings.defaultTargetLanguage,
-            selectedModel = "google"
+            selectedModel = "gemini-3.1-flash-lite-preview"
         )
     }
 
@@ -120,6 +120,10 @@ class TranslateViewModel @Inject constructor(
             savedPath = null,
             saveError = null
         )
+    }
+
+    fun onModelChange(model: String) {
+        _uiState.value = _uiState.value.copy(selectedModel = model)
     }
 
     fun onSourceLangChange(lang: String) {
@@ -190,8 +194,11 @@ class TranslateViewModel @Inject constructor(
     }
 
     fun hasTranslateApiKey(): Boolean {
-        return !settings.googleTranslateApiKey.isNullOrBlank() ||
-               BuildConfig.GOOGLE_TRANSLATE_API_KEY.isNotBlank()
+        return if (settings.translationModel == "gemini") {
+            !settings.geminiApiKey.isNullOrBlank()
+        } else {
+            !settings.googleTranslateApiKey.isNullOrBlank() || BuildConfig.GOOGLE_TRANSLATE_API_KEY.isNotBlank()
+        }
     }
 
     fun cancelTranslation() {

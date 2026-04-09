@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -192,6 +194,22 @@ fun TranslateScreen(
                         }
                     }
 
+                    Spacer(Modifier.height(16.dp))
+                    SubtyDivider()
+                    Spacer(Modifier.height(16.dp))
+
+                    // ── Model selector ────────────────────────────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        SubtyLabel("AI MODEL")
+                        ModelDropdown(
+                            selected = state.selectedModel,
+                            onSelect = viewModel::onModelChange,
+                        )
+                    }
                 }
                 SubtyDivider()
             }
@@ -343,6 +361,61 @@ fun TranslateScreen(
         )
     }
     } // end Scaffold
+}
+
+private val TRANSLATION_MODELS = listOf(
+    "gemini-3.1-flash-lite-preview" to "Gemini 3.1 Flash Lite (fastest)",
+    "gemini-2.5-flash"              to "Gemini 2.5 Flash (stable)",
+)
+
+@Composable
+fun ModelDropdown(
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val label = TRANSLATION_MODELS.find { it.first == selected }?.second ?: selected
+
+    Box {
+        Row(
+            modifier = Modifier
+                .border(1.dp, SubtyBorderDim)
+                .background(SubtyBg3)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            SubtyText(label, fontSize = 13, weight = FontWeight.Bold, color = SubtyText1)
+            Icon(
+                Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = SubtyText3,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            TRANSLATION_MODELS.forEach { (id, name) ->
+                DropdownMenuItem(
+                    text = {
+                        SubtyText(
+                            name,
+                            fontSize = 13,
+                            color = if (id == selected) SubtyMocha else SubtyText1,
+                            weight = if (id == selected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    onClick = { onSelect(id); expanded = false },
+                )
+            }
+        }
+    }
 }
 
 @Composable

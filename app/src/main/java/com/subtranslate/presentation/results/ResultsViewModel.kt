@@ -66,24 +66,22 @@ class ResultsViewModel @Inject constructor(
 
             val osDeferred = async {
                 searchUseCase(
-                    query = query.ifBlank { null },
-                    imdbId = imdbIdStr?.toIntOrNull(),
+                    query     = query.ifBlank { null },
+                    imdbId    = imdbIdStr?.removePrefix("tt")?.toIntOrNull(),
                     languages = languages,
-                    season = season,
-                    episode = episode,
+                    season    = season,
+                    episode   = episode,
                 ).getOrNull()?.map { it.copy(posterUrl = posterUrl) } ?: emptyList()
             }
             val sdDeferred = async {
                 try {
                     repository.searchSubDL(
-                        title = query.ifBlank { null },
-                        imdbId = imdbIdStr,
-                        season = season,
-                        episode = episode,
-                        // SubDL requires uppercase language codes ("EN,HE" not "en,he")
+                        title     = query.ifBlank { null },
+                        imdbId    = imdbIdStr,
+                        season    = season,
+                        episode   = episode,
                         languages = languages?.uppercase(),
-                        // Pass content type so SubDL can narrow results to movie vs tv
-                        type = searchSession.contentType,
+                        type      = searchSession.contentType,
                     )
                 } catch (_: Exception) { emptyList() }
             }

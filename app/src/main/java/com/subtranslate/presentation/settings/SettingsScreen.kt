@@ -29,9 +29,9 @@ import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 private val MODELS = listOf(
-    "google"          to "Google Translate",
-    "gemini-1.5-flash" to "Gemini 1.5 Flash",
-    "gemini-2.0-flash" to "Gemini 2.0 Flash",
+    "google"                         to "Google Translate",
+    "gemini-3.1-flash-lite-preview"  to "Gemini 3.1 Flash Lite (fastest)",
+    "gemini-2.5-flash"               to "Gemini 2.5 Flash (stable)",
 )
 
 private val FORMATS = listOf("srt" to "SRT", "vtt" to "VTT", "ass" to "ASS")
@@ -52,43 +52,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp),
         )
 
-        Spacer(Modifier.height(16.dp))
-
-        // ── Display ───────────────────────────────────────────────────────────
-        SubtyLabel(
-            "Display",
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
-        SubtyDivider()
-        SubtyToggleRow(
-            label = "Dark mode",
-            description = "Switch between dark and light appearance",
-            checked = state.isDarkTheme,
-            onCheckedChange = viewModel::onDarkThemeChange,
-        )
-        SubtyDividerDim()
-        SubtyToggleRow(
-            label = "Show movie posters",
-            description = "Display cover art in search results",
-            checked = state.showPosters,
-            onCheckedChange = viewModel::onShowPostersChange,
-        )
-        SubtyDividerDim()
-        SubtyToggleRow(
-            label = "Compact results",
-            description = "Smaller cards, more results on screen",
-            checked = state.compactResults,
-            onCheckedChange = viewModel::onCompactResultsChange,
-        )
-        SubtyDivider()
-
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
         // ── Translation ───────────────────────────────────────────────────────
-        SubtyLabel(
-            "Translation",
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
+        SettingsSectionHeader("Translation", Modifier.padding(horizontal = 24.dp))
         SubtyDivider()
         SubtyLanguagePickerRow(
             label = "Default target language",
@@ -112,13 +79,36 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
         SubtyDivider()
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
+
+        // ── API Keys ──────────────────────────────────────────────────────────
+        SettingsSectionHeader("API Keys", Modifier.padding(horizontal = 24.dp))
+        SubtyDivider()
+        ApiKeyRow(
+            label = "Google Translate API Key",
+            value = state.googleTranslateApiKey,
+            placeholder = "Enter your Google Translate API key",
+            onValueChange = viewModel::onGoogleTranslateApiKeyChange,
+            getLinkUrl = "https://console.cloud.google.com/apis/library/translate.googleapis.com",
+            getLinkLabel = "Get free API key →",
+            context = context,
+        )
+        SubtyDivider()
+        ApiKeyRow(
+            label = "Gemini API Key",
+            value = state.geminiApiKey,
+            placeholder = "Enter your Gemini API key",
+            onValueChange = viewModel::onGeminiApiKeyChange,
+            getLinkUrl = "https://aistudio.google.com/app/apikey",
+            getLinkLabel = "Get free API key →",
+            context = context,
+        )
+        SubtyDivider()
+
+        Spacer(Modifier.height(24.dp))
 
         // ── Save ──────────────────────────────────────────────────────────────
-        SubtyLabel(
-            "Save",
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
+        SettingsSectionHeader("Save", Modifier.padding(horizontal = 24.dp))
         SubtyDivider()
         SettingsDropdown(
             label = "Preferred format",
@@ -135,26 +125,34 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
         SubtyDivider()
 
-        Spacer(Modifier.height(16.dp))
-
-        // ── API Keys ──────────────────────────────────────────────────────────
-        SubtyLabel(
-            "API Keys",
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        )
-        SubtyDivider()
-        ApiKeyRow(
-            label = "Google Translate API Key",
-            value = state.googleTranslateApiKey,
-            placeholder = "Enter your Google Translate API key",
-            onValueChange = viewModel::onGoogleTranslateApiKeyChange,
-            getLinkUrl = "https://console.cloud.google.com/apis/library/translate.googleapis.com",
-            getLinkLabel = "Get free API key →",
-            context = context,
-        )
-        SubtyDivider()
-
         Spacer(Modifier.height(24.dp))
+
+        // ── Display ───────────────────────────────────────────────────────────
+        SettingsSectionHeader("Display", Modifier.padding(horizontal = 24.dp))
+        SubtyDivider()
+        SubtyToggleRow(
+            label = "Dark mode",
+            description = "Switch between dark and light appearance",
+            checked = state.isDarkTheme,
+            onCheckedChange = viewModel::onDarkThemeChange,
+        )
+        SubtyDividerDim()
+        SubtyToggleRow(
+            label = "Show movie posters",
+            description = "Display cover art in search results",
+            checked = state.showPosters,
+            onCheckedChange = viewModel::onShowPostersChange,
+        )
+        SubtyDividerDim()
+        SubtyToggleRow(
+            label = "Compact results",
+            description = "Smaller cards, more results on screen",
+            checked = state.compactResults,
+            onCheckedChange = viewModel::onCompactResultsChange,
+        )
+        SubtyDivider()
+
+        Spacer(Modifier.height(28.dp))
 
         SubtyButton(
             text = "Save",
@@ -175,6 +173,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
         Spacer(Modifier.height(24.dp))
     }
+}
+
+@Composable
+private fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier) {
+    SubtyText(
+        text = text.uppercase(),
+        modifier = modifier.padding(bottom = 10.dp),
+        fontSize = 11,
+        weight = FontWeight.Bold,
+        color = SubtyMocha,
+    )
 }
 
 @Composable

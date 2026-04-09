@@ -27,10 +27,10 @@ class GeminiTranslationService @Inject constructor(
     private val settingsDataStore: SettingsDataStore
 ) {
     companion object {
-        private const val BATCH_SIZE = 40
+        private const val BATCH_SIZE = 80        // larger batches = fewer API calls
         private const val CONTEXT_OVERLAP = 3
         private const val MAX_RETRIES = 3
-        private const val MAX_CONCURRENT = 4
+        private const val MAX_CONCURRENT = 6     // 2.5-flash supports higher concurrency
         private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
     }
 
@@ -46,7 +46,7 @@ class GeminiTranslationService @Inject constructor(
         sourceLang: String,
         targetLang: String,
         title: String?,
-        modelId: String = "gemini-1.5-flash",
+        modelId: String = "gemini-3.1-flash-lite-preview",
         onProgress: (translated: Int, total: Int, batch: Int, totalBatches: Int) -> Unit
     ): List<SubtitleEntry> = withContext(Dispatchers.IO) {
 
@@ -109,8 +109,13 @@ class GeminiTranslationService @Inject constructor(
                 put("parts", JSONArray().put(JSONObject().put("text", userMessage)))
             }))
             put("generationConfig", JSONObject().apply {
-                put("temperature", 0.3)
-                put("maxOutputTokens", 4096)
+                put("temperature", 0.1)
+                put("maxOutputTokens", 8192)
+                // Disable thinking mode on 2.5-flash — not needed for translation,
+                // significantly faster and cheaper without it.
+                put("thinkingConfig", JSONObject().apply {
+                    put("thinkingBudget", 0)
+                })
             })
         }
 
