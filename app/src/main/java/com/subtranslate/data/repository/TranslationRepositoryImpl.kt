@@ -43,6 +43,14 @@ class TranslationRepositoryImpl @Inject constructor(
         ))
 
         try {
+            var engineKey = when {
+                modelId.startsWith("gemini") -> "gemini"
+                modelId == "deepl" -> "deepl"
+                modelId == "microsoft" -> "microsoft"
+                else -> "mymemory"
+            }
+            var fallbackUsed = false
+
             val translatedEntries = when {
                 modelId.startsWith("gemini") -> {
                     // Premium: Gemini (context-aware, batched with overlap)
@@ -84,9 +92,7 @@ class TranslationRepositoryImpl @Inject constructor(
                 modelId == "microsoft" -> {
                     // Use centrally-configured key from BuildConfig (shared for all users).
                     // User can override via Settings if they want.
-                    val apiKey = settings.microsoftApiKey
-                        .takeIf { !it.isNullOrBlank() }
-                        ?: BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }
+                    val apiKey = settings.effectiveMicrosoftApiKey
                         ?: throw IllegalStateException("Microsoft API key not configured. Add it in Settings.")
                     val region = settings.microsoftRegion
                         .takeIf { !it.isNullOrBlank() }
@@ -117,6 +123,8 @@ class TranslationRepositoryImpl @Inject constructor(
                                 || msg.contains("429", ignoreCase = true)
                                 || msg.contains("403", ignoreCase = true)
                         if (isQuotaError) {
+                            engineKey = "mymemory"
+                            fallbackUsed = true
                             // Fallback to MyMemory with warning
                             trySend(TranslationProgress(
                                 totalEntries = subtitleFile.entries.size,
@@ -161,12 +169,6 @@ class TranslationRepositoryImpl @Inject constructor(
 
             // Track usage (local per-device)
             val totalChars = subtitleFile.entries.sumOf { it.text.length }
-            val engineKey = when {
-                modelId.startsWith("gemini") -> "gemini"
-                modelId == "deepl" -> "deepl"
-                modelId == "microsoft" -> "microsoft"
-                else -> "mymemory"
-            }
             settings.addCharsUsed(engineKey, totalChars)
 
             // Track globally via Firebase Analytics (visible in Firebase Console)
@@ -177,7 +179,7 @@ class TranslationRepositoryImpl @Inject constructor(
                     param("entries", subtitleFile.entries.size.toLong())
                     param("source_lang", sourceLang)
                     param("target_lang", targetLang)
-                    param("fallback_used", "false")
+                    param("fallback_used", fallbackUsed.toString())
                 }
             } catch (_: Exception) {
                 // Analytics is best-effort; don't crash if Firebase isn't ready

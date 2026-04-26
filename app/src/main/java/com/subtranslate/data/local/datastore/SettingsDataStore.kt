@@ -108,8 +108,11 @@ class SettingsDataStore(context: Context) {
 
     var microsoftApiKey: String?
         get() = prefs.getString("microsoft_api_key", null)
-            ?: BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }
         set(v) = prefs.edit().putString("microsoft_api_key", v).apply()
+
+    val effectiveMicrosoftApiKey: String?
+        get() = microsoftApiKey?.takeIf { it.isNotBlank() }
+            ?: BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }
 
     var microsoftRegion: String
         get() = prefs.getString("microsoft_region", null)

@@ -91,8 +91,7 @@ class MicrosoftTranslationService @Inject constructor() {
                 }
             }
         }
-        // All retries exhausted — return originals
-        return texts
+        throw lastException ?: Exception("Microsoft Translator failed after $MAX_RETRIES retries")
     }
 
     private fun translateBatch(

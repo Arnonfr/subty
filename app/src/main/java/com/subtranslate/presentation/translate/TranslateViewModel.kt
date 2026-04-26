@@ -194,15 +194,17 @@ class TranslateViewModel @Inject constructor(
     }
 
     fun hasTranslateApiKey(): Boolean {
-        return when {
-            _uiState.value.selectedModel.startsWith("gemini") ->
+        val model = _uiState.value.selectedModel
+        val result = when {
+            model.startsWith("gemini") ->
                 !settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()
-            _uiState.value.selectedModel == "deepl" ->
+            model == "deepl" ->
                 !settings.deeplApiKey.isNullOrBlank()
-            _uiState.value.selectedModel == "microsoft" ->
-                !settings.microsoftApiKey.isNullOrBlank() || BuildConfig.MICROSOFT_API_KEY.isNotBlank()
+            model == "microsoft" ->
+                !settings.effectiveMicrosoftApiKey.isNullOrBlank()
             else -> true // MyMemory and other free services need no key
         }
+        return result
     }
 
     fun cancelTranslation() {

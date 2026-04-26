@@ -23,8 +23,8 @@ android {
         applicationId = "com.subtranslate"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.7"
+        versionCode = 11
+        versionName = "1.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val geminiApiKey = System.getenv("GEMINI_API_KEY") ?: localProps["GEMINI_API_KEY"] ?: ""
@@ -51,7 +51,7 @@ android {
             ?: ""
         val microsoftRegion = System.getenv("MICROSOFT_REGION")
             ?: localProps["MICROSOFT_REGION"]?.toString()
-            ?: "global"
+            ?: "westeurope"
 
         buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
         buildConfigField("String", "SUBDL_API_KEY", "\"$subdlApiKey\"")
