@@ -1,5 +1,8 @@
 package com.subtranslate.data.repository
 
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.logEvent
+import com.subtranslate.BuildConfig
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.remote.translation.DeepLTranslationService
 import com.subtranslate.data.remote.translation.GeminiTranslationService
@@ -20,7 +23,8 @@ class TranslationRepositoryImpl @Inject constructor(
     private val geminiService: GeminiTranslationService,
     private val deeplService: DeepLTranslationService,
     private val microsoftService: MicrosoftTranslationService,
-    private val settings: SettingsDataStore
+    private val settings: SettingsDataStore,
+    private val firebaseAnalytics: FirebaseAnalytics
 ) : TranslationRepository {
 
     var lastTranslatedFile: SubtitleFile? = null
@@ -78,9 +82,16 @@ class TranslationRepositoryImpl @Inject constructor(
                     }
                 }
                 modelId == "microsoft" -> {
+                    // Use centrally-configured key from BuildConfig (shared for all users).
+                    // User can override via Settings if they want.
                     val apiKey = settings.microsoftApiKey
+                        .takeIf { !it.isNullOrBlank() }
+                        ?: BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }
                         ?: throw IllegalStateException("Microsoft API key not configured. Add it in Settings.")
                     val region = settings.microsoftRegion
+                        .takeIf { !it.isNullOrBlank() }
+                        ?: BuildConfig.MICROSOFT_REGION.takeIf { it.isNotBlank() }
+                        ?: "westeurope"
                     val batchesTotal = (subtitleFile.entries.size + 99) / 100
                     try {
                         microsoftService.translateEntries(
@@ -148,7 +159,7 @@ class TranslationRepositoryImpl @Inject constructor(
                 }
             }
 
-            // Track usage
+            // Track usage (local per-device)
             val totalChars = subtitleFile.entries.sumOf { it.text.length }
             val engineKey = when {
                 modelId.startsWith("gemini") -> "gemini"
@@ -157,6 +168,20 @@ class TranslationRepositoryImpl @Inject constructor(
                 else -> "mymemory"
             }
             settings.addCharsUsed(engineKey, totalChars)
+
+            // Track globally via Firebase Analytics (visible in Firebase Console)
+            try {
+                firebaseAnalytics.logEvent("translation_complete") {
+                    param("engine", engineKey)
+                    param("chars", totalChars.toLong())
+                    param("entries", subtitleFile.entries.size.toLong())
+                    param("source_lang", sourceLang)
+                    param("target_lang", targetLang)
+                    param("fallback_used", "false")
+                }
+            } catch (_: Exception) {
+                // Analytics is best-effort; don't crash if Firebase isn't ready
+            }
 
             lastTranslatedFile = subtitleFile.copy(entries = translatedEntries)
 

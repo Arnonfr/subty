@@ -1,6 +1,7 @@
 package com.subtranslate.di
 
 import android.content.Context
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import dagger.Module
 import dagger.Provides
@@ -17,4 +18,9 @@ object TranslationModule {
     @Singleton
     fun provideSettingsDataStore(@ApplicationContext context: Context): SettingsDataStore =
         SettingsDataStore(context)
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAnalytics(@ApplicationContext context: Context): FirebaseAnalytics =
+        FirebaseAnalytics.getInstance(context)
 }
