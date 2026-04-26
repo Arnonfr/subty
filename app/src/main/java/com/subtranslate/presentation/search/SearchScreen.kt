@@ -330,8 +330,15 @@ fun SearchScreen(
 
         // ── Season / Episode — only for TV series ─────────────────────────────
         if (!state.isMovie) {
+            Spacer(Modifier.height(8.dp))
+            SubtyText(
+                text = "Optional — leave defaults to search all episodes",
+                fontSize = 11,
+                color = SubtyText3,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
             if (!state.useSeasonEpisodeTextFields) {
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
                 SubtyLabel("Season", modifier = Modifier.padding(horizontal = 24.dp))
                 Spacer(Modifier.height(8.dp))
                 val seasonCount = if (state.seasonsCount > 0) state.seasonsCount else 30

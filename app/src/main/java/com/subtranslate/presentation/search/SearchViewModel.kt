@@ -190,6 +190,8 @@ class SearchViewModel @Inject constructor(
             seasonsCount = feature.attributes.seasonsCount ?: 0,
             episodesCount = feature.attributes.episodesCount ?: 0,
             isMovie = !isTv,
+            season = if (isTv) "1" else "",
+            episode = if (isTv) "1" else "",
         )
     }
 
