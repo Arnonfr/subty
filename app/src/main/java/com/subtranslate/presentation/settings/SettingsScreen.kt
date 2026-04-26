@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.subtranslate.BuildConfig
 import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
@@ -113,10 +114,16 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         ApiKeyRow(
             label = "Microsoft Azure Key",
             value = state.microsoftApiKey,
-            placeholder = "Enter your Translator key",
+            placeholder = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
+                "✓ Pre-configured (optional override)"
+            else
+                "Enter your Translator key",
             onValueChange = viewModel::onMicrosoftApiKeyChange,
             getLinkUrl = "https://portal.azure.com/#create/Microsoft.CognitiveServicesTextTranslation",
-            getLinkLabel = "Create free resource →",
+            getLinkLabel = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
+                "Override with your own key →"
+            else
+                "Create free resource →",
             context = context,
         )
         Column(
