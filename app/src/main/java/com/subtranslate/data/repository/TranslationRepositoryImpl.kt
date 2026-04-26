@@ -3,6 +3,7 @@ package com.subtranslate.data.repository
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.remote.translation.DeepLTranslationService
 import com.subtranslate.data.remote.translation.GeminiTranslationService
+import com.subtranslate.data.remote.translation.MicrosoftTranslationService
 import com.subtranslate.data.remote.translation.MyMemoryTranslationService
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
@@ -18,6 +19,7 @@ class TranslationRepositoryImpl @Inject constructor(
     private val myMemoryService: MyMemoryTranslationService,
     private val geminiService: GeminiTranslationService,
     private val deeplService: DeepLTranslationService,
+    private val microsoftService: MicrosoftTranslationService,
     private val settings: SettingsDataStore
 ) : TranslationRepository {
 
@@ -70,6 +72,27 @@ class TranslationRepositoryImpl @Inject constructor(
                             totalEntries = total,
                             translatedEntries = translated,
                             currentBatch = (translated + 49) / 50,
+                            totalBatches = batchesTotal,
+                            status = TranslationStatus.TRANSLATING
+                        ))
+                    }
+                }
+                modelId == "microsoft" -> {
+                    val apiKey = settings.microsoftApiKey
+                        ?: throw IllegalStateException("Microsoft API key not configured. Add it in Settings.")
+                    val region = settings.microsoftRegion
+                    val batchesTotal = (subtitleFile.entries.size + 99) / 100
+                    microsoftService.translateEntries(
+                        entries = subtitleFile.entries,
+                        sourceLang = sourceLang,
+                        targetLang = targetLang,
+                        apiKey = apiKey,
+                        region = region
+                    ) { translated, total ->
+                        trySend(TranslationProgress(
+                            totalEntries = total,
+                            translatedEntries = translated,
+                            currentBatch = (translated + 99) / 100,
                             totalBatches = batchesTotal,
                             status = TranslationStatus.TRANSLATING
                         ))

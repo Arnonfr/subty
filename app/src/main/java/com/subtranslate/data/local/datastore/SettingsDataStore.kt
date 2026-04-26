@@ -104,6 +104,14 @@ class SettingsDataStore(context: Context) {
         get() = prefs.getString("deepl_api_key", null)
         set(v) = prefs.edit().putString("deepl_api_key", v).apply()
 
+    var microsoftApiKey: String?
+        get() = prefs.getString("microsoft_api_key", null)
+        set(v) = prefs.edit().putString("microsoft_api_key", v).apply()
+
+    var microsoftRegion: String
+        get() = prefs.getString("microsoft_region", "global") ?: "global"
+        set(v) = prefs.edit().putString("microsoft_region", v).apply()
+
     companion object {
         private const val KEY_SOURCE_LANG = "source_lang"
         private const val KEY_TARGET_LANG = "target_lang"

@@ -32,6 +32,7 @@ private val MODELS = listOf(
     "gemini-2.5-flash"               to "Gemini 2.5 Flash (stable)",
     "gemini-3.1-flash-lite-preview"  to "Gemini 3.1 Flash Lite (fastest)",
     "deepl"                          to "DeepL (500K chars/month free)",
+    "microsoft"                      to "Microsoft Azure (2M chars/month free)",
     "mymemory"                       to "MyMemory (Free, Basic)",
 )
 
@@ -104,6 +105,34 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             getLinkLabel = "Get free API key →",
             context = context,
         )
+        SubtyDividerDim()
+        ApiKeyRow(
+            label = "Microsoft Azure Key",
+            value = state.microsoftApiKey,
+            placeholder = "Enter your Translator key",
+            onValueChange = viewModel::onMicrosoftApiKeyChange,
+            getLinkUrl = "https://portal.azure.com/#create/Microsoft.CognitiveServicesTextTranslation",
+            getLinkLabel = "Create free resource →",
+            context = context,
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+        ) {
+            SubtyText("Region", fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+            Spacer(Modifier.height(4.dp))
+            SubtyTextField(
+                value = state.microsoftRegion,
+                onValueChange = viewModel::onMicrosoftRegionChange,
+                placeholder = "global",
+            )
+            SubtyText(
+                "Use 'global' for multi-service keys",
+                fontSize = 10,
+                color = SubtyText3,
+            )
+        }
         SubtyDivider()
 
         Spacer(Modifier.height(24.dp))

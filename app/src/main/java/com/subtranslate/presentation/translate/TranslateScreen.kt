@@ -369,7 +369,7 @@ fun TranslateScreen(
         AlertDialog(
             onDismissRequest = { showApiKeyDialog = false },
             title = { androidx.compose.material3.Text("Gemini API Key Required") },
-            text = { androidx.compose.material3.Text("To use this translation engine, add your API key in Settings. Alternatively, select MyMemory or DeepL Free which include free tiers.") },
+            text = { androidx.compose.material3.Text("To use this translation engine, add your API key in Settings. Alternatively, select MyMemory, DeepL Free, or Microsoft Azure which include free tiers.") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showApiKeyDialog = false
@@ -392,6 +392,7 @@ private val TRANSLATION_MODELS = listOf(
     "gemini-2.5-flash"              to "Gemini 2.5 Flash (stable)",
     "gemini-3.1-flash-lite-preview" to "Gemini 3.1 Flash Lite (fastest)",
     "deepl"                         to "DeepL (500K chars/month free)",
+    "microsoft"                     to "Microsoft Azure (2M chars/month free)",
     "mymemory"                      to "MyMemory (Free, Basic)",
 )
 

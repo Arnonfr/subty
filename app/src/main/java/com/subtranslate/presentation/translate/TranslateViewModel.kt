@@ -199,6 +199,8 @@ class TranslateViewModel @Inject constructor(
                 !settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()
             _uiState.value.selectedModel == "deepl" ->
                 !settings.deeplApiKey.isNullOrBlank()
+            _uiState.value.selectedModel == "microsoft" ->
+                !settings.microsoftApiKey.isNullOrBlank()
             else -> true // MyMemory and other free services need no key
         }
     }

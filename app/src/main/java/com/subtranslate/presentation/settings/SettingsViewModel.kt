@@ -24,6 +24,8 @@ data class SettingsUiState(
     // API Keys
     val geminiApiKey: String = "",
     val deeplApiKey: String = "",
+    val microsoftApiKey: String = "",
+    val microsoftRegion: String = "global",
     val saved: Boolean = false
 )
 
@@ -45,6 +47,8 @@ class SettingsViewModel @Inject constructor(
             autoSave = settings.autoSaveTranslated,
             geminiApiKey = settings.geminiApiKey ?: "",
             deeplApiKey = settings.deeplApiKey ?: "",
+            microsoftApiKey = settings.microsoftApiKey ?: "",
+            microsoftRegion = settings.microsoftRegion,
         )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -63,6 +67,8 @@ class SettingsViewModel @Inject constructor(
     fun onAutoSaveChange(v: Boolean) = update { copy(autoSave = v, saved = false) }
     fun onGeminiApiKeyChange(v: String) = update { copy(geminiApiKey = v, saved = false) }
     fun onDeepLApiKeyChange(v: String) = update { copy(deeplApiKey = v, saved = false) }
+    fun onMicrosoftApiKeyChange(v: String) = update { copy(microsoftApiKey = v, saved = false) }
+    fun onMicrosoftRegionChange(v: String) = update { copy(microsoftRegion = v, saved = false) }
 
     fun save() {
         val s = _uiState.value
@@ -76,6 +82,8 @@ class SettingsViewModel @Inject constructor(
         settings.autoSaveTranslated = s.autoSave
         settings.geminiApiKey = s.geminiApiKey.ifBlank { null }
         settings.deeplApiKey = s.deeplApiKey.ifBlank { null }
+        settings.microsoftApiKey = s.microsoftApiKey.ifBlank { null }
+        settings.microsoftRegion = s.microsoftRegion.ifBlank { "global" }
         update { copy(saved = true) }
     }
 
