@@ -11,12 +11,13 @@ import javax.inject.Inject
 data class SettingsUiState(
     // Translation
     val defaultTargetLang: String = "he",
-    val translationModel: String = "google",
+    val translationModel: String = "gemini-2.5-flash",
     val autoTranslate: Boolean = false,
     // Display
     val showPosters: Boolean = true,
     val compactResults: Boolean = false,
-    val isDarkTheme: Boolean = true,
+    val isDarkTheme: Boolean = false,
+    val useSeasonEpisodeTextFields: Boolean = false,
     // Save
     val preferredSaveFormat: String = "srt",
     val autoSave: Boolean = false,
@@ -39,6 +40,7 @@ class SettingsViewModel @Inject constructor(
             showPosters = settings.showPosters,
             compactResults = settings.compactResults,
             isDarkTheme = settings.isDarkTheme,
+            useSeasonEpisodeTextFields = settings.useSeasonEpisodeTextFields,
             preferredSaveFormat = settings.preferredSaveFormat,
             autoSave = settings.autoSaveTranslated,
             googleTranslateApiKey = settings.googleTranslateApiKey ?: "",
@@ -52,6 +54,7 @@ class SettingsViewModel @Inject constructor(
     fun onAutoTranslateChange(v: Boolean) = update { copy(autoTranslate = v, saved = false) }
     fun onShowPostersChange(v: Boolean) = update { copy(showPosters = v, saved = false) }
     fun onCompactResultsChange(v: Boolean) = update { copy(compactResults = v, saved = false) }
+    fun onSeasonEpisodeInputModeChange(v: Boolean) = update { copy(useSeasonEpisodeTextFields = v, saved = false) }
     fun onDarkThemeChange(v: Boolean) {
         settings.isDarkTheme = v
         update { copy(isDarkTheme = v, saved = false) }
@@ -68,6 +71,7 @@ class SettingsViewModel @Inject constructor(
         settings.autoTranslateAfterDownload = s.autoTranslate
         settings.showPosters = s.showPosters
         settings.compactResults = s.compactResults
+        settings.useSeasonEpisodeTextFields = s.useSeasonEpisodeTextFields
         settings.preferredSaveFormat = s.preferredSaveFormat
         settings.autoSaveTranslated = s.autoSave
         settings.googleTranslateApiKey = s.googleTranslateApiKey.ifBlank { null }

@@ -29,9 +29,9 @@ import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 private val MODELS = listOf(
-    "google"                         to "Google Translate",
-    "gemini-3.1-flash-lite-preview"  to "Gemini 3.1 Flash Lite (fastest)",
     "gemini-2.5-flash"               to "Gemini 2.5 Flash (stable)",
+    "gemini-3.1-flash-lite-preview"  to "Gemini 3.1 Flash Lite (fastest)",
+    "mymemory"                       to "MyMemory (Free, Basic)",
 )
 
 private val FORMATS = listOf("srt" to "SRT", "vtt" to "VTT", "ass" to "ASS")
@@ -83,16 +83,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
         // ── API Keys ──────────────────────────────────────────────────────────
         SettingsSectionHeader("API Keys", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        ApiKeyRow(
-            label = "Google Translate API Key",
-            value = state.googleTranslateApiKey,
-            placeholder = "Enter your Google Translate API key",
-            onValueChange = viewModel::onGoogleTranslateApiKeyChange,
-            getLinkUrl = "https://console.cloud.google.com/apis/library/translate.googleapis.com",
-            getLinkLabel = "Get free API key →",
-            context = context,
-        )
         SubtyDivider()
         ApiKeyRow(
             label = "Gemini API Key",
@@ -149,6 +139,13 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             description = "Smaller cards, more results on screen",
             checked = state.compactResults,
             onCheckedChange = viewModel::onCompactResultsChange,
+        )
+        SubtyDividerDim()
+        SubtyToggleRow(
+            label = "Manual season/episode fields",
+            description = "Use text inputs instead of selectable number chips",
+            checked = state.useSeasonEpisodeTextFields,
+            onCheckedChange = viewModel::onSeasonEpisodeInputModeChange,
         )
         SubtyDivider()
 

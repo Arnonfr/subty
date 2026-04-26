@@ -360,8 +360,8 @@ fun TranslateScreen(
 }
 
 private val TRANSLATION_MODELS = listOf(
-    "gemini-3.1-flash-lite-preview" to "Gemini 3.1 Flash Lite (fastest)",
     "gemini-2.5-flash"              to "Gemini 2.5 Flash (stable)",
+    "gemini-3.1-flash-lite-preview" to "Gemini 3.1 Flash Lite (fastest)",
     "mymemory"                      to "MyMemory (Free, Basic)",
 )
 

@@ -55,7 +55,7 @@ class TranslationForegroundService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val sourceLang = intent?.getStringExtra(EXTRA_SOURCE_LANG) ?: "en"
         val targetLang = intent?.getStringExtra(EXTRA_TARGET_LANG) ?: "he"
-        val modelId    = intent?.getStringExtra(EXTRA_MODEL_ID)    ?: "google"
+        val modelId    = intent?.getStringExtra(EXTRA_MODEL_ID)    ?: "mymemory"
         val file       = pendingFile ?: run { stopSelf(); return START_NOT_STICKY }
 
         startForeground(NOTIFICATION_ID, buildNotification("Starting\u2026", 0, 0))

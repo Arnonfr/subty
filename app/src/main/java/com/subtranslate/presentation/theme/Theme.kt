@@ -146,7 +146,7 @@ private val Shapes = Shapes(
 // ── Theme entry point ─────────────────────────────────────────────────────────
 @Composable
 fun SubTranslateTheme(
-    darkTheme: Boolean = true,
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colors = if (darkTheme) DarkSubtyColors else LightSubtyColors

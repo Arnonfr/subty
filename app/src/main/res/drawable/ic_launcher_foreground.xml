@@ -1,99 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Subty adaptive icon foreground — movie screen with subtitle bars -->
+<!-- Subty adaptive icon foreground — updated subtitle mark -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Screen card (dark fill, lighter than background) -->
-    <path
-        android:fillColor="#1C1510"
-        android:pathData="
-M20,14
-L88,14
-Q94,14 94,20
-L94,88
-Q94,94 88,94
-L20,94
-Q14,94 14,88
-L14,20
-Q14,14 20,14 Z" />
-
-    <!-- Subtitle strip (bottom 32% of card) -->
-    <path
-        android:fillColor="#22180F"
-        android:pathData="
-M14,64
-L94,64
-L94,88
-Q94,94 88,94
-L20,94
-Q14,94 14,88
-L14,64 Z" />
-
-    <!-- Divider line -->
-    <path
-        android:fillColor="#7A5C38"
-        android:pathData="M20,64 L88,64 L88,65.5 L20,65.5 Z" />
-
-    <!-- Subtitle bar 1 — full width -->
-    <path
-        android:fillColor="#C49568"
-        android:pathData="
-M22,70
-L86,70
-Q88,70 88,72
-L88,76
-Q88,78 86,78
-L22,78
-Q20,78 20,76
-L20,72
-Q20,70 22,70 Z" />
-
-    <!-- Subtitle bar 2 — shorter, centered -->
-    <path
-        android:fillColor="#7A5C38"
-        android:pathData="
-M33,82
-L75,82
-Q77,82 77,84
-L77,88
-Q77,90 75,90
-L33,90
-Q31,90 31,88
-L31,84
-Q31,82 33,82 Z" />
-
-    <!-- Play button circle (outline only) -->
+    <!-- Subtitle frame with the lower-corner gaps from the updated mark -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#C49568"
-        android:strokeWidth="2.5"
-        android:pathData="M54,37 m-11,0 a11,11 0,1,0 22,0 a11,11 0,1,0 -22,0" />
-
-    <!-- Play triangle -->
-    <path
-        android:fillColor="#D8AC7E"
+        android:strokeColor="#D3B179"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
         android:pathData="
-M51,31
-L51,43
-L62,37 Z" />
+M26,77
+L20,77
+Q16,77 16,73
+L16,30
+Q16,22 24,22
+L84,22
+Q92,22 92,30
+L92,73
+Q92,77 88,77
+L82,77" />
 
-    <!-- Screen border -->
+    <!-- White S mark, drawn as a bold subtitle-studio stroke -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#C49568"
-        android:strokeWidth="2"
+        android:strokeColor="#F7F3EE"
+        android:strokeWidth="10"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="round"
         android:pathData="
-M20,14
-L88,14
-Q94,14 94,20
-L94,88
-Q94,94 88,94
-L20,94
-Q14,94 14,88
-L14,20
-Q14,14 20,14 Z" />
+M69,35
+C64,30 52,29 45,33
+C37,37 38,47 48,49
+L60,52
+C72,55 72,68 62,72
+C54,76 41,74 36,68" />
+
+    <!-- Subtitle lines -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#D3B179"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M29,68 L79,68" />
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#D3B179"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M36,76 L72,76" />
 
 </vector>

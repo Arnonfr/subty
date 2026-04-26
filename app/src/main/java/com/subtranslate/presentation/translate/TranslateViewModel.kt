@@ -35,7 +35,7 @@ data class TranslateUiState(
     // sourceLang is auto-detected from the subtitle file — never entered manually
     val sourceLang: String = "en",
     val targetLang: String = "he",
-    val selectedModel: String = "gemini-3.1-flash-lite-preview",
+    val selectedModel: String = "gemini-2.5-flash",
     val isLoadingFile: Boolean = false,
     val progress: TranslationProgress = TranslationProgress(),
     val translatedFile: SubtitleFile? = null,
@@ -69,7 +69,7 @@ class TranslateViewModel @Inject constructor(
     init {
         _uiState.value = _uiState.value.copy(
             targetLang = settings.defaultTargetLanguage,
-            selectedModel = "gemini-3.1-flash-lite-preview"
+            selectedModel = settings.translationModel
         )
     }
 
@@ -195,7 +195,8 @@ class TranslateViewModel @Inject constructor(
 
     fun hasTranslateApiKey(): Boolean {
         return when {
-            _uiState.value.selectedModel.startsWith("gemini") -> !settings.geminiApiKey.isNullOrBlank()
+            _uiState.value.selectedModel.startsWith("gemini") ->
+                !settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()
             else -> true // MyMemory and other free services need no key
         }
     }

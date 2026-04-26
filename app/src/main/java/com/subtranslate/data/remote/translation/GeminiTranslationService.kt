@@ -27,10 +27,10 @@ class GeminiTranslationService @Inject constructor(
     private val settingsDataStore: SettingsDataStore
 ) {
     companion object {
-        private const val BATCH_SIZE = 80        // larger batches = fewer API calls
+        private const val BATCH_SIZE = 40        // smaller batches preserve cue mapping better
         private const val CONTEXT_OVERLAP = 3
         private const val MAX_RETRIES = 3
-        private const val MAX_CONCURRENT = 6     // 2.5-flash supports higher concurrency
+        private const val MAX_CONCURRENT = 2
         private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
     }
 
@@ -80,6 +80,9 @@ class GeminiTranslationService @Inject constructor(
                                 attempt++
                                 if (attempt >= MAX_RETRIES) throw e
                             }
+                        }
+                        if (!success) {
+                            throw IllegalStateException("Translation batch ${batchIdx + 1} returned too few mapped subtitle lines")
                         }
                         val done = completedCount.incrementAndGet()
                         onProgress(translationMap.size, entries.size, done, batches.size)

@@ -285,15 +285,16 @@ fun SearchScreen(
 
         // ── Season / Episode — only for TV series ─────────────────────────────
         if (!state.isMovie) {
-            if (state.seasonsCount > 0) {
+            if (!state.useSeasonEpisodeTextFields) {
                 Spacer(Modifier.height(16.dp))
                 SubtyLabel("Season", modifier = Modifier.padding(horizontal = 24.dp))
                 Spacer(Modifier.height(8.dp))
+                val seasonCount = if (state.seasonsCount > 0) state.seasonsCount else 30
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
-                    items(state.seasonsCount) { i ->
+                    items(seasonCount) { i ->
                         val s = (i + 1).toString()
                         SubtyChip(
                             text = s, selected = state.season == s,
@@ -305,7 +306,7 @@ fun SearchScreen(
                 Spacer(Modifier.height(12.dp))
                 SubtyLabel("Episode", modifier = Modifier.padding(horizontal = 24.dp))
                 Spacer(Modifier.height(8.dp))
-                val epCount = if (state.episodesCount in 1..50) state.episodesCount else 30
+                val epCount = if (state.episodesCount in 1..80) state.episodesCount else 30
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(0.dp),

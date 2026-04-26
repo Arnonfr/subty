@@ -21,6 +21,15 @@ class SettingsDataStore(context: Context) {
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 
+    init {
+        if (!prefs.contains(KEY_LIGHT_THEME_DEFAULT_APPLIED)) {
+            prefs.edit()
+                .putBoolean("is_dark_theme", false)
+                .putBoolean(KEY_LIGHT_THEME_DEFAULT_APPLIED, true)
+                .apply()
+        }
+    }
+
     // ── Translation ──────────────────────────────────────────────────────────
 
     var defaultSourceLanguage: String
@@ -32,8 +41,12 @@ class SettingsDataStore(context: Context) {
         set(value) = prefs.edit().putString(KEY_TARGET_LANG, value).apply()
 
     var translationModel: String
-        get() = prefs.getString("translation_model", "google") ?: "google"
-        set(v) = prefs.edit().putString("translation_model", v).apply()
+        get() = when (val model = prefs.getString(KEY_MODEL, "gemini-2.5-flash")) {
+            "google" -> "mymemory"
+            null -> "gemini-2.5-flash"
+            else -> model
+        }
+        set(v) = prefs.edit().putString(KEY_MODEL, v).apply()
 
     var autoTranslateAfterDownload: Boolean
         get() = prefs.getBoolean(KEY_AUTO_TRANSLATE, false)
@@ -41,15 +54,19 @@ class SettingsDataStore(context: Context) {
 
     // ── Display ──────────────────────────────────────────────────────────────
 
-    private val _isDarkThemeFlow = MutableStateFlow(prefs.getBoolean("is_dark_theme", true))
+    private val _isDarkThemeFlow = MutableStateFlow(prefs.getBoolean("is_dark_theme", false))
     val isDarkThemeFlow: StateFlow<Boolean> = _isDarkThemeFlow.asStateFlow()
 
     var isDarkTheme: Boolean
-        get() = prefs.getBoolean("is_dark_theme", true)
+        get() = prefs.getBoolean("is_dark_theme", false)
         set(v) {
             prefs.edit().putBoolean("is_dark_theme", v).apply()
             _isDarkThemeFlow.value = v
         }
+
+    var useSeasonEpisodeTextFields: Boolean
+        get() = prefs.getBoolean(KEY_SEASON_EPISODE_TEXT_FIELDS, false)
+        set(value) = prefs.edit().putBoolean(KEY_SEASON_EPISODE_TEXT_FIELDS, value).apply()
 
     var showPosters: Boolean
         get() = prefs.getBoolean(KEY_SHOW_POSTERS, true)
@@ -90,6 +107,8 @@ class SettingsDataStore(context: Context) {
         private const val KEY_AUTO_TRANSLATE = "auto_translate"
         private const val KEY_SHOW_POSTERS = "show_posters"
         private const val KEY_COMPACT_RESULTS = "compact_results"
+        private const val KEY_SEASON_EPISODE_TEXT_FIELDS = "season_episode_text_fields"
+        private const val KEY_LIGHT_THEME_DEFAULT_APPLIED = "light_theme_default_applied"
         private const val KEY_SAVE_FORMAT = "save_format"
         private const val KEY_AUTO_SAVE = "auto_save"
         private const val KEY_GEMINI_API_KEY = "gemini_api_key"

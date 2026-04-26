@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.subtranslate.data.local.dao.SearchHistoryDao
+import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.local.entity.SearchHistoryEntity
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.dto.FeatureDto
@@ -43,6 +44,7 @@ data class SearchUiState(
     val selectedMovieTitle: String? = null,
     val seasonsCount: Int = 0,
     val episodesCount: Int = 0,
+    val useSeasonEpisodeTextFields: Boolean = false,
     /** true when the selected suggestion is a movie (no season/episode needed) */
     val isMovie: Boolean = false,
 )
@@ -54,9 +56,12 @@ class SearchViewModel @Inject constructor(
     private val openSubtitlesApi: OpenSubtitlesApi,
     private val searchSession: SearchSession,
     private val searchHistoryDao: SearchHistoryDao,
+    private val settings: SettingsDataStore,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SearchUiState())
+    private val _uiState = MutableStateFlow(
+        SearchUiState(useSeasonEpisodeTextFields = settings.useSeasonEpisodeTextFields)
+    )
     val uiState: StateFlow<SearchUiState> = _uiState
 
     private var suggestJob: Job? = null
