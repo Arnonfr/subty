@@ -7,9 +7,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import android.Manifest
 import android.app.DownloadManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.PlayArrow
@@ -54,6 +60,16 @@ fun TranslateScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showApiKeyDialog by remember { mutableStateOf(false) }
+    var shouldStartTranslationAfterPermission by remember { mutableStateOf(false) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted && shouldStartTranslationAfterPermission) {
+            viewModel.pendingFile?.let { viewModel.startTranslation(it) }
+        }
+        shouldStartTranslationAfterPermission = false
+    }
 
     LaunchedEffect(fileId, languageCode) {
         viewModel.downloadAndLoad(fileId, languageCode)
@@ -201,7 +217,7 @@ fun TranslateScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        SubtyLabel("AI MODEL")
+                        SubtyLabel("ENGINE")
                         ModelDropdown(
                             selected = state.selectedModel,
                             onSelect = viewModel::onModelChange,
@@ -225,7 +241,19 @@ fun TranslateScreen(
                             showApiKeyDialog = true
                         } else {
                             val file = viewModel.pendingFile
-                            if (file != null) viewModel.startTranslation(file)
+                            if (file != null) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    when (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)) {
+                                        PackageManager.PERMISSION_GRANTED -> viewModel.startTranslation(file)
+                                        else -> {
+                                            shouldStartTranslationAfterPermission = true
+                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                    }
+                                } else {
+                                    viewModel.startTranslation(file)
+                                }
+                            }
                         }
                     },
                     style = SubtyButtonStyle.FILLED,
@@ -341,7 +369,7 @@ fun TranslateScreen(
         AlertDialog(
             onDismissRequest = { showApiKeyDialog = false },
             title = { androidx.compose.material3.Text("Gemini API Key Required") },
-            text = { androidx.compose.material3.Text("To use Gemini translation, add your API key in Settings. Alternatively, select MyMemory (Free) which needs no key.") },
+            text = { androidx.compose.material3.Text("To use this translation engine, add your API key in Settings. Alternatively, select MyMemory or DeepL Free which include free tiers.") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showApiKeyDialog = false
@@ -363,6 +391,7 @@ fun TranslateScreen(
 private val TRANSLATION_MODELS = listOf(
     "gemini-2.5-flash"              to "Gemini 2.5 Flash (stable)",
     "gemini-3.1-flash-lite-preview" to "Gemini 3.1 Flash Lite (fastest)",
+    "deepl"                         to "DeepL (500K chars/month free)",
     "mymemory"                      to "MyMemory (Free, Basic)",
 )
 

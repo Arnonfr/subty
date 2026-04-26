@@ -2,6 +2,11 @@ package com.subtranslate.data.remote.translation
 
 import com.subtranslate.domain.model.SubtitleEntry
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -14,8 +19,8 @@ import javax.inject.Singleton
 /**
  * Free non-AI translation via MyMemory API (mymemory.translated.net).
  * No API key required. Limit: ~1000 words/day anonymous, 500 chars/request.
- * Each subtitle cue is translated separately. This is slower, but keeps subtitle
- * cue boundaries intact; translation APIs do not reliably preserve delimiters.
+ * Uses concurrent requests with limited parallelism for speed, and retries
+ * failed entries with exponential backoff.
  */
 @Singleton
 class MyMemoryTranslationService @Inject constructor() {
@@ -26,6 +31,8 @@ class MyMemoryTranslationService @Inject constructor() {
         .build()
 
     private val MAX_CHARS = 450 // stay safely under the 500-char API limit
+    private val MAX_RETRIES = 3
+    private val CONCURRENCY = 5 // MyMemory tolerates modest parallelism
 
     suspend fun translateEntries(
         entries: List<SubtitleEntry>,
@@ -34,29 +41,57 @@ class MyMemoryTranslationService @Inject constructor() {
         onProgress: (translated: Int, total: Int) -> Unit
     ): List<SubtitleEntry> = withContext(Dispatchers.IO) {
         val langPair = "$sourceLang|$targetLang"
-        val resultMap = mutableMapOf<Int, String>()
+        val semaphore = Semaphore(CONCURRENCY)
+        val progressCounter = java.util.concurrent.atomic.AtomicInteger(0)
 
-        var translated = 0
-        for (entry in entries) {
-            val sourceText = entry.text.trim()
-            val chunks = sourceText.chunked(MAX_CHARS)
-            val translatedText = chunks.joinToString(" ") { chunk ->
-                runCatching { callMyMemory(chunk, langPair) }
-                    .getOrNull()
-                    ?.trim()
-                    ?.ifBlank { null }
-                    ?: chunk
+        val deferreds = entries.map { entry ->
+            async {
+                semaphore.withPermit {
+                    val translatedText = translateEntryWithRetry(entry, langPair)
+                    val current = progressCounter.incrementAndGet()
+                    onProgress(current, entries.size)
+                    entry.index to translatedText
+                }
             }
-            resultMap[entry.index] = translatedText
-            translated += 1
-            onProgress(translated, entries.size)
         }
+
+        val results = deferreds.awaitAll().toMap()
 
         entries.map { entry ->
-            val t = resultMap[entry.index] ?: return@map entry
+            val t = results[entry.index] ?: entry.text
             val fixed = fixRtlPunctuation(t, targetLang)
-            entry.copy(text = fixed, rawText = reinsertOverrideTags(entry.rawText, fixed))
+            entry.copy(
+                text = fixed,
+                rawText = reinsertOverrideTags(entry.rawText, fixed)
+            )
         }
+    }
+
+    private suspend fun translateEntryWithRetry(
+        entry: SubtitleEntry,
+        langPair: String
+    ): String {
+        val sourceText = entry.text.trim()
+        val chunks = sourceText.chunked(MAX_CHARS)
+        val results = mutableListOf<String>()
+
+        for (chunk in chunks) {
+            var translated: String? = null
+            for (attempt in 1..MAX_RETRIES) {
+                try {
+                    translated = callMyMemory(chunk, langPair)
+                        ?.trim()
+                        ?.ifBlank { null }
+                    if (translated != null) break
+                } catch (e: Exception) {
+                    if (attempt < MAX_RETRIES) {
+                        delay(500L * attempt)
+                    }
+                }
+            }
+            results.add(translated ?: chunk)
+        }
+        return results.joinToString(" ")
     }
 
     private fun callMyMemory(text: String, langPair: String): String {

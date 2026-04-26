@@ -65,7 +65,7 @@ class HistoryViewModel @Inject constructor(
         searchSession.contentType = "tv"
         searchSession.imdbId      = null
         searchSession.posterUrl   = null
-        searchSession.pendingBrowseTitle = null
-        searchSession.pendingBrowseLangs = null
+        searchSession.pendingBrowseTitle = item.query
+        searchSession.pendingBrowseLangs = item.languages
     }
 }

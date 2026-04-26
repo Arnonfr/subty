@@ -84,7 +84,7 @@ fun NavGraph(
                     navController.navigate(Screen.Results.createRoute(item.query))
                 },
                 onBrowseEpisodes = { item ->
-                    navController.navigate(Screen.Results.createRoute(item.query))
+                    navController.navigate(Screen.Search.route)
                 },
             )
         }

@@ -23,6 +23,7 @@ data class SettingsUiState(
     val autoSave: Boolean = false,
     // API Keys
     val geminiApiKey: String = "",
+    val deeplApiKey: String = "",
     val saved: Boolean = false
 )
 
@@ -43,6 +44,7 @@ class SettingsViewModel @Inject constructor(
             preferredSaveFormat = settings.preferredSaveFormat,
             autoSave = settings.autoSaveTranslated,
             geminiApiKey = settings.geminiApiKey ?: "",
+            deeplApiKey = settings.deeplApiKey ?: "",
         )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -60,6 +62,7 @@ class SettingsViewModel @Inject constructor(
     fun onSaveFormatChange(v: String) = update { copy(preferredSaveFormat = v, saved = false) }
     fun onAutoSaveChange(v: Boolean) = update { copy(autoSave = v, saved = false) }
     fun onGeminiApiKeyChange(v: String) = update { copy(geminiApiKey = v, saved = false) }
+    fun onDeepLApiKeyChange(v: String) = update { copy(deeplApiKey = v, saved = false) }
 
     fun save() {
         val s = _uiState.value
@@ -72,6 +75,7 @@ class SettingsViewModel @Inject constructor(
         settings.preferredSaveFormat = s.preferredSaveFormat
         settings.autoSaveTranslated = s.autoSave
         settings.geminiApiKey = s.geminiApiKey.ifBlank { null }
+        settings.deeplApiKey = s.deeplApiKey.ifBlank { null }
         update { copy(saved = true) }
     }
 

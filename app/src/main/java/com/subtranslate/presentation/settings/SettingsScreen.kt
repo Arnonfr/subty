@@ -31,6 +31,7 @@ import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 private val MODELS = listOf(
     "gemini-2.5-flash"               to "Gemini 2.5 Flash (stable)",
     "gemini-3.1-flash-lite-preview"  to "Gemini 3.1 Flash Lite (fastest)",
+    "deepl"                          to "DeepL (500K chars/month free)",
     "mymemory"                       to "MyMemory (Free, Basic)",
 )
 
@@ -90,6 +91,16 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             placeholder = "Enter your Gemini API key",
             onValueChange = viewModel::onGeminiApiKeyChange,
             getLinkUrl = "https://aistudio.google.com/app/apikey",
+            getLinkLabel = "Get free API key →",
+            context = context,
+        )
+        SubtyDividerDim()
+        ApiKeyRow(
+            label = "DeepL API Key",
+            value = state.deeplApiKey,
+            placeholder = "Enter your DeepL API key",
+            onValueChange = viewModel::onDeepLApiKeyChange,
+            getLinkUrl = "https://www.deepl.com/pro-api",
             getLinkLabel = "Get free API key →",
             context = context,
         )
