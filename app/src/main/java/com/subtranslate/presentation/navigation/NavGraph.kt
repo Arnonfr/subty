@@ -68,6 +68,11 @@ fun NavGraph(
                 fileName = fileName,
                 languageCode = languageCode,
                 onBack = { navController.popBackStack() },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route) {
+                        launchSingleTop = true
+                    }
+                },
                 translateEnabled = appConfig.translateEnabled,
                 maintenanceMessage = appConfig.maintenanceMessage,
             )

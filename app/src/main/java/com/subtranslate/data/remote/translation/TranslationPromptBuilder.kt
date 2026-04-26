@@ -2,6 +2,21 @@ package com.subtranslate.data.remote.translation
 
 import com.subtranslate.domain.model.SubtitleEntry
 
+private val RTL_LANGUAGES = setOf("he", "ar", "fa", "ur", "yi", "iw")
+
+/** Fix Unicode BiDi: trailing punctuation in RTL text visually drifts to the wrong side.
+ *  Appending RLM (‏) after each line's terminal punctuation anchors it correctly. */
+fun fixRtlPunctuation(text: String, targetLang: String): String {
+    if (targetLang.lowercase() !in RTL_LANGUAGES) return text
+    val rlm = "‏"
+    // Add RLM after punctuation that ends a line (period, comma, ?, !, :, ;)
+    return text.lines().joinToString("\n") { line ->
+        val trimmed = line.trimEnd()
+        if (trimmed.isNotEmpty() && trimmed.last() in ".,:;!?") "$trimmed$rlm"
+        else line
+    }
+}
+
 object TranslationPromptBuilder {
 
     private const val NEWLINE_PLACEHOLDER = "{LF}"

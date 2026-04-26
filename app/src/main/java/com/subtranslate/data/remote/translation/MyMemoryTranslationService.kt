@@ -54,7 +54,8 @@ class MyMemoryTranslationService @Inject constructor() {
 
         entries.map { entry ->
             val t = resultMap[entry.index] ?: return@map entry
-            entry.copy(text = t, rawText = reinsertOverrideTags(entry.rawText, t))
+            val fixed = fixRtlPunctuation(t, targetLang)
+            entry.copy(text = fixed, rawText = reinsertOverrideTags(entry.rawText, fixed))
         }
     }
 

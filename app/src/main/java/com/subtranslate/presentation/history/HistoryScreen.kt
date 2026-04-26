@@ -155,6 +155,15 @@ private fun SearchHistoryRow(
                 if (detail.isNotEmpty()) SubtyText(detail, fontSize = 11, color = SubtyMocha)
                 SubtyText(sdf.format(Date(item.searchedAt)), fontSize = 10, color = SubtyText3)
             }
+            if (onBrowseEpisodes != null) {
+                SubtyButton(
+                    text = "Browse",
+                    onClick = onBrowseEpisodes,
+                    style = SubtyButtonStyle.OUTLINE,
+                    small = true,
+                )
+                Spacer(Modifier.width(4.dp))
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
@@ -163,19 +172,6 @@ private fun SearchHistoryRow(
                     modifier = Modifier.size(18.dp),
                 )
             }
-        }
-        if (onBrowseEpisodes != null) {
-            Spacer(Modifier.height(6.dp))
-            SubtyText(
-                text = "Browse other episodes →",
-                fontSize = 11,
-                color = SubtyMocha,
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onBrowseEpisodes,
-                ),
-            )
         }
     }
 }

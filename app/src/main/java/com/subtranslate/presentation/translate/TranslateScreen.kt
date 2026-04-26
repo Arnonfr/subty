@@ -44,6 +44,7 @@ fun TranslateScreen(
     fileName: String,
     languageCode: String,
     onBack: () -> Unit,
+    onNavigateToSettings: () -> Unit = {},
     translateEnabled: Boolean = true,
     maintenanceMessage: String = "",
     viewModel: TranslateViewModel = hiltViewModel(),
@@ -344,7 +345,7 @@ fun TranslateScreen(
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showApiKeyDialog = false
-                    onBack()
+                    onNavigateToSettings()
                 }) {
                     androidx.compose.material3.Text("Go to Settings")
                 }

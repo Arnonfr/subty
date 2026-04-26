@@ -94,9 +94,10 @@ class GeminiTranslationService @Inject constructor(
         entries.map { entry ->
             val translated = translationMap[entry.index]
             if (translated != null) {
+                val fixed = fixRtlPunctuation(translated, targetLang)
                 entry.copy(
-                    text = translated,
-                    rawText = reinsertOverrideTags(entry.rawText, translated)
+                    text = fixed,
+                    rawText = reinsertOverrideTags(entry.rawText, fixed)
                 )
             } else entry
         }
