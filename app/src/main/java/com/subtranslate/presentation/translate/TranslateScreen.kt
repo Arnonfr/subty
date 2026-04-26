@@ -376,10 +376,16 @@ fun TranslateScreen(
     } // end Column
 
     if (showApiKeyDialog) {
+        val engineName = when {
+            state.selectedModel.startsWith("gemini") -> "Gemini"
+            state.selectedModel == "deepl" -> "DeepL"
+            state.selectedModel == "microsoft" -> "Microsoft Azure"
+            else -> "Translation"
+        }
         AlertDialog(
             onDismissRequest = { showApiKeyDialog = false },
-            title = { androidx.compose.material3.Text("Gemini API Key Required") },
-            text = { androidx.compose.material3.Text("To use this translation engine, add your API key in Settings. Alternatively, select MyMemory, DeepL Free, or Microsoft Azure which include free tiers.") },
+            title = { androidx.compose.material3.Text("$engineName API Key Required") },
+            text = { androidx.compose.material3.Text("To use this translation engine, add your API key in Settings. Alternatively, select MyMemory (free) or another engine with a free tier.") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showApiKeyDialog = false
