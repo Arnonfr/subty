@@ -168,14 +168,10 @@ fun TranslateScreen(
 
                             // Arrow
                             Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 8.dp)
-                                    .size(32.dp)
-                                    .border(1.dp, SubtyBorderDim)
-                                    .background(SubtyBg3),
+                                modifier = Modifier.padding(horizontal = 8.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
+                                SubtyText("→", fontSize = 16, color = SubtyMocha, weight = FontWeight.Bold)
                             }
 
                             // Target (always right)
@@ -343,8 +339,8 @@ fun TranslateScreen(
     if (showApiKeyDialog) {
         AlertDialog(
             onDismissRequest = { showApiKeyDialog = false },
-            title = { androidx.compose.material3.Text("Google Translate API Key Required") },
-            text = { androidx.compose.material3.Text("To translate subtitles, you need a free Google Translate API key. Go to Settings to enter yours.") },
+            title = { androidx.compose.material3.Text("Gemini API Key Required") },
+            text = { androidx.compose.material3.Text("To use Gemini translation, add your API key in Settings. Alternatively, select MyMemory (Free) which needs no key.") },
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     showApiKeyDialog = false
@@ -366,6 +362,7 @@ fun TranslateScreen(
 private val TRANSLATION_MODELS = listOf(
     "gemini-3.1-flash-lite-preview" to "Gemini 3.1 Flash Lite (fastest)",
     "gemini-2.5-flash"              to "Gemini 2.5 Flash (stable)",
+    "mymemory"                      to "MyMemory (Free, Basic)",
 )
 
 @Composable

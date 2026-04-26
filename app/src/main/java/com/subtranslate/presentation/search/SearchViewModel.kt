@@ -61,6 +61,24 @@ class SearchViewModel @Inject constructor(
 
     private var suggestJob: Job? = null
 
+    init {
+        val pending = searchSession.pendingBrowseTitle
+        if (!pending.isNullOrBlank()) {
+            searchSession.pendingBrowseTitle = null
+            val langs = searchSession.pendingBrowseLangs
+            searchSession.pendingBrowseLangs = null
+            val langSet = langs?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet()
+                ?: setOf("en", "he")
+            _uiState.value = _uiState.value.copy(
+                query = pending,
+                selectedLanguages = langSet,
+                showSuggestions = true,
+                suggestionsLoading = true,
+            )
+            fetchSuggestions(pending)
+        }
+    }
+
     fun onQueryChange(query: String) {
         _uiState.value = _uiState.value.copy(
             query = query,

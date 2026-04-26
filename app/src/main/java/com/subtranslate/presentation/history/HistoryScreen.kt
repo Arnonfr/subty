@@ -25,6 +25,7 @@ import java.util.*
 @Composable
 fun HistoryScreen(
     onSearchAgain: (SearchHistoryEntity) -> Unit = {},
+    onBrowseEpisodes: (SearchHistoryEntity) -> Unit = {},
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val downloads by viewModel.history.collectAsState()
@@ -87,6 +88,12 @@ fun HistoryScreen(
                                 onSearchAgain(item)
                             },
                             onDelete = { viewModel.deleteSearch(item.id) },
+                            onBrowseEpisodes = if (item.contentType == "tv") {
+                                {
+                                    viewModel.prepareSeriesBrowse(item)
+                                    onBrowseEpisodes(item)
+                                }
+                            } else null,
                         )
                         SubtyDividerDim()
                     }
@@ -120,9 +127,10 @@ private fun SearchHistoryRow(
     item: SearchHistoryEntity,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onBrowseEpisodes: (() -> Unit)? = null,
 ) {
     val sdf = remember { SimpleDateFormat("dd MMM yyyy  HH:mm", Locale.getDefault()) }
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(SubtyBg)
@@ -132,27 +140,41 @@ private fun SearchHistoryRow(
                 onClick = onClick,
             )
             .padding(start = 24.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            SubtyText(item.query, fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
-            val detail = buildString {
-                item.season?.let { append("S$it") }
-                item.episode?.let { if (isNotEmpty()) append(" "); append("E$it") }
-                item.languages?.let {
-                    if (isNotEmpty()) append("  ·  ")
-                    append(it.uppercase())
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                SubtyText(item.query, fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
+                val detail = buildString {
+                    item.season?.let { append("S$it") }
+                    item.episode?.let { if (isNotEmpty()) append(" "); append("E$it") }
+                    item.languages?.let {
+                        if (isNotEmpty()) append("  ·  ")
+                        append(it.uppercase())
+                    }
                 }
+                if (detail.isNotEmpty()) SubtyText(detail, fontSize = 11, color = SubtyMocha)
+                SubtyText(sdf.format(Date(item.searchedAt)), fontSize = 10, color = SubtyText3)
             }
-            if (detail.isNotEmpty()) SubtyText(detail, fontSize = 11, color = SubtyMocha)
-            SubtyText(sdf.format(Date(item.searchedAt)), fontSize = 10, color = SubtyText3)
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = SubtyText3,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
-        IconButton(onClick = onDelete) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = "Delete",
-                tint = SubtyText3,
-                modifier = Modifier.size(18.dp),
+        if (onBrowseEpisodes != null) {
+            Spacer(Modifier.height(6.dp))
+            SubtyText(
+                text = "Browse other episodes →",
+                fontSize = 11,
+                color = SubtyMocha,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onBrowseEpisodes,
+                ),
             )
         }
     }

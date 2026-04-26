@@ -1,7 +1,7 @@
 package com.subtranslate.data.repository
 
 import com.subtranslate.data.remote.translation.GeminiTranslationService
-import com.subtranslate.data.remote.translation.GoogleTranslateService
+import com.subtranslate.data.remote.translation.MyMemoryTranslationService
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
 import com.subtranslate.domain.model.TranslationStatus
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 class TranslationRepositoryImpl @Inject constructor(
-    private val googleTranslateService: GoogleTranslateService,
+    private val myMemoryService: MyMemoryTranslationService,
     private val geminiService: GeminiTranslationService
 ) : TranslationRepository {
 
@@ -51,8 +51,8 @@ class TranslationRepositoryImpl @Inject constructor(
                     ))
                 }
             } else {
-                // Default: Google Translate (fast, cheap, no context)
-                googleTranslateService.translateEntries(
+                // Basic: MyMemory (free, no API key, non-AI)
+                myMemoryService.translateEntries(
                     entries = subtitleFile.entries,
                     sourceLang = sourceLang,
                     targetLang = targetLang

@@ -13,4 +13,7 @@ class SearchSession @Inject constructor() {
     var languages: String? = null
     /** "movie" | "tv" | null — set from autocomplete suggestion */
     var contentType: String? = null
+    /** Set when navigating from history "Browse Episodes" — pre-populates SearchScreen with the show */
+    var pendingBrowseTitle: String? = null
+    var pendingBrowseLangs: String? = null
 }

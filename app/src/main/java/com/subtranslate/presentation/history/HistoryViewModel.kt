@@ -55,4 +55,10 @@ class HistoryViewModel @Inject constructor(
         searchSession.imdbId      = null
         searchSession.posterUrl   = null
     }
+
+    /** Set pending browse data so SearchScreen pre-populates with this show on next entry. */
+    fun prepareSeriesBrowse(item: SearchHistoryEntity) {
+        searchSession.pendingBrowseTitle = item.query
+        searchSession.pendingBrowseLangs = item.languages
+    }
 }

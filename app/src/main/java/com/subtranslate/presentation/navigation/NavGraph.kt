@@ -77,7 +77,12 @@ fun NavGraph(
             HistoryScreen(
                 onSearchAgain = { item ->
                     navController.navigate(Screen.Results.createRoute(item.query))
-                }
+                },
+                onBrowseEpisodes = {
+                    navController.navigate(Screen.Search.route) {
+                        popUpTo(Screen.Search.route) { inclusive = true }
+                    }
+                },
             )
         }
 

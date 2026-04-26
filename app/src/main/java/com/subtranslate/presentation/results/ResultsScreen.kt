@@ -226,10 +226,6 @@ fun ResultsScreen(
                 }
 
                 else -> {
-                    val ctx = LocalContext.current
-                    val encodedQuery = remember(query) {
-                        runCatching { URLEncoder.encode(query, "UTF-8") }.getOrDefault(query)
-                    }
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(state.filteredResults, key = { it.fileId }) { result ->
                             SubtitleResultRow(
@@ -243,40 +239,6 @@ fun ResultsScreen(
                                     onTranslate(result.fileId, result.fileName, result.languageCode)
                                 },
                             )
-                        }
-                        // ── WebHunt: search more on external sites ────────────────
-                        item {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(SubtyBg2)
-                                    .padding(horizontal = 24.dp, vertical = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                SubtyLabel("Search more online")
-                                val sites = listOf(
-                                    "Podnapisi"     to "https://www.podnapisi.net/en/subtitles/search/?keywords=$encodedQuery",
-                                    "Addic7ed"      to "https://www.addic7ed.com/search.php?search=$encodedQuery",
-                                    "OpenSubtitles" to "https://www.opensubtitles.org/en/search/sublanguageid-all/moviename-$encodedQuery",
-                                    "YIFY"          to "https://yifysubtitles.ch/search?q=$encodedQuery",
-                                )
-                                Row(horizontalArrangement = Arrangement.spacedBy(0.dp)) {
-                                    sites.forEachIndexed { i, (name, url) ->
-                                        SubtyChip(
-                                            text = name,
-                                            selected = false,
-                                            onClick = {
-                                                ctx.startActivity(
-                                                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                )
-                                            },
-                                            modifier = if (i > 0) Modifier.offset(x = (-1).dp) else Modifier,
-                                        )
-                                    }
-                                }
-                            }
-                            SubtyDivider()
                         }
                     }
                 }

@@ -194,10 +194,9 @@ class TranslateViewModel @Inject constructor(
     }
 
     fun hasTranslateApiKey(): Boolean {
-        return if (settings.translationModel == "gemini") {
-            !settings.geminiApiKey.isNullOrBlank()
-        } else {
-            !settings.googleTranslateApiKey.isNullOrBlank() || BuildConfig.GOOGLE_TRANSLATE_API_KEY.isNotBlank()
+        return when {
+            _uiState.value.selectedModel.startsWith("gemini") -> !settings.geminiApiKey.isNullOrBlank()
+            else -> true // MyMemory and other free services need no key
         }
     }
 
