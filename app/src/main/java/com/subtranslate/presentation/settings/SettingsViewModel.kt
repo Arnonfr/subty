@@ -8,6 +8,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
+data class UsageStats(
+    val myMemory: Int = 0,
+    val deepL: Int = 0,
+    val microsoft: Int = 0,
+    val gemini: Int = 0,
+)
+
 data class SettingsUiState(
     // Translation
     val defaultTargetLang: String = "he",
@@ -26,6 +33,8 @@ data class SettingsUiState(
     val deeplApiKey: String = "",
     val microsoftApiKey: String = "",
     val microsoftRegion: String = "global",
+    // Usage
+    val usage: UsageStats = UsageStats(),
     val saved: Boolean = false
 )
 
@@ -49,6 +58,7 @@ class SettingsViewModel @Inject constructor(
             deeplApiKey = settings.deeplApiKey ?: "",
             microsoftApiKey = settings.microsoftApiKey ?: "",
             microsoftRegion = settings.microsoftRegion,
+            usage = loadUsage(),
         )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -85,6 +95,19 @@ class SettingsViewModel @Inject constructor(
         settings.microsoftApiKey = s.microsoftApiKey.ifBlank { null }
         settings.microsoftRegion = s.microsoftRegion.ifBlank { "global" }
         update { copy(saved = true) }
+    }
+
+    fun refreshUsage() {
+        update { copy(usage = loadUsage()) }
+    }
+
+    private fun loadUsage(): UsageStats {
+        return UsageStats(
+            myMemory = settings.getCharsUsed("mymemory"),
+            deepL = settings.getCharsUsed("deepl"),
+            microsoft = settings.getCharsUsed("microsoft"),
+            gemini = settings.getCharsUsed("gemini"),
+        )
     }
 
     private fun update(block: SettingsUiState.() -> SettingsUiState) {

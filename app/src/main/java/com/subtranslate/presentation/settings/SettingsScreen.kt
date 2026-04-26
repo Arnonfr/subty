@@ -43,6 +43,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    LaunchedEffect(Unit) {
+        viewModel.refreshUsage()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -133,6 +137,20 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 color = SubtyText3,
             )
         }
+        SubtyDivider()
+
+        Spacer(Modifier.height(24.dp))
+
+        // ── Usage ─────────────────────────────────────────────────────────────
+        SettingsSectionHeader("Usage This Month", Modifier.padding(horizontal = 24.dp))
+        SubtyDivider()
+        UsageRow("MyMemory", state.usage.myMemory, 1_000_000)
+        SubtyDividerDim()
+        UsageRow("DeepL", state.usage.deepL, 500_000)
+        SubtyDividerDim()
+        UsageRow("Microsoft Azure", state.usage.microsoft, 2_000_000)
+        SubtyDividerDim()
+        UsageRow("Gemini", state.usage.gemini, Int.MAX_VALUE)
         SubtyDivider()
 
         Spacer(Modifier.height(24.dp))
@@ -272,6 +290,44 @@ private fun ApiKeyRow(
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 runCatching { context.startActivity(intent) }
             },
+        )
+    }
+}
+
+@Composable
+private fun UsageRow(
+    label: String,
+    used: Int,
+    limit: Int,
+) {
+    val percentage = if (limit > 0 && limit < Int.MAX_VALUE) (used.toFloat() / limit * 100).toInt() else null
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            SubtyText(label, fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+            if (percentage != null) {
+                val color = when {
+                    percentage >= 100 -> androidx.compose.ui.graphics.Color.Red
+                    percentage >= 80 -> androidx.compose.ui.graphics.Color(0xFFFFA500)
+                    else -> SubtyMocha
+                }
+                SubtyText(
+                    "$percentage% of free tier",
+                    fontSize = 10,
+                    color = color,
+                )
+            }
+        }
+        SubtyText(
+            "%,d".format(used),
+            fontSize = 13,
+            weight = FontWeight.Bold,
+            color = SubtyText1,
         )
     }
 }

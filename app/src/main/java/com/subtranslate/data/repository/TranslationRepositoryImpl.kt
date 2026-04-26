@@ -116,6 +116,16 @@ class TranslationRepositoryImpl @Inject constructor(
                 }
             }
 
+            // Track usage
+            val totalChars = subtitleFile.entries.sumOf { it.text.length }
+            val engineKey = when {
+                modelId.startsWith("gemini") -> "gemini"
+                modelId == "deepl" -> "deepl"
+                modelId == "microsoft" -> "microsoft"
+                else -> "mymemory"
+            }
+            settings.addCharsUsed(engineKey, totalChars)
+
             lastTranslatedFile = subtitleFile.copy(entries = translatedEntries)
 
             send(TranslationProgress(

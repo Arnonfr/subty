@@ -112,6 +112,36 @@ class SettingsDataStore(context: Context) {
         get() = prefs.getString("microsoft_region", "global") ?: "global"
         set(v) = prefs.edit().putString("microsoft_region", v).apply()
 
+    // ── Usage Tracking ───────────────────────────────────────────────────────
+
+    /** Returns total characters translated this month for a given engine. */
+    fun getCharsUsed(engine: String): Int {
+        val currentMonth = java.time.YearMonth.now().toString()
+        val storedMonth = prefs.getString("usage_month", "") ?: ""
+        if (storedMonth != currentMonth) {
+            // New month — reset counters implicitly by returning 0 until saved
+            return 0
+        }
+        return prefs.getInt("chars_used_$engine", 0)
+    }
+
+    /** Adds translated characters to the current month's counter for an engine. */
+    fun addCharsUsed(engine: String, chars: Int) {
+        val currentMonth = java.time.YearMonth.now().toString()
+        val storedMonth = prefs.getString("usage_month", "") ?: ""
+        val editor = prefs.edit()
+        if (storedMonth != currentMonth) {
+            // Reset all engine counters for new month
+            editor.putString("usage_month", currentMonth)
+            listOf("mymemory", "deepl", "microsoft", "gemini").forEach {
+                editor.putInt("chars_used_$it", 0)
+            }
+        }
+        val current = prefs.getInt("chars_used_$engine", 0)
+        editor.putInt("chars_used_$engine", current + chars)
+        editor.apply()
+    }
+
     companion object {
         private const val KEY_SOURCE_LANG = "source_lang"
         private const val KEY_TARGET_LANG = "target_lang"

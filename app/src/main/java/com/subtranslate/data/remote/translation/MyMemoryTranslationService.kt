@@ -74,6 +74,7 @@ class MyMemoryTranslationService @Inject constructor() {
         val sourceText = entry.text.trim()
         val chunks = sourceText.chunked(MAX_CHARS)
         val results = mutableListOf<String>()
+        var lastError: Exception? = null
 
         for (chunk in chunks) {
             var translated: String? = null
@@ -84,12 +85,17 @@ class MyMemoryTranslationService @Inject constructor() {
                         ?.ifBlank { null }
                     if (translated != null) break
                 } catch (e: Exception) {
+                    lastError = e
                     if (attempt < MAX_RETRIES) {
                         delay(500L * attempt)
                     }
                 }
             }
-            results.add(translated ?: chunk)
+            if (translated == null) {
+                // Propagate the actual error so the user sees what went wrong
+                throw lastError ?: Exception("MyMemory failed to translate after $MAX_RETRIES retries")
+            }
+            results.add(translated)
         }
         return results.joinToString(" ")
     }
@@ -100,15 +106,26 @@ class MyMemoryTranslationService @Inject constructor() {
         val request = Request.Builder().url(url).get().build()
 
         httpClient.newCall(request).execute().use { response ->
+            val bodyString = response.body!!.string()
             if (!response.isSuccessful) {
-                throw Exception("MyMemory error ${response.code}")
+                // Try to extract MyMemory's friendly message from JSON even on HTTP errors
+                val friendly = runCatching {
+                    JSONObject(bodyString).optString("responseDetails")
+                }.getOrNull()
+                throw Exception(friendly ?: "MyMemory error ${response.code}")
             }
-            val json = JSONObject(response.body!!.string())
+            val json = JSONObject(bodyString)
             val status = json.optInt("responseStatus", 0)
+            val translatedText = json.getJSONObject("responseData").getString("translatedText")
+
+            // Detect quota / warning messages that MyMemory returns even with status 200
+            if (translatedText.startsWith("MYMEMORY WARNING", ignoreCase = true)) {
+                throw Exception(translatedText)
+            }
             if (status != 200) {
                 throw Exception("MyMemory status $status: ${json.optString("responseDetails")}")
             }
-            return json.getJSONObject("responseData").getString("translatedText")
+            return translatedText
         }
     }
 
