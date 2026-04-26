@@ -41,7 +41,7 @@ class SettingsDataStore(context: Context) {
         set(value) = prefs.edit().putString(KEY_TARGET_LANG, value).apply()
 
     var translationModel: String
-        get() = when (val model = prefs.getString(KEY_MODEL, "gemini-2.5-flash")) {
+        get() = when (val model = prefs.getString(KEY_MODEL, "mymemory")) {
             "google" -> "mymemory"
             null -> "gemini-2.5-flash"
             else -> model
