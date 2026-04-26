@@ -33,6 +33,4 @@ English, Hebrew, Arabic, French, Spanish, German, Italian, Portuguese, Russian, 
 SUBTITLE SOURCES:
 Powered by OpenSubtitles — the world's largest open subtitle database with over 4 million subtitle files across 60+ languages.
 
----
-
 Subty is free to download. Google Translate is used for translation — the free tier includes 500,000 characters per month (approximately 8 full movies). No in-app purchases required for basic use.

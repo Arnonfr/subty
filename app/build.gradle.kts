@@ -173,6 +173,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.androidx.test.runner)
 
     // Firebase
     implementation(platform(libs.firebase.bom))

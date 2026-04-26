@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["preview/server.js"],
       "port": 7890
+    },
+    {
+      "name": "email-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "9293"],
+      "port": 9293
     }
   ]
 }

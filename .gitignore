@@ -64,3 +64,5 @@ captures/
 .zencoder/
 skills/
 skills-lock.json
+fastlane/google-play-key.json
+.a5c/
