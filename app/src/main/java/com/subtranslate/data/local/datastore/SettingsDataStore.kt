@@ -3,6 +3,7 @@ package com.subtranslate.data.local.datastore
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.subtranslate.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,9 +42,10 @@ class SettingsDataStore(context: Context) {
         set(value) = prefs.edit().putString(KEY_TARGET_LANG, value).apply()
 
     var translationModel: String
-        get() = when (val model = prefs.getString(KEY_MODEL, "mymemory")) {
+        get() = when (val model = prefs.getString(KEY_MODEL, "")) {
             "google" -> "mymemory"
-            null -> "gemini-2.5-flash"
+            "" -> BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }?.let { "microsoft" } ?: "mymemory"
+            null -> BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }?.let { "microsoft" } ?: "mymemory"
             else -> model
         }
         set(v) = prefs.edit().putString(KEY_MODEL, v).apply()
@@ -106,10 +108,13 @@ class SettingsDataStore(context: Context) {
 
     var microsoftApiKey: String?
         get() = prefs.getString("microsoft_api_key", null)
+            ?: BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }
         set(v) = prefs.edit().putString("microsoft_api_key", v).apply()
 
     var microsoftRegion: String
-        get() = prefs.getString("microsoft_region", "global") ?: "global"
+        get() = prefs.getString("microsoft_region", null)
+            ?: BuildConfig.MICROSOFT_REGION.takeIf { it.isNotBlank() }
+            ?: "global"
         set(v) = prefs.edit().putString("microsoft_region", v).apply()
 
     // ── Usage Tracking ───────────────────────────────────────────────────────

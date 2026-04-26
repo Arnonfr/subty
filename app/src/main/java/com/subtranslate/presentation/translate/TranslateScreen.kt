@@ -292,6 +292,16 @@ fun TranslateScreen(
                 }
             }
 
+            // ── Warning (e.g. fallback to MyMemory) ───────────────────────────
+            progress.warningMessage?.let { warn ->
+                item {
+                    SubtyWarningBanner(
+                        warn,
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
+                }
+            }
+
             // ── Saved path ────────────────────────────────────────────────────
             state.savedPath?.let { path ->
                 item {

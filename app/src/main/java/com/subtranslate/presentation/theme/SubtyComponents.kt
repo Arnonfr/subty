@@ -459,3 +459,16 @@ fun SubtySuccessBanner(text: String, modifier: Modifier = Modifier) {
         SubtyText(text, fontSize = 12, color = SubtyMocha)
     }
 }
+
+@Composable
+fun SubtyWarningBanner(text: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.dp, Color(0xFFFFA500))
+            .background(Color(0xFF2A1A00))
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+    ) {
+        SubtyText(text, fontSize = 12, color = Color(0xFFFFA500))
+    }
+}

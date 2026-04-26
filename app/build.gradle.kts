@@ -45,12 +45,21 @@ android {
             ?: localProps["OPENSUBTITLES_PASSWORD"]?.toString()
             ?: ""
 
+        val microsoftApiKey = System.getenv("MICROSOFT_API_KEY")
+            ?: localProps["MICROSOFT_API_KEY"]?.toString()
+            ?: ""
+        val microsoftRegion = System.getenv("MICROSOFT_REGION")
+            ?: localProps["MICROSOFT_REGION"]?.toString()
+            ?: "global"
+
         buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
         buildConfigField("String", "SUBDL_API_KEY", "\"$subdlApiKey\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
         buildConfigField("String", "GOOGLE_TRANSLATE_API_KEY", "\"$googleTranslateApiKey\"")
         buildConfigField("String", "OPENSUBTITLES_USERNAME", "\"$osUsername\"")
         buildConfigField("String", "OPENSUBTITLES_PASSWORD", "\"$osPassword\"")
+        buildConfigField("String", "MICROSOFT_API_KEY", "\"$microsoftApiKey\"")
+        buildConfigField("String", "MICROSOFT_REGION", "\"$microsoftRegion\"")
 
     }
 

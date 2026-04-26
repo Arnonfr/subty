@@ -82,20 +82,52 @@ class TranslationRepositoryImpl @Inject constructor(
                         ?: throw IllegalStateException("Microsoft API key not configured. Add it in Settings.")
                     val region = settings.microsoftRegion
                     val batchesTotal = (subtitleFile.entries.size + 99) / 100
-                    microsoftService.translateEntries(
-                        entries = subtitleFile.entries,
-                        sourceLang = sourceLang,
-                        targetLang = targetLang,
-                        apiKey = apiKey,
-                        region = region
-                    ) { translated, total ->
-                        trySend(TranslationProgress(
-                            totalEntries = total,
-                            translatedEntries = translated,
-                            currentBatch = (translated + 99) / 100,
-                            totalBatches = batchesTotal,
-                            status = TranslationStatus.TRANSLATING
-                        ))
+                    try {
+                        microsoftService.translateEntries(
+                            entries = subtitleFile.entries,
+                            sourceLang = sourceLang,
+                            targetLang = targetLang,
+                            apiKey = apiKey,
+                            region = region
+                        ) { translated, total ->
+                            trySend(TranslationProgress(
+                                totalEntries = total,
+                                translatedEntries = translated,
+                                currentBatch = (translated + 99) / 100,
+                                totalBatches = batchesTotal,
+                                status = TranslationStatus.TRANSLATING
+                            ))
+                        }
+                    } catch (e: Exception) {
+                        val msg = e.message ?: ""
+                        val isQuotaError = msg.contains("quota", ignoreCase = true)
+                                || msg.contains("exceeded", ignoreCase = true)
+                                || msg.contains("limit", ignoreCase = true)
+                                || msg.contains("429", ignoreCase = true)
+                                || msg.contains("403", ignoreCase = true)
+                        if (isQuotaError) {
+                            // Fallback to MyMemory with warning
+                            trySend(TranslationProgress(
+                                totalEntries = subtitleFile.entries.size,
+                                status = TranslationStatus.TRANSLATING,
+                                warningMessage = "Microsoft quota exceeded. Falling back to MyMemory (free)."
+                            ))
+                            myMemoryService.translateEntries(
+                                entries = subtitleFile.entries,
+                                sourceLang = sourceLang,
+                                targetLang = targetLang
+                            ) { translated, total ->
+                                trySend(TranslationProgress(
+                                    totalEntries = total,
+                                    translatedEntries = translated,
+                                    currentBatch = 1,
+                                    totalBatches = 1,
+                                    status = TranslationStatus.TRANSLATING
+                                ))
+                            }
+                        } else {
+                            throw e
+                        }
                     }
                 }
                 else -> {

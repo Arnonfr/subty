@@ -200,7 +200,7 @@ class TranslateViewModel @Inject constructor(
             _uiState.value.selectedModel == "deepl" ->
                 !settings.deeplApiKey.isNullOrBlank()
             _uiState.value.selectedModel == "microsoft" ->
-                !settings.microsoftApiKey.isNullOrBlank()
+                !settings.microsoftApiKey.isNullOrBlank() || BuildConfig.MICROSOFT_API_KEY.isNotBlank()
             else -> true // MyMemory and other free services need no key
         }
     }
