@@ -62,5 +62,5 @@ jobs:
           serviceAccountJson: fastlane/google-play-key.json
           packageName: com.subtranslate
           releaseFiles: app/build/outputs/bundle/stableRelease/app-stable-release.aab
-          track: ${{ github.event.inputs.track }}
+          tracks: ${{ github.event.inputs.track }}
           status: completed
