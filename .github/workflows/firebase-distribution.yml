@@ -43,6 +43,8 @@ jobs:
           OPENSUBTITLES_PASSWORD: ${{ secrets.OPENSUBTITLES_PASSWORD }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
+          MICROSOFT_API_KEY: ${{ secrets.MICROSOFT_API_KEY }}
+          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
 
       - name: Upload Stable to Firebase
         run: ./gradlew appDistributionUploadStableDebug
@@ -54,6 +56,8 @@ jobs:
           OPENSUBTITLES_USERNAME: ${{ secrets.OPENSUBTITLES_USERNAME }}
           OPENSUBTITLES_PASSWORD: ${{ secrets.OPENSUBTITLES_PASSWORD }}
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
+          MICROSOFT_API_KEY: ${{ secrets.MICROSOFT_API_KEY }}
+          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
 
       # Lab is distributed from main only (requires com.subtranslate.lab in google-services.json)
       - name: Build Lab
@@ -66,6 +70,8 @@ jobs:
           OPENSUBTITLES_USERNAME: ${{ secrets.OPENSUBTITLES_USERNAME }}
           OPENSUBTITLES_PASSWORD: ${{ secrets.OPENSUBTITLES_PASSWORD }}
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
+          MICROSOFT_API_KEY: ${{ secrets.MICROSOFT_API_KEY }}
+          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
 
       - name: Upload Lab to Firebase
         if: github.ref == 'refs/heads/main'
@@ -78,3 +84,5 @@ jobs:
           OPENSUBTITLES_USERNAME: ${{ secrets.OPENSUBTITLES_USERNAME }}
           OPENSUBTITLES_PASSWORD: ${{ secrets.OPENSUBTITLES_PASSWORD }}
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
+          MICROSOFT_API_KEY: ${{ secrets.MICROSOFT_API_KEY }}
+          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
