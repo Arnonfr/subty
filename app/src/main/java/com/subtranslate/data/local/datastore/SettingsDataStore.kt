@@ -29,6 +29,12 @@ class SettingsDataStore(context: Context) {
                 .putBoolean(KEY_LIGHT_THEME_DEFAULT_APPLIED, true)
                 .apply()
         }
+        if (!prefs.contains(KEY_MICROSOFT_DEFAULT_APPLIED)) {
+            prefs.edit()
+                .putString(KEY_MODEL, "microsoft")
+                .putBoolean(KEY_MICROSOFT_DEFAULT_APPLIED, true)
+                .apply()
+        }
     }
 
     // ── Translation ──────────────────────────────────────────────────────────
@@ -180,6 +186,7 @@ class SettingsDataStore(context: Context) {
         private const val KEY_COMPACT_RESULTS = "compact_results"
         private const val KEY_SEASON_EPISODE_TEXT_FIELDS = "season_episode_text_fields"
         private const val KEY_LIGHT_THEME_DEFAULT_APPLIED = "light_theme_default_applied"
+        private const val KEY_MICROSOFT_DEFAULT_APPLIED = "microsoft_default_applied"
         private const val KEY_SAVE_FORMAT = "save_format"
         private const val KEY_AUTO_SAVE = "auto_save"
         private const val KEY_GEMINI_API_KEY = "gemini_api_key"
