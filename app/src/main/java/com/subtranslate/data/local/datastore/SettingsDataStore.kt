@@ -44,8 +44,8 @@ class SettingsDataStore(context: Context) {
     var translationModel: String
         get() = when (val model = prefs.getString(KEY_MODEL, "")) {
             "google" -> "mymemory"
-            "" -> BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }?.let { "microsoft" } ?: "mymemory"
-            null -> BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }?.let { "microsoft" } ?: "mymemory"
+            "" -> "microsoft"
+            null -> "microsoft"
             else -> model
         }
         set(v) = prefs.edit().putString(KEY_MODEL, v).apply()

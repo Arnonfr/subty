@@ -19,7 +19,7 @@ data class UsageStats(
 data class SettingsUiState(
     // Translation
     val defaultTargetLang: String = "he",
-    val translationModel: String = "gemini-2.5-flash",
+    val translationModel: String = "microsoft",
     val autoTranslate: Boolean = false,
     // Display
     val showPosters: Boolean = true,

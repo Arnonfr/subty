@@ -35,7 +35,7 @@ data class TranslateUiState(
     // sourceLang is auto-detected from the subtitle file — never entered manually
     val sourceLang: String = "en",
     val targetLang: String = "he",
-    val selectedModel: String = "mymemory",
+    val selectedModel: String = "microsoft",
     val isLoadingFile: Boolean = false,
     val progress: TranslationProgress = TranslationProgress(),
     val translatedFile: SubtitleFile? = null,
