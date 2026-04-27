@@ -4,6 +4,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,6 +37,7 @@ class RemoteConfigManager @Inject constructor() {
 
         // In production: 1 hour cache. During dev you can lower this.
         private const val FETCH_INTERVAL_SECONDS = 3600L
+        private const val FETCH_TIMEOUT_SECONDS = 4L
     }
 
     private val remoteConfig = Firebase.remoteConfig
@@ -52,7 +54,10 @@ class RemoteConfigManager @Inject constructor() {
      * Falls back to defaults / last cached values if fetch fails (e.g. offline).
      */
     suspend fun fetchAndGet(): AppConfig {
-        runCatching { remoteConfig.fetchAndActivate().await() }
+        runCatching { remoteConfig.setDefaultsAsync(DEFAULTS).await() }
+        withTimeoutOrNull(FETCH_TIMEOUT_SECONDS * 1000) {
+            runCatching { remoteConfig.fetchAndActivate().await() }
+        }
         return current()
     }
 

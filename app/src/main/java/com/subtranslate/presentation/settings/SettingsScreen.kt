@@ -40,13 +40,11 @@ private val MODELS = listOf(
 private val FORMATS = listOf("srt" to "SRT", "vtt" to "VTT", "ass" to "ASS")
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onOpenApiKeys: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        viewModel.refreshUsage()
-    }
 
     Column(
         modifier = Modifier
@@ -88,76 +86,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
         Spacer(Modifier.height(24.dp))
 
-        // ── API Keys ──────────────────────────────────────────────────────────
-        SettingsSectionHeader("API Keys", Modifier.padding(horizontal = 24.dp))
+        // ── Advanced ─────────────────────────────────────────────────────────
+        SettingsSectionHeader("Advanced", Modifier.padding(horizontal = 24.dp))
         SubtyDivider()
-        ApiKeyRow(
-            label = "Gemini API Key",
-            value = state.geminiApiKey,
-            placeholder = "Enter your Gemini API key",
-            onValueChange = viewModel::onGeminiApiKeyChange,
-            getLinkUrl = "https://aistudio.google.com/app/apikey",
-            getLinkLabel = "Get free API key →",
-            context = context,
-        )
-        SubtyDividerDim()
-        ApiKeyRow(
-            label = "DeepL API Key",
-            value = state.deeplApiKey,
-            placeholder = "Enter your DeepL API key",
-            onValueChange = viewModel::onDeepLApiKeyChange,
-            getLinkUrl = "https://www.deepl.com/pro-api",
-            getLinkLabel = "Get free API key →",
-            context = context,
-        )
-        SubtyDividerDim()
-        ApiKeyRow(
-            label = "Microsoft Azure Key",
-            value = state.microsoftApiKey,
-            placeholder = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
-                "✓ Pre-configured (optional override)"
-            else
-                "Enter your Translator key",
-            onValueChange = viewModel::onMicrosoftApiKeyChange,
-            getLinkUrl = "https://portal.azure.com/#create/Microsoft.CognitiveServicesTextTranslation",
-            getLinkLabel = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
-                "Override with your own key →"
-            else
-                "Create free resource →",
-            context = context,
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-        ) {
-            SubtyText("Region", fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
-            Spacer(Modifier.height(4.dp))
-            SubtyTextField(
-                value = state.microsoftRegion,
-                onValueChange = viewModel::onMicrosoftRegionChange,
-                placeholder = "global",
-            )
-            SubtyText(
-                "Use 'global' for multi-service keys",
-                fontSize = 10,
-                color = SubtyText3,
-            )
-        }
-        SubtyDivider()
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Usage ─────────────────────────────────────────────────────────────
-        SettingsSectionHeader("Usage This Month", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        UsageRow("MyMemory", state.usage.myMemory, 1_000_000)
-        SubtyDividerDim()
-        UsageRow("DeepL", state.usage.deepL, 500_000)
-        SubtyDividerDim()
-        UsageRow("Microsoft Azure", state.usage.microsoft, 2_000_000)
-        SubtyDividerDim()
-        UsageRow("Gemini", state.usage.gemini, Int.MAX_VALUE)
+        SettingsNavRow("API Keys", "Optional provider overrides", onOpenApiKeys)
         SubtyDivider()
 
         Spacer(Modifier.height(24.dp))
@@ -238,6 +170,120 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 }
 
 @Composable
+fun ApiKeysScreen(
+    onBack: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SubtyBg)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SubtyText(
+                "‹",
+                fontSize = 28,
+                weight = FontWeight.Normal,
+                color = SubtyText1,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) { onBack() },
+            )
+            SubtyPageTitle("API Keys")
+        }
+
+        Spacer(Modifier.height(20.dp))
+        SettingsSectionHeader("Provider Keys", Modifier.padding(horizontal = 24.dp))
+        SubtyDivider()
+        ApiKeyRow(
+            label = "Gemini API Key",
+            value = state.geminiApiKey,
+            placeholder = "Enter your Gemini API key",
+            onValueChange = viewModel::onGeminiApiKeyChange,
+            getLinkUrl = "https://aistudio.google.com/app/apikey",
+            getLinkLabel = "Get free API key →",
+            context = context,
+        )
+        SubtyDividerDim()
+        ApiKeyRow(
+            label = "DeepL API Key",
+            value = state.deeplApiKey,
+            placeholder = "Enter your DeepL API key",
+            onValueChange = viewModel::onDeepLApiKeyChange,
+            getLinkUrl = "https://www.deepl.com/pro-api",
+            getLinkLabel = "Get free API key →",
+            context = context,
+        )
+        SubtyDividerDim()
+        ApiKeyRow(
+            label = "Microsoft Azure Key",
+            value = state.microsoftApiKey,
+            placeholder = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
+                "✓ Pre-configured (optional override)"
+            else
+                "Enter your Translator key",
+            onValueChange = viewModel::onMicrosoftApiKeyChange,
+            getLinkUrl = "https://portal.azure.com/#create/Microsoft.CognitiveServicesTextTranslation",
+            getLinkLabel = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
+                "Override with your own key →"
+            else
+                "Create free resource →",
+            context = context,
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+        ) {
+            SubtyText("Region", fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+            Spacer(Modifier.height(4.dp))
+            SubtyTextField(
+                value = state.microsoftRegion,
+                onValueChange = viewModel::onMicrosoftRegionChange,
+                placeholder = "global",
+            )
+            SubtyText(
+                "Use 'global' for multi-service keys",
+                fontSize = 10,
+                color = SubtyText3,
+            )
+        }
+        SubtyDivider()
+
+        Spacer(Modifier.height(28.dp))
+        SubtyButton(
+            text = "Save",
+            onClick = viewModel::save,
+            style = SubtyButtonStyle.FILLED,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+        )
+
+        if (state.saved) {
+            Spacer(Modifier.height(12.dp))
+            SubtySuccessBanner(
+                "Settings saved",
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
 private fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier) {
     SubtyText(
         text = text.uppercase(),
@@ -246,6 +292,31 @@ private fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier) {
         weight = FontWeight.Bold,
         color = SubtyMocha,
     )
+}
+
+@Composable
+private fun SettingsNavRow(
+    label: String,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) { onClick() }
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            SubtyText(label, fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+            SubtyText(description, fontSize = 11, color = SubtyText3)
+        }
+        SubtyText("›", fontSize = 22, color = SubtyText3)
+    }
 }
 
 @Composable

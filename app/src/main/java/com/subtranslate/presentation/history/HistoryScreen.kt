@@ -26,6 +26,7 @@ import java.util.*
 fun HistoryScreen(
     onSearchAgain: (SearchHistoryEntity) -> Unit = {},
     onBrowseEpisodes: (SearchHistoryEntity) -> Unit = {},
+    onSearchDownloadAgain: (String) -> Unit = {},
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val downloads by viewModel.history.collectAsState()
@@ -113,7 +114,14 @@ fun HistoryScreen(
                         SubtyDividerDim()
                     }
                     items(downloads, key = { "d${it.id}" }) { item ->
-                        DownloadHistoryRow(item = item, onDelete = { viewModel.delete(item.id) })
+                        DownloadHistoryRow(
+                            item = item,
+                            onSearchAgain = {
+                                val query = viewModel.restoreDownloadSearch(item)
+                                onSearchDownloadAgain(query)
+                            },
+                            onDelete = { viewModel.delete(item.id) },
+                        )
                         SubtyDividerDim()
                     }
                 }
@@ -157,13 +165,20 @@ private fun SearchHistoryRow(
             }
             if (onBrowseEpisodes != null) {
                 SubtyButton(
-                    text = "Browse",
+                    text = "Episodes",
                     onClick = onBrowseEpisodes,
                     style = SubtyButtonStyle.OUTLINE,
                     small = true,
                 )
                 Spacer(Modifier.width(4.dp))
             }
+            SubtyButton(
+                text = "Search",
+                onClick = onClick,
+                style = SubtyButtonStyle.OUTLINE,
+                small = true,
+            )
+            Spacer(Modifier.width(4.dp))
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
@@ -177,7 +192,11 @@ private fun SearchHistoryRow(
 }
 
 @Composable
-private fun DownloadHistoryRow(item: HistoryItem, onDelete: () -> Unit) {
+private fun DownloadHistoryRow(
+    item: HistoryItem,
+    onSearchAgain: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val sdf = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
     Row(
         modifier = Modifier
@@ -202,6 +221,13 @@ private fun DownloadHistoryRow(item: HistoryItem, onDelete: () -> Unit) {
             )
             SubtyText(sdf.format(Date(item.downloadedAt)), fontSize = 10, color = SubtyText3)
         }
+        SubtyButton(
+            text = "Search",
+            onClick = onSearchAgain,
+            style = SubtyButtonStyle.OUTLINE,
+            small = true,
+        )
+        Spacer(Modifier.width(4.dp))
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Default.Delete,

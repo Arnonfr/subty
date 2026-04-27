@@ -35,6 +35,15 @@ class TranslationRepositoryImpl @Inject constructor(
         targetLang: String,
         modelId: String
     ): Flow<TranslationProgress> = channelFlow {
+        if (settings.getTranslationsUsedThisMonth() >= MONTHLY_TRANSLATION_LIMIT) {
+            send(TranslationProgress(
+                totalEntries = subtitleFile.entries.size,
+                status = TranslationStatus.ERROR,
+                errorMessage = "Monthly translation limit reached (10/month). Try again next month."
+            ))
+            return@channelFlow
+        }
+
         // channelFlow allows send() from any thread/coroutine context,
         // fixing the "Flow invariant is violated" crash caused by runBlocking inside flow{}
         send(TranslationProgress(
@@ -170,6 +179,7 @@ class TranslationRepositoryImpl @Inject constructor(
             // Track usage (local per-device)
             val totalChars = subtitleFile.entries.sumOf { it.text.length }
             settings.addCharsUsed(engineKey, totalChars)
+            settings.addTranslationUsed()
 
             // Track globally via Firebase Analytics (visible in Firebase Console)
             try {
@@ -201,5 +211,9 @@ class TranslationRepositoryImpl @Inject constructor(
                 errorMessage = e.message
             ))
         }
+    }
+
+    private companion object {
+        private const val MONTHLY_TRANSLATION_LIMIT = 10
     }
 }

@@ -108,7 +108,11 @@ class SettingsDataStore(context: Context) {
 
     var microsoftApiKey: String?
         get() = prefs.getString("microsoft_api_key", null)
+            ?: BuildConfig.MICROSOFT_API_KEY.takeIf { it.isNotBlank() }
         set(v) = prefs.edit().putString("microsoft_api_key", v).apply()
+
+    val customMicrosoftApiKey: String?
+        get() = prefs.getString("microsoft_api_key", null)
 
     val effectiveMicrosoftApiKey: String?
         get() = microsoftApiKey?.takeIf { it.isNotBlank() }
@@ -150,6 +154,23 @@ class SettingsDataStore(context: Context) {
         editor.apply()
     }
 
+    fun getTranslationsUsedThisMonth(): Int {
+        val currentMonth = java.time.YearMonth.now().toString()
+        val storedMonth = prefs.getString(KEY_TRANSLATION_LIMIT_MONTH, "") ?: ""
+        if (storedMonth != currentMonth) return 0
+        return prefs.getInt(KEY_TRANSLATIONS_USED, 0)
+    }
+
+    fun addTranslationUsed() {
+        val currentMonth = java.time.YearMonth.now().toString()
+        val storedMonth = prefs.getString(KEY_TRANSLATION_LIMIT_MONTH, "") ?: ""
+        val current = if (storedMonth == currentMonth) prefs.getInt(KEY_TRANSLATIONS_USED, 0) else 0
+        prefs.edit()
+            .putString(KEY_TRANSLATION_LIMIT_MONTH, currentMonth)
+            .putInt(KEY_TRANSLATIONS_USED, current + 1)
+            .apply()
+    }
+
     companion object {
         private const val KEY_SOURCE_LANG = "source_lang"
         private const val KEY_TARGET_LANG = "target_lang"
@@ -163,5 +184,7 @@ class SettingsDataStore(context: Context) {
         private const val KEY_AUTO_SAVE = "auto_save"
         private const val KEY_GEMINI_API_KEY = "gemini_api_key"
         private const val KEY_OPENSUBTITLES_API_KEY = "opensubtitles_api_key"
+        private const val KEY_TRANSLATION_LIMIT_MONTH = "translation_limit_month"
+        private const val KEY_TRANSLATIONS_USED = "translations_used"
     }
 }

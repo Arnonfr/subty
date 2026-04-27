@@ -68,4 +68,29 @@ class HistoryViewModel @Inject constructor(
         searchSession.pendingBrowseTitle = item.query
         searchSession.pendingBrowseLangs = item.languages
     }
+
+    fun restoreDownloadSearch(item: HistoryItem): String {
+        val title = item.movieTitle
+        val episodeMatch = Regex("""(?i)(?:s(\d{1,2})\s*e(\d{1,2})|(\d{1,2})x(\d{1,2}))""")
+            .find(title)
+        val season = episodeMatch?.groups?.get(1)?.value?.toIntOrNull()
+            ?: episodeMatch?.groups?.get(3)?.value?.toIntOrNull()
+        val episode = episodeMatch?.groups?.get(2)?.value?.toIntOrNull()
+            ?: episodeMatch?.groups?.get(4)?.value?.toIntOrNull()
+        val query = title
+            .replace(episodeMatch?.value.orEmpty(), " ")
+            .replace(Regex("""[._-]+"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+            .ifBlank { title }
+
+        searchSession.movieTitle = query
+        searchSession.season = season
+        searchSession.episode = episode
+        searchSession.languages = item.originalLanguage
+        searchSession.contentType = if (season != null || episode != null) "tv" else "movie"
+        searchSession.imdbId = null
+        searchSession.posterUrl = null
+        return query
+    }
 }

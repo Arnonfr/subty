@@ -246,7 +246,7 @@ class SearchViewModel @Inject constructor(
         searchSession.season = state.season.toIntOrNull()
         searchSession.episode = state.episode.toIntOrNull()
         searchSession.languages = state.selectedLanguages.joinToString(",")
-        if (state.searchMode == SearchMode.IMDB_ID) {
+        if (state.searchMode == SearchMode.IMDB_ID || state.imdbId.isNotBlank()) {
             searchSession.imdbId = state.imdbId.ifBlank { null }
         }
         // Collapse autocomplete
@@ -255,7 +255,7 @@ class SearchViewModel @Inject constructor(
             suggestionsLoading = false,
         )
         // Save to search history (fire-and-forget)
-        val queryToSave = if (state.searchMode == SearchMode.TITLE) state.query else state.imdbId
+        val queryToSave = if (state.searchMode == SearchMode.TITLE) state.query.ifBlank { state.imdbId } else state.imdbId
         if (queryToSave.isNotBlank()) {
             viewModelScope.launch {
                 runCatching {

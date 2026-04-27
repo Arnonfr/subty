@@ -15,11 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,7 +43,6 @@ fun SearchScreen(
     var langFilter by remember { mutableStateOf("") }
     var langSearchOpen by remember { mutableStateOf(false) }
     var showAdvancedOptions by remember { mutableStateOf(false) }
-    var overflowExpanded by remember { mutableStateOf(false) }
 
     // Filtered language list — if user types in lang filter field, narrow the chips
     val visibleLanguages = remember(langFilter) {
@@ -81,50 +77,15 @@ fun SearchScreen(
             }
         }
 
-        // ── Page title + overflow menu ────────────────────────────────────────
+        // ── Page title ────────────────────────────────────────────────────────
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp, end = 12.dp, top = 24.dp, bottom = 4.dp),
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             SubtyPageTitle("Search")
-            Box {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More options",
-                    tint = SubtyText3,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) { overflowExpanded = true },
-                )
-                DropdownMenu(
-                    expanded = overflowExpanded,
-                    onDismissRequest = { overflowExpanded = false },
-                    modifier = Modifier.background(SubtyBg2),
-                ) {
-                    DropdownMenuItem(
-                        text = { SubtyText("Search by IMDB ID", fontSize = 14) },
-                        onClick = {
-                            overflowExpanded = false
-                            viewModel.onSearchModeChange(SearchMode.IMDB_ID)
-                            showAdvancedOptions = true
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { SubtyText("Search by Title", fontSize = 14) },
-                        onClick = {
-                            overflowExpanded = false
-                            viewModel.onSearchModeChange(SearchMode.TITLE)
-                            showAdvancedOptions = false
-                        },
-                    )
-                }
-            }
         }
         SubtyLabel(
             "Find subtitles by title",
@@ -148,7 +109,7 @@ fun SearchScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
-                        viewModel.search(); onSearch(state.query)
+                        viewModel.search(); onSearch(state.query.ifBlank { state.imdbId })
                     }),
                     textStyle = TextStyle(
                         color = SubtyText1,
@@ -464,7 +425,7 @@ fun SearchScreen(
         Spacer(Modifier.height(24.dp))
         SubtyButton(
             text = "Search Subtitles",
-            onClick = { viewModel.search(); onSearch(state.query) },
+            onClick = { viewModel.search(); onSearch(state.query.ifBlank { state.imdbId }) },
             style = SubtyButtonStyle.FILLED,
             enabled = searchEnabled && !state.isLoading && (state.query.isNotBlank() || state.imdbId.isNotBlank()),
             loading = state.isLoading,

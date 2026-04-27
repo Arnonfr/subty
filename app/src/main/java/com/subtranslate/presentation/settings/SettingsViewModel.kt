@@ -56,7 +56,7 @@ class SettingsViewModel @Inject constructor(
             autoSave = settings.autoSaveTranslated,
             geminiApiKey = settings.geminiApiKey ?: "",
             deeplApiKey = settings.deeplApiKey ?: "",
-            microsoftApiKey = settings.microsoftApiKey ?: "",
+            microsoftApiKey = settings.customMicrosoftApiKey ?: "",
             microsoftRegion = settings.microsoftRegion,
             usage = loadUsage(),
         )

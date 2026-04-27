@@ -13,6 +13,7 @@ import com.subtranslate.data.remote.config.AppConfig
 import com.subtranslate.presentation.history.HistoryScreen
 import com.subtranslate.presentation.results.ResultsScreen
 import com.subtranslate.presentation.search.SearchScreen
+import com.subtranslate.presentation.settings.ApiKeysScreen
 import com.subtranslate.presentation.settings.SettingsScreen
 import com.subtranslate.presentation.translate.TranslateScreen
 
@@ -86,11 +87,22 @@ fun NavGraph(
                 onBrowseEpisodes = { item ->
                     navController.navigate(Screen.Search.route)
                 },
+                onSearchDownloadAgain = { query ->
+                    navController.navigate(Screen.Results.createRoute(query))
+                },
             )
         }
 
         composable(Screen.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(
+                onOpenApiKeys = { navController.navigate(Screen.ApiKeys.route) }
+            )
+        }
+
+        composable(Screen.ApiKeys.route) {
+            ApiKeysScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }
