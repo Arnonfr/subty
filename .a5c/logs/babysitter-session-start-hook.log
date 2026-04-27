@@ -146,3 +146,107 @@
 [INFO] 2026-03-19T20:57:27Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
 [INFO] 2026-03-19T20:57:27Z Hook input received (     274 bytes)
 [INFO] 2026-03-19T20:57:27Z CLI exit code=0
+[INFO] 2026-03-23T07:05:51Z Hook script invoked
+[INFO] 2026-03-23T07:05:51Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-03-23T07:05:51Z Hook input received (     274 bytes)
+[INFO] 2026-03-23T07:05:51Z CLI exit code=0
+[INFO] 2026-03-23T08:27:02Z Hook script invoked
+[INFO] 2026-03-23T08:27:02Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-03-23T08:27:02Z Hook input received (     274 bytes)
+[INFO] 2026-03-23T08:27:02Z CLI exit code=0
+[INFO] 2026-03-23T09:14:28Z Hook script invoked
+[INFO] 2026-03-23T09:14:28Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-03-23T09:14:28Z Hook input received (     274 bytes)
+[INFO] 2026-03-23T09:14:28Z CLI exit code=0
+[INFO] 2026-03-23T16:57:34Z Hook script invoked
+[INFO] 2026-03-23T16:57:34Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-03-23T16:57:34Z Hook input received (     274 bytes)
+[INFO] 2026-03-23T16:57:34Z CLI exit code=0
+[INFO] 2026-03-31T06:52:16Z Hook script invoked
+[INFO] 2026-03-31T06:52:16Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-03-31T06:52:16Z Hook input received (     275 bytes)
+[INFO] 2026-03-31T06:52:16Z CLI exit code=0
+[INFO] 2026-03-31T07:31:11Z Hook script invoked
+[INFO] 2026-03-31T07:31:11Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-03-31T07:31:11Z Hook input received (     274 bytes)
+[INFO] 2026-03-31T07:31:11Z CLI exit code=0
+[INFO] 2026-04-09T09:18:55Z Hook script invoked
+[INFO] 2026-04-09T09:18:55Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T09:18:55Z CLI not found after install, using npx fallback
+[INFO] 2026-04-09T09:18:55Z Hook input received (     274 bytes)
+[INFO] 2026-04-09T09:18:55Z CLI exit code=127
+[INFO] 2026-04-09T09:41:12Z Hook script invoked
+[INFO] 2026-04-09T09:41:12Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T09:41:12Z CLI not found after install, using npx fallback
+[INFO] 2026-04-09T09:41:12Z Hook input received (     274 bytes)
+[INFO] 2026-04-09T09:41:12Z CLI exit code=127
+[INFO] 2026-04-09T10:29:20Z Hook script invoked
+[INFO] 2026-04-09T10:29:20Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T10:29:20Z CLI not found after install, using npx fallback
+[INFO] 2026-04-09T10:29:20Z Hook input received (     274 bytes)
+[INFO] 2026-04-09T10:29:20Z CLI exit code=127
+[INFO] 2026-04-09T11:37:58Z Hook script invoked
+[INFO] 2026-04-09T11:37:58Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T11:37:58Z Hook input received (     275 bytes)
+[INFO] 2026-04-09T11:37:59Z CLI exit code=0
+[INFO] 2026-04-09T11:37:59Z Hook script invoked
+[INFO] 2026-04-09T11:37:59Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T11:37:59Z Hook input received (     275 bytes)
+[INFO] 2026-04-09T11:37:59Z CLI exit code=0
+[INFO] 2026-04-09T11:47:35Z Hook script invoked
+[INFO] 2026-04-09T11:47:35Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T11:47:35Z Hook input received (     275 bytes)
+[INFO] 2026-04-09T11:47:35Z CLI exit code=0
+[INFO] 2026-04-09T13:26:50Z Hook script invoked
+[INFO] 2026-04-09T13:26:50Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T13:26:50Z Hook input received (     275 bytes)
+[INFO] 2026-04-09T13:26:50Z CLI exit code=0
+[INFO] 2026-04-09T13:26:54Z Hook script invoked
+[INFO] 2026-04-09T13:26:54Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T13:26:54Z Hook input received (     274 bytes)
+[INFO] 2026-04-09T13:26:54Z CLI exit code=0
+[INFO] 2026-04-09T14:00:38Z Hook script invoked
+[INFO] 2026-04-09T14:00:38Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T14:00:38Z CLI not found after install, using npx fallback
+[INFO] 2026-04-09T14:00:38Z Hook input received (     274 bytes)
+[INFO] 2026-04-09T14:00:38Z CLI exit code=127
+[INFO] 2026-04-09T14:23:07Z Hook script invoked
+[INFO] 2026-04-09T14:23:07Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T14:23:07Z Hook input received (     275 bytes)
+[INFO] 2026-04-09T14:23:07Z CLI exit code=0
+[INFO] 2026-04-09T14:23:11Z Hook script invoked
+[INFO] 2026-04-09T14:23:11Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T14:23:11Z Hook input received (     274 bytes)
+[INFO] 2026-04-09T14:23:11Z CLI exit code=0
+[INFO] 2026-04-09T14:36:30Z Hook script invoked
+[INFO] 2026-04-09T14:36:30Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T14:36:30Z Hook input received (     303 bytes)
+[INFO] 2026-04-09T14:36:30Z CLI exit code=0
+[INFO] 2026-04-09T14:55:43Z Hook script invoked
+[INFO] 2026-04-09T14:55:43Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-09T14:55:43Z Hook input received (     274 bytes)
+[INFO] 2026-04-09T14:55:43Z CLI exit code=0
+[INFO] 2026-04-26T09:38:53Z Hook script invoked
+[INFO] 2026-04-26T09:38:53Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-26T09:38:53Z Hook input received (     275 bytes)
+[INFO] 2026-04-26T09:38:53Z CLI exit code=0
+[INFO] 2026-04-26T13:29:00Z Hook script invoked
+[INFO] 2026-04-26T13:29:00Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-26T13:29:00Z Hook input received (     275 bytes)
+[INFO] 2026-04-26T13:29:01Z CLI exit code=0
+[INFO] 2026-04-26T18:52:23Z Hook script invoked
+[INFO] 2026-04-26T18:52:23Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-26T18:52:23Z Hook input received (     274 bytes)
+[INFO] 2026-04-26T18:52:23Z CLI exit code=0
+[INFO] 2026-04-27T06:36:03Z Hook script invoked
+[INFO] 2026-04-27T06:36:03Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-27T06:36:03Z Hook input received (     274 bytes)
+[INFO] 2026-04-27T06:36:03Z CLI exit code=0
+[INFO] 2026-04-27T06:43:00Z Hook script invoked
+[INFO] 2026-04-27T06:43:00Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-27T06:43:00Z Hook input received (     274 bytes)
+[INFO] 2026-04-27T06:43:00Z CLI exit code=0
+[INFO] 2026-04-27T06:46:58Z Hook script invoked
+[INFO] 2026-04-27T06:46:58Z PLUGIN_ROOT=/Users/hyh/.claude/plugins/babysitter
+[INFO] 2026-04-27T06:46:58Z Hook input received (     303 bytes)
+[INFO] 2026-04-27T06:46:58Z CLI exit code=0
