@@ -30,11 +30,11 @@ import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 private val MODELS = listOf(
-    "gemini-2.5-flash"               to "Gemini 2.5 Flash (stable)",
-    "gemini-3.1-flash-lite-preview"  to "Gemini 3.1 Flash Lite (fastest)",
-    "deepl"                          to "DeepL (500K chars/month free)",
-    "microsoft"                      to "Microsoft Azure (2M chars/month free)",
-    "mymemory"                       to "MyMemory (Free, Basic)",
+    "microsoft"                      to "Microsoft",
+    "gemini-2.5-flash"               to "Gemini",
+    "gemini-3.1-flash-lite-preview"  to "Gemini Lite",
+    "deepl"                          to "DeepL",
+    "mymemory"                       to "MyMemory (Free)",
 )
 
 private val FORMATS = listOf("srt" to "SRT", "vtt" to "VTT", "ass" to "ASS")
@@ -72,8 +72,10 @@ fun SettingsScreen(
         SettingsDropdown(
             label = "Model",
             selected = state.translationModel,
-            options = MODELS,
+            options = MODELS.filter { it.first in state.availableModels },
             onSelect = viewModel::onModelChange,
+            moreOptionsLabel = "More options",
+            onMoreOptions = onOpenApiKeys,
         )
         SubtyDividerDim()
         SubtyToggleRow(
@@ -246,7 +248,7 @@ fun ApiKeysScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 8.dp),
         ) {
-            SubtyText("Region", fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+            SubtyText("Region", fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
             Spacer(Modifier.height(4.dp))
             SubtyTextField(
                 value = state.microsoftRegion,
@@ -255,7 +257,7 @@ fun ApiKeysScreen(
             )
             SubtyText(
                 "Use 'global' for multi-service keys",
-                fontSize = 10,
+                fontSize = 12,
                 color = SubtyText3,
             )
         }
@@ -288,7 +290,7 @@ private fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier) {
     SubtyText(
         text = text.uppercase(),
         modifier = modifier.padding(bottom = 10.dp),
-        fontSize = 11,
+        fontSize = 10,
         weight = FontWeight.Bold,
         color = SubtyMocha,
     )
@@ -312,8 +314,9 @@ private fun SettingsNavRow(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            SubtyText(label, fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
-            SubtyText(description, fontSize = 11, color = SubtyText3)
+            SubtyText(label, fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
+            Spacer(Modifier.height(2.dp))
+            SubtyText(description, fontSize = 12, color = SubtyText3)
         }
         SubtyText("›", fontSize = 22, color = SubtyText3)
     }
@@ -336,7 +339,7 @@ private fun ApiKeyRow(
             .padding(horizontal = 24.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        SubtyText(label, fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+        SubtyText(label, fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
         SubtyTextField(
             value = value,
             onValueChange = onValueChange,
@@ -357,7 +360,7 @@ private fun ApiKeyRow(
         )
         SubtyText(
             text = getLinkLabel,
-            fontSize = 11,
+            fontSize = 12,
             weight = FontWeight.Bold,
             color = SubtyMocha,
             modifier = Modifier.clickable(
@@ -416,6 +419,8 @@ private fun SettingsDropdown(
     selected: String,
     options: List<Pair<String, String>>,
     onSelect: (String) -> Unit,
+    moreOptionsLabel: String? = null,
+    onMoreOptions: (() -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box(modifier = Modifier.fillMaxWidth()) {
@@ -435,8 +440,8 @@ private fun SettingsDropdown(
                 Spacer(Modifier.height(4.dp))
                 SubtyText(
                     options.find { it.first == selected }?.second ?: selected,
-                    fontSize = 14,
-                    weight = FontWeight.Medium,
+                    fontSize = 15,
+                    weight = FontWeight.SemiBold,
                     color = SubtyText1,
                 )
             }
@@ -465,6 +470,21 @@ private fun SettingsDropdown(
                         )
                     },
                     onClick = { onSelect(code); expanded = false },
+                    modifier = Modifier.background(SubtyBg2),
+                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                )
+            }
+            if (moreOptionsLabel != null && onMoreOptions != null) {
+                DropdownMenuItem(
+                    text = {
+                        SubtyText(
+                            moreOptionsLabel,
+                            fontSize = 14,
+                            color = SubtyMocha,
+                            weight = FontWeight.Bold,
+                        )
+                    },
+                    onClick = { expanded = false; onMoreOptions() },
                     modifier = Modifier.background(SubtyBg2),
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
                 )

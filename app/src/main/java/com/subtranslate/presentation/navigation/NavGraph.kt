@@ -70,7 +70,7 @@ fun NavGraph(
                 languageCode = languageCode,
                 onBack = { navController.popBackStack() },
                 onNavigateToSettings = {
-                    navController.navigate(Screen.Settings.route) {
+                    navController.navigate(Screen.ApiKeys.route) {
                         launchSingleTop = true
                     }
                 },

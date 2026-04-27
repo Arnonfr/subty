@@ -1,6 +1,7 @@
 package com.subtranslate.presentation.settings
 
 import androidx.lifecycle.ViewModel
+import com.subtranslate.BuildConfig
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,7 @@ data class SettingsUiState(
     val deeplApiKey: String = "",
     val microsoftApiKey: String = "",
     val microsoftRegion: String = "global",
+    val availableModels: List<String> = emptyList(),
     // Usage
     val usage: UsageStats = UsageStats(),
     val saved: Boolean = false
@@ -46,7 +48,10 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         SettingsUiState(
             defaultTargetLang = settings.defaultTargetLanguage,
-            translationModel = settings.translationModel,
+            translationModel = settings.translationModel
+                .takeIf { it in loadAvailableModels() }
+                ?: loadAvailableModels().firstOrNull()
+                ?: settings.translationModel,
             autoTranslate = settings.autoTranslateAfterDownload,
             showPosters = settings.showPosters,
             compactResults = settings.compactResults,
@@ -58,6 +63,7 @@ class SettingsViewModel @Inject constructor(
             deeplApiKey = settings.deeplApiKey ?: "",
             microsoftApiKey = settings.customMicrosoftApiKey ?: "",
             microsoftRegion = settings.microsoftRegion,
+            availableModels = loadAvailableModels(),
             usage = loadUsage(),
         )
     )
@@ -94,7 +100,7 @@ class SettingsViewModel @Inject constructor(
         settings.deeplApiKey = s.deeplApiKey.ifBlank { null }
         settings.microsoftApiKey = s.microsoftApiKey.ifBlank { null }
         settings.microsoftRegion = s.microsoftRegion.ifBlank { "global" }
-        update { copy(saved = true) }
+        update { copy(saved = true, availableModels = loadAvailableModels()) }
     }
 
     fun refreshUsage() {
@@ -108,6 +114,16 @@ class SettingsViewModel @Inject constructor(
             microsoft = settings.getCharsUsed("microsoft"),
             gemini = settings.getCharsUsed("gemini"),
         )
+    }
+
+    private fun loadAvailableModels(): List<String> = buildList {
+        if (!settings.effectiveMicrosoftApiKey.isNullOrBlank()) add("microsoft")
+        if (!settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()) {
+            add("gemini-2.5-flash")
+            add("gemini-3.1-flash-lite-preview")
+        }
+        if (!settings.deeplApiKey.isNullOrBlank()) add("deepl")
+        add("mymemory") // always available — no key required
     }
 
     private fun update(block: SettingsUiState.() -> SettingsUiState) {

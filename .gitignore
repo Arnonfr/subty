@@ -27,6 +27,10 @@ captures/
 .DS_Store
 **/.DS_Store
 
+# Test/debug screenshots from emulator sessions
+screen_*.png
+appicon*.png
+
 # Kotlin / Gradle cache
 .kotlin/
 

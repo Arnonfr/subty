@@ -63,7 +63,7 @@ fun SubtyPageTitle(text: String, modifier: Modifier = Modifier) {
         modifier = modifier,
         fontSize = 32,
         weight = FontWeight.Black,
-        letterSpacing = -0.02f,
+        letterSpacing = 0f,
         uppercase = true,
         color = SubtyText1,
     )
@@ -400,10 +400,10 @@ fun SubtyToggleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            SubtyText(label, fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
+            SubtyText(label, fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
             if (description.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                SubtyText(description, fontSize = 11, color = SubtyText3)
+                SubtyText(description, fontSize = 12, color = SubtyText3)
             }
         }
         SubtySwitch(checked = checked, onCheckedChange = onCheckedChange)

@@ -40,7 +40,8 @@ data class TranslateUiState(
     val progress: TranslationProgress = TranslationProgress(),
     val translatedFile: SubtitleFile? = null,
     val savedPath: String? = null,
-    val saveError: String? = null
+    val saveError: String? = null,
+    val availableModels: List<String> = emptyList(),
 )
 
 @HiltViewModel
@@ -67,10 +68,13 @@ class TranslateViewModel @Inject constructor(
     private var translationJob: Job? = null
 
     init {
+        val models = availableModels()
         _uiState.value = _uiState.value.copy(
             targetLang = settings.defaultTargetLanguage,
-            selectedModel = settings.translationModel
+            selectedModel = settings.translationModel,
+            availableModels = models,
         )
+        ensureSelectedModelAvailable()
     }
 
     /**
@@ -195,16 +199,34 @@ class TranslateViewModel @Inject constructor(
 
     fun hasTranslateApiKey(): Boolean {
         val model = _uiState.value.selectedModel
+        val msKey = settings.effectiveMicrosoftApiKey
         val result = when {
             model.startsWith("gemini") ->
                 !settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()
             model == "deepl" ->
                 !settings.deeplApiKey.isNullOrBlank()
             model == "microsoft" ->
-                !settings.effectiveMicrosoftApiKey.isNullOrBlank()
+                !msKey.isNullOrBlank()
             else -> true // MyMemory and other free services need no key
         }
         return result
+    }
+
+    private fun availableModels(): List<String> = buildList {
+        if (!settings.effectiveMicrosoftApiKey.isNullOrBlank()) add("microsoft")
+        if (!settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()) {
+            add("gemini-2.5-flash")
+            add("gemini-3.1-flash-lite-preview")
+        }
+        if (!settings.deeplApiKey.isNullOrBlank()) add("deepl")
+        add("mymemory") // always available — no key required
+    }
+
+    private fun ensureSelectedModelAvailable() {
+        val models = _uiState.value.availableModels
+        if (models.isNotEmpty() && _uiState.value.selectedModel !in models) {
+            _uiState.value = _uiState.value.copy(selectedModel = models.first())
+        }
     }
 
     fun cancelTranslation() {

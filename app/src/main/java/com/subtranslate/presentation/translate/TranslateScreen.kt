@@ -220,7 +220,9 @@ fun TranslateScreen(
                         SubtyLabel("ENGINE")
                         ModelDropdown(
                             selected = state.selectedModel,
+                            availableModelIds = state.availableModels,
                             onSelect = viewModel::onModelChange,
+                            onMoreOptions = onNavigateToSettings,
                         )
                     }
                 }
@@ -405,20 +407,23 @@ fun TranslateScreen(
 }
 
 private val TRANSLATION_MODELS = listOf(
-    "gemini-2.5-flash"              to "Gemini 2.5 Flash (stable)",
-    "gemini-3.1-flash-lite-preview" to "Gemini 3.1 Flash Lite (fastest)",
-    "deepl"                         to "DeepL (500K chars/month free)",
-    "microsoft"                     to "Microsoft Azure (2M chars/month free)",
-    "mymemory"                      to "MyMemory (Free, Basic)",
+    "microsoft"                     to "Microsoft",
+    "gemini-2.5-flash"              to "Gemini",
+    "gemini-3.1-flash-lite-preview" to "Gemini Lite",
+    "deepl"                         to "DeepL",
+    "mymemory"                      to "MyMemory (Free)",
 )
 
 @Composable
 fun ModelDropdown(
     selected: String,
+    availableModelIds: List<String>,
     onSelect: (String) -> Unit,
+    onMoreOptions: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val label = TRANSLATION_MODELS.find { it.first == selected }?.second ?: selected
+    val availableModels = TRANSLATION_MODELS.filter { it.first in availableModelIds }
 
     Box {
         Row(
@@ -445,7 +450,7 @@ fun ModelDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
-            TRANSLATION_MODELS.forEach { (id, name) ->
+            availableModels.forEach { (id, name) ->
                 DropdownMenuItem(
                     text = {
                         SubtyText(
@@ -458,6 +463,17 @@ fun ModelDropdown(
                     onClick = { onSelect(id); expanded = false },
                 )
             }
+            DropdownMenuItem(
+                text = {
+                    SubtyText(
+                        "More options",
+                        fontSize = 13,
+                        color = SubtyMocha,
+                        weight = FontWeight.Bold,
+                    )
+                },
+                onClick = { expanded = false; onMoreOptions() },
+            )
         }
     }
 }

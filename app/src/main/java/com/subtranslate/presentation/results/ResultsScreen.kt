@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -181,7 +184,12 @@ fun ResultsScreen(
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        SubtyText("▾", fontSize = 20, color = SubtyText2)
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "More languages",
+                            tint = SubtyText2,
+                            modifier = Modifier.size(22.dp),
+                        )
                         DropdownMenu(
                             expanded = langMenuExpanded,
                             onDismissRequest = { langMenuExpanded = false },
