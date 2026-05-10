@@ -15,6 +15,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,6 +49,7 @@ data class SearchUiState(
     val useSeasonEpisodeTextFields: Boolean = false,
     /** true when the selected suggestion is a movie (no season/episode needed) */
     val isMovie: Boolean = false,
+    val recentShows: List<SearchHistoryEntity> = emptyList(),
 )
 
 enum class SearchMode { TITLE, IMDB_ID }
@@ -67,6 +70,12 @@ class SearchViewModel @Inject constructor(
     private var suggestJob: Job? = null
 
     init {
+        // Load recent shows for the home carousel
+        searchHistoryDao.getRecentWithPosters()
+            .onEach { items -> _uiState.value = _uiState.value.copy(recentShows = items) }
+            .launchIn(viewModelScope)
+
+        // Pending browse title (from History screen "Browse Episodes")
         val pending = searchSession.pendingBrowseTitle
         if (!pending.isNullOrBlank()) {
             searchSession.pendingBrowseTitle = null
@@ -81,6 +90,34 @@ class SearchViewModel @Inject constructor(
                 suggestionsLoading = true,
             )
             fetchSuggestions(pending)
+        }
+
+        // Pending selected feature (from TitleBrowserScreen)
+        val pendingTitle = searchSession.pendingSelectedFeatureTitle
+        if (!pendingTitle.isNullOrBlank()) {
+            val isTv = searchSession.pendingSelectedFeatureType == "tv"
+            searchSession.posterUrl = searchSession.pendingSelectedFeaturePoster
+            searchSession.movieTitle = pendingTitle
+            searchSession.imdbId = searchSession.pendingSelectedFeatureImdbId?.toString()
+            searchSession.contentType = searchSession.pendingSelectedFeatureType
+            _uiState.value = _uiState.value.copy(
+                query = pendingTitle,
+                showSuggestions = false,
+                selectedPosterUrl = searchSession.pendingSelectedFeaturePoster,
+                selectedMovieTitle = pendingTitle,
+                seasonsCount = searchSession.pendingSelectedFeatureSeasons ?: 0,
+                episodesCount = searchSession.pendingSelectedFeatureEpisodes ?: 0,
+                isMovie = !isTv,
+                season = if (isTv) "1" else "",
+                episode = if (isTv) "1" else "",
+            )
+            searchSession.pendingSelectedFeatureTitle = null
+            searchSession.pendingSelectedFeaturePoster = null
+            searchSession.pendingSelectedFeatureImdbId = null
+            searchSession.pendingSelectedFeatureType = null
+            searchSession.pendingSelectedFeatureSeasons = null
+            searchSession.pendingSelectedFeatureEpisodes = null
+            searchSession.pendingSelectedFeatureId = null
         }
     }
 
@@ -220,6 +257,19 @@ class SearchViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(showSuggestions = false)
     }
 
+    /** Prepares session for searching the next episode of the given history item and returns the query string */
+    fun prepareNextEpisodeSearch(item: SearchHistoryEntity): String {
+        val nextEp = (item.episode ?: 0) + 1
+        searchSession.movieTitle = item.query
+        searchSession.season = item.season
+        searchSession.episode = nextEp
+        searchSession.languages = item.languages
+        searchSession.contentType = item.contentType
+        searchSession.posterUrl = item.posterUrl
+        searchSession.imdbId = null
+        return item.query
+    }
+
     fun onImdbIdChange(id: String) { _uiState.value = _uiState.value.copy(imdbId = id) }
     fun onSeasonChange(s: String) {
         _uiState.value = _uiState.value.copy(
@@ -266,6 +316,7 @@ class SearchViewModel @Inject constructor(
                             episode = state.episode.toIntOrNull(),
                             languages = state.selectedLanguages.joinToString(","),
                             contentType = searchSession.contentType,
+                            posterUrl = state.selectedPosterUrl,
                         )
                     )
                 }

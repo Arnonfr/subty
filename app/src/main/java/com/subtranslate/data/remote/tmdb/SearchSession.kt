@@ -16,4 +16,12 @@ class SearchSession @Inject constructor() {
     /** Set when navigating from history "Browse Episodes" — pre-populates SearchScreen with the show */
     var pendingBrowseTitle: String? = null
     var pendingBrowseLangs: String? = null
+    /** Set by TitleBrowserScreen when user picks a title — consumed by SearchViewModel.init */
+    var pendingSelectedFeatureId: String? = null
+    var pendingSelectedFeatureTitle: String? = null
+    var pendingSelectedFeaturePoster: String? = null
+    var pendingSelectedFeatureImdbId: Int? = null
+    var pendingSelectedFeatureType: String? = null  // "tv" | "movie"
+    var pendingSelectedFeatureSeasons: Int? = null
+    var pendingSelectedFeatureEpisodes: Int? = null
 }

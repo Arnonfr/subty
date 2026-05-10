@@ -21,4 +21,16 @@ interface SearchHistoryDao {
 
     @Query("DELETE FROM search_history")
     suspend fun deleteAll()
+
+    /** Most recent unique-by-title TV/movie searches that have a poster — for the home carousel */
+    @Query("""
+        SELECT * FROM search_history
+        WHERE id IN (
+            SELECT MAX(id) FROM search_history
+            WHERE posterUrl IS NOT NULL
+            GROUP BY query
+        )
+        ORDER BY searchedAt DESC LIMIT 10
+    """)
+    fun getRecentWithPosters(): Flow<List<SearchHistoryEntity>>
 }
