@@ -38,6 +38,8 @@ abstract class SubTranslateDatabase : RoomDatabase() {
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE search_history ADD COLUMN posterUrl TEXT")
+                db.execSQL("ALTER TABLE search_history ADD COLUMN imdbId TEXT")
+                db.execSQL("ALTER TABLE search_history ADD COLUMN seasonsCount INTEGER")
             }
         }
     }
