@@ -42,22 +42,24 @@ jobs:
           fi
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleStableDebug
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
           OPENSUBTITLES_API_KEY: ${{ secrets.OPENSUBTITLES_API_KEY }}
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
+          MICROSOFT_API_KEY: ${{ secrets.MICROSOFT_API_KEY }}
+          MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-stable-debug
+          path: app/build/outputs/apk/stable/debug/app-stable-debug.apk
 
       - name: Upload to Firebase App Distribution
         if: env.HAS_FIREBASE == 'true' && github.event_name != 'pull_request'
-        run: ./gradlew appDistributionUploadDebug
+        run: ./gradlew appDistributionUploadStableDebug
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ env.FIREBASE_SERVICE_ACCOUNT }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
