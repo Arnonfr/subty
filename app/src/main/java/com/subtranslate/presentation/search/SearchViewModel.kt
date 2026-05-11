@@ -15,6 +15,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,6 +49,9 @@ data class SearchUiState(
     val useSeasonEpisodeTextFields: Boolean = false,
     /** true when the selected suggestion is a movie (no season/episode needed) */
     val isMovie: Boolean = false,
+    val recentShows: List<SearchHistoryEntity> = emptyList(),
+    /** ID of the recent-show card currently resolving its next episode via API */
+    val nextEpisodeLoadingId: Long? = null,
 )
 
 enum class SearchMode { TITLE, IMDB_ID }
@@ -67,6 +72,12 @@ class SearchViewModel @Inject constructor(
     private var suggestJob: Job? = null
 
     init {
+        // Load recent shows for the home carousel
+        searchHistoryDao.getRecentTvShows()
+            .onEach { items -> _uiState.value = _uiState.value.copy(recentShows = items) }
+            .launchIn(viewModelScope)
+
+        // Pending browse title (from History screen "Browse Episodes")
         val pending = searchSession.pendingBrowseTitle
         if (!pending.isNullOrBlank()) {
             searchSession.pendingBrowseTitle = null
@@ -81,6 +92,34 @@ class SearchViewModel @Inject constructor(
                 suggestionsLoading = true,
             )
             fetchSuggestions(pending)
+        }
+
+        // Pending selected feature (from TitleBrowserScreen)
+        val pendingTitle = searchSession.pendingSelectedFeatureTitle
+        if (!pendingTitle.isNullOrBlank()) {
+            val isTv = searchSession.pendingSelectedFeatureType == "tv"
+            searchSession.posterUrl = searchSession.pendingSelectedFeaturePoster
+            searchSession.movieTitle = pendingTitle
+            searchSession.imdbId = searchSession.pendingSelectedFeatureImdbId?.toString()
+            searchSession.contentType = searchSession.pendingSelectedFeatureType
+            _uiState.value = _uiState.value.copy(
+                query = pendingTitle,
+                showSuggestions = false,
+                selectedPosterUrl = searchSession.pendingSelectedFeaturePoster,
+                selectedMovieTitle = pendingTitle,
+                seasonsCount = searchSession.pendingSelectedFeatureSeasons ?: 0,
+                episodesCount = searchSession.pendingSelectedFeatureEpisodes ?: 0,
+                isMovie = !isTv,
+                season = if (isTv) "1" else "",
+                episode = if (isTv) "1" else "",
+            )
+            searchSession.pendingSelectedFeatureTitle = null
+            searchSession.pendingSelectedFeaturePoster = null
+            searchSession.pendingSelectedFeatureImdbId = null
+            searchSession.pendingSelectedFeatureType = null
+            searchSession.pendingSelectedFeatureSeasons = null
+            searchSession.pendingSelectedFeatureEpisodes = null
+            searchSession.pendingSelectedFeatureId = null
         }
     }
 
@@ -220,6 +259,75 @@ class SearchViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(showSuggestions = false)
     }
 
+    /**
+     * Resolves the true next episode via API (checks same season, then season+1 E1),
+     * updates the session, and calls [onReady] with the query string.
+     * Shows a loading indicator on the card while the API call is in flight.
+     */
+    fun findNextEpisode(item: SearchHistoryEntity, onReady: (String) -> Unit) {
+        _uiState.value = _uiState.value.copy(nextEpisodeLoadingId = item.id)
+        viewModelScope.launch {
+            val season = item.season ?: 1
+            val candidateEp = (item.episode ?: 0) + 1
+            val imdbIdInt = item.imdbId?.toIntOrNull()
+            val seasonsCount = item.seasonsCount
+
+            val (resolvedSeason, resolvedEp) = resolveNextEpisode(
+                imdbIdInt, season, candidateEp, seasonsCount, item.languages
+            )
+
+            searchSession.movieTitle = item.query
+            searchSession.season = resolvedSeason
+            searchSession.episode = resolvedEp
+            searchSession.languages = item.languages
+            searchSession.contentType = item.contentType
+            searchSession.posterUrl = item.posterUrl
+            searchSession.imdbId = item.imdbId
+
+            _uiState.value = _uiState.value.copy(nextEpisodeLoadingId = null)
+            onReady(item.query)
+        }
+    }
+
+    private suspend fun resolveNextEpisode(
+        imdbId: Int?,
+        season: Int,
+        candidateEp: Int,
+        seasonsCount: Int?,
+        languages: String?,
+    ): Pair<Int, Int> {
+        if (imdbId == null) return Pair(season, candidateEp)
+
+        // 1. Check if next episode exists in same season
+        val sameSeasonHits = runCatching {
+            openSubtitlesApi.searchSubtitles(
+                imdbId = imdbId,
+                season = season,
+                episode = candidateEp,
+                languages = languages,
+                page = 1,
+            ).totalCount
+        }.getOrElse { 0 }
+
+        if (sameSeasonHits > 0) return Pair(season, candidateEp)
+
+        // 2. No subtitles found — try next season if one is known to exist
+        val hasNextSeason = seasonsCount == null || season < seasonsCount
+        if (!hasNextSeason) return Pair(season, candidateEp) // keep as-is, search will show no results
+
+        val nextSeasonHits = runCatching {
+            openSubtitlesApi.searchSubtitles(
+                imdbId = imdbId,
+                season = season + 1,
+                episode = 1,
+                languages = languages,
+                page = 1,
+            ).totalCount
+        }.getOrElse { 0 }
+
+        return if (nextSeasonHits > 0) Pair(season + 1, 1) else Pair(season, candidateEp)
+    }
+
     fun onImdbIdChange(id: String) { _uiState.value = _uiState.value.copy(imdbId = id) }
     fun onSeasonChange(s: String) {
         _uiState.value = _uiState.value.copy(
@@ -266,6 +374,9 @@ class SearchViewModel @Inject constructor(
                             episode = state.episode.toIntOrNull(),
                             languages = state.selectedLanguages.joinToString(","),
                             contentType = searchSession.contentType,
+                            posterUrl = state.selectedPosterUrl,
+                            imdbId = searchSession.imdbId,
+                            seasonsCount = state.seasonsCount.takeIf { it > 0 },
                         )
                     )
                 }
