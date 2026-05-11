@@ -249,7 +249,7 @@ class SearchViewModel @Inject constructor(
      * updates the session, and calls [onReady] with the query string.
      * Shows a loading indicator on the card while the API call is in flight.
      */
-    fun findNextEpisode(item: SearchHistoryEntity, onReady: (String) -> Unit) {
+    fun findNextEpisode(item: SearchHistoryEntity) {
         _uiState.value = _uiState.value.copy(nextEpisodeLoadingId = item.id)
         viewModelScope.launch {
             val season = item.season ?: 1
@@ -269,8 +269,23 @@ class SearchViewModel @Inject constructor(
             searchSession.posterUrl = item.posterUrl
             searchSession.imdbId = item.imdbId
 
-            _uiState.value = _uiState.value.copy(nextEpisodeLoadingId = null)
-            onReady(item.query)
+            val langSet = item.languages?.split(",")
+                ?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet()
+                ?: _uiState.value.selectedLanguages
+
+            _uiState.value = _uiState.value.copy(
+                nextEpisodeLoadingId = null,
+                query = item.query,
+                selectedMovieTitle = item.query,
+                selectedPosterUrl = item.posterUrl,
+                isMovie = false,
+                season = resolvedSeason.toString(),
+                episode = resolvedEp.toString(),
+                selectedLanguages = langSet,
+                showSuggestions = false,
+                suggestions = emptyList(),
+                combinedSuggestions = emptyList(),
+            )
         }
     }
 

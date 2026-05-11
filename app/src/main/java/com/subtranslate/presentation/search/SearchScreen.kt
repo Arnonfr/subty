@@ -337,12 +337,7 @@ fun SearchScreen(
                     RecentShowCard(
                         item = item,
                         isLoadingNext = state.nextEpisodeLoadingId == item.id,
-                        onFindNext = {
-                            viewModel.findNextEpisode(item) { q ->
-                                viewModel.search()
-                                onSearch(q)
-                            }
-                        },
+                        onFindNext = { viewModel.findNextEpisode(item) },
                         onTap = {
                             viewModel.onHistorySuggestionSelected(item)
                         },
