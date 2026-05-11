@@ -7,6 +7,7 @@ interface SubtitleRepository {
     suspend fun search(
         query: String? = null,
         imdbId: Int? = null,
+        tmdbId: Int? = null,
         languages: String? = null,
         movieHash: String? = null,
         season: Int? = null,

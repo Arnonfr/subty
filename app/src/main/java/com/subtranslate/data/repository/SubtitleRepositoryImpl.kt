@@ -66,6 +66,7 @@ class SubtitleRepositoryImpl @Inject constructor(
     override suspend fun search(
         query: String?,
         imdbId: Int?,
+        tmdbId: Int?,
         languages: String?,
         movieHash: String?,
         season: Int?,
@@ -75,6 +76,7 @@ class SubtitleRepositoryImpl @Inject constructor(
         val response = osApi.searchSubtitles(
             query     = query,
             imdbId    = imdbId,
+            tmdbId    = tmdbId,
             languages = languages,
             movieHash = movieHash,
             season    = season,
@@ -98,21 +100,22 @@ class SubtitleRepositoryImpl @Inject constructor(
     suspend fun searchSubDL(
         title: String?,
         imdbId: String?    = null,
+        tmdbId: Int?       = null,
         season: Int?       = null,
         episode: Int?      = null,
         languages: String? = null,
         type: String?      = null,
     ): List<SubtitleSearchResult> {
         val apiKey = BuildConfig.SUBDL_API_KEY.ifBlank { return emptyList() }
-        
-        // Use IMDB ID if available, otherwise fallback to title search
+
         val formattedImdbId = imdbId?.let { formatImdbId(it) }
-        
+
         return try {
             val resp = subDLApi.searchSubtitles(
                 apiKey    = apiKey,
-                title     = if (formattedImdbId == null) title else null,
+                title     = if (formattedImdbId == null && tmdbId == null) title else null,
                 imdbId    = formattedImdbId,
+                tmdbId    = tmdbId,
                 season    = season,
                 episode   = episode,
                 languages = languages,

@@ -9,6 +9,8 @@ import com.subtranslate.data.local.entity.SearchHistoryEntity
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.dto.FeatureDto
 import com.subtranslate.data.remote.tmdb.SearchSession
+import com.subtranslate.data.remote.tmdb.TmdbApi
+import com.subtranslate.data.remote.tmdb.toFeatureDto
 import com.subtranslate.domain.model.SubtitleSearchResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -58,6 +60,7 @@ enum class SearchMode { TITLE, IMDB_ID }
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
+    private val tmdbApi: TmdbApi,
     private val openSubtitlesApi: OpenSubtitlesApi,
     private val searchSession: SearchSession,
     private val searchHistoryDao: SearchHistoryDao,
@@ -101,6 +104,7 @@ class SearchViewModel @Inject constructor(
             searchSession.posterUrl = searchSession.pendingSelectedFeaturePoster
             searchSession.movieTitle = pendingTitle
             searchSession.imdbId = searchSession.pendingSelectedFeatureImdbId?.toString()
+            searchSession.tmdbId = searchSession.pendingSelectedFeatureTmdbId
             searchSession.contentType = searchSession.pendingSelectedFeatureType
             _uiState.value = _uiState.value.copy(
                 query = pendingTitle,
@@ -116,6 +120,7 @@ class SearchViewModel @Inject constructor(
             searchSession.pendingSelectedFeatureTitle = null
             searchSession.pendingSelectedFeaturePoster = null
             searchSession.pendingSelectedFeatureImdbId = null
+            searchSession.pendingSelectedFeatureTmdbId = null
             searchSession.pendingSelectedFeatureType = null
             searchSession.pendingSelectedFeatureSeasons = null
             searchSession.pendingSelectedFeatureEpisodes = null
@@ -150,12 +155,14 @@ class SearchViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(suggestionsLoading = true)
         suggestJob = viewModelScope.launch {
             delay(100)
-            // Fetch history suggestions in parallel
             val historyItems = runCatching { searchHistoryDao.searchByPrefix(query) }
                 .getOrDefault(emptyList())
-            runCatching { openSubtitlesApi.searchFeatures(query) }
+            runCatching { tmdbApi.searchMulti(query) }
                 .onSuccess { response ->
-                    val remoteResults = rankSuggestions(response.data, query).take(8)
+                    val remoteResults = response.results
+                        .filter { it.mediaType != "person" }
+                        .map { it.toFeatureDto() }
+                        .take(8)  // TMDB already returns by popularity
                     val historySuggestions = historyItems.map { Suggestion.History(it) }
                     val remoteSuggestions = remoteResults.map { Suggestion.Remote(it) }
                     val combined = (historySuggestions + remoteSuggestions).take(8)
@@ -164,12 +171,11 @@ class SearchViewModel @Inject constructor(
                         combinedSuggestions = combined,
                         showSuggestions = combined.isNotEmpty(),
                         suggestionsLoading = false,
-                        suggestionsError = null
+                        suggestionsError = null,
                     )
                 }
                 .onFailure { throwable ->
                     Log.e("SearchViewModel", "Suggestions fetch failed: ${throwable.message}")
-                    // Fall back to history-only suggestions
                     val historySuggestions = historyItems.map { Suggestion.History(it) }
                     _uiState.value = _uiState.value.copy(
                         suggestions = emptyList(),
@@ -179,29 +185,6 @@ class SearchViewModel @Inject constructor(
                         suggestionsError = null,
                     )
                 }
-        }
-    }
-
-    private fun rankSuggestions(results: List<FeatureDto>, query: String): List<FeatureDto> {
-        val q = query.lowercase().trim()
-        return results.sortedByDescending { feature ->
-            val title = feature.attributes.title?.lowercase() ?: ""
-            val attrs = feature.attributes
-            var score = 0
-            // 1. Exact prefix match is highest signal
-            if (title.startsWith(q)) score += 100
-            // 2. Query matches at word boundary
-            if (title.split(" ").any { it.startsWith(q) }) score += 50
-            // 3. Popular TV shows (many seasons/episodes)
-            score += (attrs.seasonsCount ?: 0) * 10
-            score += minOf((attrs.episodesCount ?: 0) / 10, 50)
-            // 4. Recent content (2010+ gets bonus)
-            val year = attrs.year ?: 2000
-            if (year >= 2010) score += 20
-            if (year >= 2015) score += 10
-            // 5. Movies get slight boost for recency (higher IMDB ID = more recent)
-            if (attrs.featureType == "Movie") score += 5
-            score
         }
     }
 
@@ -216,6 +199,7 @@ class SearchViewModel @Inject constructor(
         searchSession.posterUrl = posterUrl
         searchSession.movieTitle = title
         searchSession.imdbId = imdbId
+        searchSession.tmdbId = feature.attributes.tmdbId
         searchSession.contentType = contentType
 
         _uiState.value = _uiState.value.copy(
@@ -240,8 +224,9 @@ class SearchViewModel @Inject constructor(
         searchSession.episode     = item.episode
         searchSession.languages   = item.languages
         searchSession.contentType = item.contentType
-        searchSession.imdbId      = null
-        searchSession.posterUrl   = null
+        searchSession.imdbId      = item.imdbId
+        searchSession.tmdbId      = null
+        searchSession.posterUrl   = item.posterUrl
         _uiState.value = _uiState.value.copy(
             query = item.query,
             showSuggestions = false,
