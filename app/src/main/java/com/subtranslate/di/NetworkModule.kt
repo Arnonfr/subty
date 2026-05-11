@@ -5,9 +5,11 @@ import com.squareup.moshi.JsonReader
 import com.squareup.moshi.JsonWriter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.subtranslate.BuildConfig
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesAuthInterceptor
 import com.subtranslate.data.remote.subdl.SubDLApi
+import com.subtranslate.data.remote.tmdb.TmdbApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -77,6 +79,37 @@ object NetworkModule {
         .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()
         .create(OpenSubtitlesApi::class.java)
+
+    // ── TMDB ─────────────────────────────────────────────────────────────────
+
+    @Provides
+    @Singleton
+    @Named("tmdb")
+    fun provideTmdbOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val url = original.url.newBuilder()
+                    .addQueryParameter("api_key", BuildConfig.TMDB_API_KEY)
+                    .build()
+                chain.proceed(original.newBuilder().url(url).build())
+            }
+            .addInterceptor(loggingInterceptor())
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+
+    @Provides
+    @Singleton
+    fun provideTmdbApi(
+        @Named("tmdb") client: OkHttpClient,
+        moshi: Moshi,
+    ): TmdbApi = Retrofit.Builder()
+        .baseUrl("https://api.themoviedb.org/")
+        .client(client)
+        .addConverterFactory(MoshiConverterFactory.create(moshi))
+        .build()
+        .create(TmdbApi::class.java)
 
     // ── SubDL ─────────────────────────────────────────────────────────────────
 

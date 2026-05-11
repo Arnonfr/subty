@@ -50,6 +50,7 @@ jobs:
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
           MICROSOFT_API_KEY: ${{ secrets.MICROSOFT_API_KEY }}
           MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

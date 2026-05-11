@@ -2,9 +2,10 @@ package com.subtranslate.presentation.titlebrowser
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.dto.FeatureDto
 import com.subtranslate.data.remote.tmdb.SearchSession
+import com.subtranslate.data.remote.tmdb.TmdbApi
+import com.subtranslate.data.remote.tmdb.toFeatureDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,32 +38,17 @@ data class TitleBrowserUiState(
                 }
             }
             return when (sortOrder) {
-                TitleSortOrder.POPULARITY -> filtered.sortedByDescending { popularityScore(it, query) }
+                TitleSortOrder.POPULARITY -> filtered  // TMDB already returns by popularity
                 TitleSortOrder.YEAR_DESC -> filtered.sortedByDescending { it.attributes.year ?: 0 }
                 TitleSortOrder.YEAR_ASC -> filtered.sortedBy { it.attributes.year ?: 9999 }
             }
         }
 }
 
-private fun popularityScore(f: FeatureDto, query: String): Int {
-    val title = f.attributes.title?.lowercase() ?: ""
-    val q = query.lowercase().trim()
-    val attrs = f.attributes
-    var score = 0
-    if (title == q) score += 300
-    if (title.startsWith(q)) score += 150
-    if (title.split(" ").any { it.startsWith(q) }) score += 80
-    score += (attrs.seasonsCount ?: 0) * 15
-    score += minOf((attrs.episodesCount ?: 0) / 5, 80)
-    val year = attrs.year ?: 2000
-    if (year >= 2015) score += 25
-    if (year >= 2010) score += 15
-    return score
-}
 
 @HiltViewModel
 class TitleBrowserViewModel @Inject constructor(
-    private val openSubtitlesApi: OpenSubtitlesApi,
+    private val tmdbApi: TmdbApi,
     private val searchSession: SearchSession,
 ) : ViewModel() {
 
@@ -73,9 +59,12 @@ class TitleBrowserViewModel @Inject constructor(
         if (_uiState.value.query == query && _uiState.value.allResults.isNotEmpty()) return
         _uiState.value = TitleBrowserUiState(query = query, isLoading = true)
         viewModelScope.launch {
-            runCatching { openSubtitlesApi.searchFeatures(query) }
+            runCatching { tmdbApi.searchMulti(query) }
                 .onSuccess { response ->
-                    _uiState.update { it.copy(allResults = response.data, isLoading = false) }
+                    val features = response.results
+                        .filter { it.mediaType != "person" }
+                        .map { it.toFeatureDto() }
+                    _uiState.update { it.copy(allResults = features, isLoading = false) }
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load") }
@@ -96,6 +85,7 @@ class TitleBrowserViewModel @Inject constructor(
         searchSession.pendingSelectedFeatureTitle = title
         searchSession.pendingSelectedFeaturePoster = feature.attributes.imgUrl
         searchSession.pendingSelectedFeatureImdbId = feature.attributes.imdbId
+        searchSession.pendingSelectedFeatureTmdbId = feature.attributes.tmdbId
         searchSession.pendingSelectedFeatureType = if (isTv) "tv" else "movie"
         searchSession.pendingSelectedFeatureSeasons = feature.attributes.seasonsCount
         searchSession.pendingSelectedFeatureEpisodes = feature.attributes.episodesCount

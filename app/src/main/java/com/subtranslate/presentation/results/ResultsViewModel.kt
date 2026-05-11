@@ -61,6 +61,7 @@ class ResultsViewModel @Inject constructor(
         viewModelScope.launch {
             val posterUrl = searchSession.posterUrl
             val imdbIdStr = searchSession.imdbId
+            val tmdbId = searchSession.tmdbId
             val season = searchSession.season
             val episode = searchSession.episode
             val languages = searchSession.languages
@@ -69,6 +70,7 @@ class ResultsViewModel @Inject constructor(
                 searchUseCase(
                     query     = query.ifBlank { null },
                     imdbId    = imdbIdStr?.removePrefix("tt")?.toIntOrNull(),
+                    tmdbId    = tmdbId,
                     languages = languages,
                     season    = season,
                     episode   = episode,
@@ -79,6 +81,7 @@ class ResultsViewModel @Inject constructor(
                     repository.searchSubDL(
                         title     = query.ifBlank { null },
                         imdbId    = imdbIdStr,
+                        tmdbId    = tmdbId,
                         season    = season,
                         episode   = episode,
                         languages = languages?.uppercase(),

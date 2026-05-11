@@ -52,6 +52,9 @@ android {
         val microsoftRegion = System.getenv("MICROSOFT_REGION")
             ?: localProps["MICROSOFT_REGION"]?.toString()
             ?: "westeurope"
+        val tmdbApiKey = System.getenv("TMDB_API_KEY")
+            ?: localProps["TMDB_API_KEY"]?.toString()
+            ?: ""
 
         buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
         buildConfigField("String", "SUBDL_API_KEY", "\"$subdlApiKey\"")
@@ -61,6 +64,7 @@ android {
         buildConfigField("String", "OPENSUBTITLES_PASSWORD", "\"$osPassword\"")
         buildConfigField("String", "MICROSOFT_API_KEY", "\"$microsoftApiKey\"")
         buildConfigField("String", "MICROSOFT_REGION", "\"$microsoftRegion\"")
+        buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
 
     }
 

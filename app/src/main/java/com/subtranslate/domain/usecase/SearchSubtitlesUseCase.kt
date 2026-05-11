@@ -10,6 +10,7 @@ class SearchSubtitlesUseCase @Inject constructor(
     suspend operator fun invoke(
         query: String? = null,
         imdbId: Int? = null,
+        tmdbId: Int? = null,
         languages: String? = null,
         season: Int? = null,
         episode: Int? = null,
@@ -18,6 +19,7 @@ class SearchSubtitlesUseCase @Inject constructor(
         repository.search(
             query = query,
             imdbId = imdbId,
+            tmdbId = tmdbId,
             languages = languages,
             season = season,
             episode = episode,

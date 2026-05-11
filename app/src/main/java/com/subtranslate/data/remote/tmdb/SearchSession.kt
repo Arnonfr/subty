@@ -17,10 +17,14 @@ class SearchSession @Inject constructor() {
     var pendingBrowseTitle: String? = null
     var pendingBrowseLangs: String? = null
     /** Set by TitleBrowserScreen when user picks a title — consumed by SearchViewModel.init */
+    /** TMDB content ID — used for subtitle search when imdbId is unavailable */
+    var tmdbId: Int? = null
+    /** Set by TitleBrowserScreen when user picks a title — consumed by SearchViewModel.init */
     var pendingSelectedFeatureId: String? = null
     var pendingSelectedFeatureTitle: String? = null
     var pendingSelectedFeaturePoster: String? = null
     var pendingSelectedFeatureImdbId: Int? = null
+    var pendingSelectedFeatureTmdbId: Int? = null
     var pendingSelectedFeatureType: String? = null  // "tv" | "movie"
     var pendingSelectedFeatureSeasons: Int? = null
     var pendingSelectedFeatureEpisodes: Int? = null
