@@ -24,7 +24,7 @@ object DatabaseModule {
             SubTranslateDatabase::class.java,
             "subtranslate.db"
         )
-            .addMigrations(SubTranslateDatabase.MIGRATION_1_2)
+            .addMigrations(SubTranslateDatabase.MIGRATION_1_2, SubTranslateDatabase.MIGRATION_2_3)
             .build()
 
     @Provides

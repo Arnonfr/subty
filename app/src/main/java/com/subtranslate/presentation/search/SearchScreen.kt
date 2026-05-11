@@ -22,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -29,12 +30,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
+import com.subtranslate.data.local.entity.SearchHistoryEntity
 import com.subtranslate.presentation.theme.*
 import com.subtranslate.util.OPENSUBTITLES_SEARCH_LANGUAGES
 
 @Composable
 fun SearchScreen(
     onSearch: (String) -> Unit,
+    onShowAll: (String) -> Unit = {},
     searchEnabled: Boolean = true,
     maintenanceMessage: String = "",
     viewModel: SearchViewModel = hiltViewModel(),
@@ -89,8 +93,32 @@ fun SearchScreen(
         }
         SubtyLabel(
             "Find subtitles by title",
-            modifier = Modifier.padding(start = 24.dp, bottom = 20.dp),
+            modifier = Modifier.padding(start = 24.dp, bottom = if (state.recentShows.isEmpty()) 20.dp else 12.dp),
         )
+
+        // ── Recent shows carousel ─────────────────────────────────────────────
+        if (state.recentShows.isNotEmpty()) {
+            SubtyLabel(
+                "Continue watching",
+                modifier = Modifier.padding(start = 24.dp, bottom = 10.dp),
+            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(bottom = 20.dp),
+            ) {
+                items(state.recentShows, key = { it.id }) { item ->
+                    RecentShowCard(
+                        item = item,
+                        onFindNext = {
+                            val q = viewModel.prepareNextEpisodeSearch(item)
+                            viewModel.search()
+                            onSearch(q)
+                        },
+                    )
+                }
+            }
+        }
 
         // ── Search field + autocomplete ───────────────────────────────────────
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -285,6 +313,30 @@ fun SearchScreen(
                         }
                         if (idx < state.combinedSuggestions.lastIndex) SubtyDividerDim()
                     }
+
+                    // "Show All" footer — always shown when there are any remote results
+                    if (state.suggestions.isNotEmpty()) {
+                        SubtyDivider()
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { onShowAll(state.query) }
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SubtyText(
+                                "Show all results for \"${state.query}\"",
+                                fontSize = 12,
+                                color = SubtyMocha,
+                                weight = FontWeight.SemiBold,
+                            )
+                            SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -440,5 +492,103 @@ fun SearchScreen(
         }
 
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun RecentShowCard(
+    item: SearchHistoryEntity,
+    onFindNext: () -> Unit,
+) {
+    val isTv = item.contentType == "tv"
+    val nextEp = (item.episode ?: 0) + 1
+    val episodeLabel = if (item.season != null && item.episode != null)
+        "S${item.season} E${item.episode}" else ""
+    val nextLabel = if (item.season != null) "S${item.season} E$nextEp" else "Next"
+
+    Column(
+        modifier = Modifier
+            .width(130.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        // Poster with season/episode overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .background(SubtyBg3)
+                .border(1.dp, SubtyBorderDim),
+        ) {
+            if (item.posterUrl != null) {
+                AsyncImage(
+                    model = item.posterUrl,
+                    contentDescription = item.query,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    SubtyText(
+                        item.query.take(1).uppercase(),
+                        fontSize = 28,
+                        weight = FontWeight.Bold,
+                        color = SubtyMocha,
+                    )
+                }
+            }
+
+            // Season/episode badge overlay
+            if (episodeLabel.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .background(SubtyBg.copy(alpha = 0.85f))
+                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                ) {
+                    SubtyText(
+                        episodeLabel,
+                        fontSize = 11,
+                        weight = FontWeight.Bold,
+                        color = SubtyMocha,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        SubtyText(
+            item.query,
+            fontSize = 12,
+            weight = FontWeight.SemiBold,
+            color = SubtyText1,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        // "Find next episode" button — only for TV series
+        if (isTv) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, SubtyMocha)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onFindNext,
+                    )
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                SubtyText(
+                    "Find $nextLabel",
+                    fontSize = 11,
+                    weight = FontWeight.SemiBold,
+                    color = SubtyMocha,
+                )
+            }
+        }
     }
 }

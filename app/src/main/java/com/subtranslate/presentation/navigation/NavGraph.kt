@@ -15,6 +15,7 @@ import com.subtranslate.presentation.results.ResultsScreen
 import com.subtranslate.presentation.search.SearchScreen
 import com.subtranslate.presentation.settings.ApiKeysScreen
 import com.subtranslate.presentation.settings.SettingsScreen
+import com.subtranslate.presentation.titlebrowser.TitleBrowserScreen
 import com.subtranslate.presentation.translate.TranslateScreen
 
 @Composable
@@ -34,6 +35,7 @@ fun NavGraph(
         composable(Screen.Search.route) {
             SearchScreen(
                 onSearch = { query -> navController.navigate(Screen.Results.createRoute(query)) },
+                onShowAll = { query -> navController.navigate(Screen.TitleBrowser.createRoute(query)) },
                 searchEnabled = appConfig.searchEnabled,
                 maintenanceMessage = appConfig.maintenanceMessage,
             )
@@ -102,6 +104,23 @@ fun NavGraph(
         composable(Screen.ApiKeys.route) {
             ApiKeysScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.TitleBrowser.route,
+            arguments = listOf(navArgument("query") { type = NavType.StringType }),
+        ) { backStack ->
+            val query = backStack.arguments?.getString("query") ?: ""
+            TitleBrowserScreen(
+                query = query,
+                onBack = { navController.popBackStack() },
+                onSelected = {
+                    // Navigate to Search (fresh instance picks up pendingSelectedFeature from SearchSession)
+                    navController.navigate(Screen.Search.route) {
+                        popUpTo(Screen.Search.route) { inclusive = true }
+                    }
+                },
             )
         }
     }
