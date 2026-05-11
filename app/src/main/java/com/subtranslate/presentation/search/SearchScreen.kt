@@ -93,34 +93,8 @@ fun SearchScreen(
         }
         SubtyLabel(
             "Find subtitles by title",
-            modifier = Modifier.padding(start = 24.dp, bottom = if (state.recentShows.isEmpty()) 20.dp else 12.dp),
+            modifier = Modifier.padding(start = 24.dp, bottom = 20.dp),
         )
-
-        // ── Recent shows carousel ─────────────────────────────────────────────
-        if (state.recentShows.isNotEmpty()) {
-            SubtyLabel(
-                "Continue watching",
-                modifier = Modifier.padding(start = 24.dp, bottom = 10.dp),
-            )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(bottom = 20.dp),
-            ) {
-                items(state.recentShows, key = { it.id }) { item ->
-                    RecentShowCard(
-                        item = item,
-                        isLoadingNext = state.nextEpisodeLoadingId == item.id,
-                        onFindNext = {
-                            viewModel.findNextEpisode(item) { q ->
-                                viewModel.search()
-                                onSearch(q)
-                            }
-                        },
-                    )
-                }
-            }
-        }
 
         // ── Search field + autocomplete ───────────────────────────────────────
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -139,7 +113,12 @@ fun SearchScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
-                        viewModel.search(); onSearch(state.query.ifBlank { state.imdbId })
+                        val q = state.query.ifBlank { state.imdbId }
+                        if (state.selectedMovieTitle == null && q.length >= 2) {
+                            onShowAll(q)
+                        } else {
+                            viewModel.search(); onSearch(q)
+                        }
                     }),
                     textStyle = TextStyle(
                         color = SubtyText1,
@@ -343,6 +322,35 @@ fun SearchScreen(
             }
         }
 
+        // ── Recent content carousel ───────────────────────────────────────────
+        if (state.recentShows.isNotEmpty()) {
+            Spacer(Modifier.height(20.dp))
+            SubtyLabel(
+                "Recently searched",
+                modifier = Modifier.padding(start = 24.dp, bottom = 10.dp),
+            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(state.recentShows, key = { it.id }) { item ->
+                    RecentShowCard(
+                        item = item,
+                        isLoadingNext = state.nextEpisodeLoadingId == item.id,
+                        onFindNext = {
+                            viewModel.findNextEpisode(item) { q ->
+                                viewModel.search()
+                                onSearch(q)
+                            }
+                        },
+                        onTap = {
+                            viewModel.onHistorySuggestionSelected(item)
+                        },
+                    )
+                }
+            }
+        }
+
         // ── Season / Episode — only for TV series ─────────────────────────────
         if (!state.isMovie) {
             Spacer(Modifier.height(8.dp))
@@ -502,23 +510,28 @@ private fun RecentShowCard(
     item: SearchHistoryEntity,
     isLoadingNext: Boolean,
     onFindNext: () -> Unit,
+    onTap: () -> Unit,
 ) {
     val isTv = item.contentType == "tv"
     val episodeLabel = if (item.season != null && item.episode != null)
         "S${item.season} E${item.episode}" else ""
 
     Column(
-        modifier = Modifier
-            .width(130.dp),
+        modifier = Modifier.width(120.dp),
         horizontalAlignment = Alignment.Start,
     ) {
-        // Poster with season/episode overlay
+        // Poster — tappable to pre-fill the search bar
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(168.dp)
                 .background(SubtyBg3)
-                .border(1.dp, SubtyBorderDim),
+                .border(1.dp, SubtyBorderDim)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onTap,
+                ),
         ) {
             if (item.posterUrl != null) {
                 AsyncImage(
@@ -538,39 +551,36 @@ private fun RecentShowCard(
                 }
             }
 
-            // Season/episode badge overlay
-            if (episodeLabel.isNotEmpty()) {
+            // Season/episode badge (TV) or "Movie" badge
+            val badge = when {
+                episodeLabel.isNotEmpty() -> episodeLabel
+                !isTv -> "Film"
+                else -> null
+            }
+            if (badge != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
                         .background(SubtyBg.copy(alpha = 0.85f))
                         .padding(horizontal = 6.dp, vertical = 3.dp),
                 ) {
-                    SubtyText(
-                        episodeLabel,
-                        fontSize = 11,
-                        weight = FontWeight.Bold,
-                        color = SubtyMocha,
-                    )
+                    SubtyText(badge, fontSize = 11, weight = FontWeight.Bold, color = SubtyMocha)
                 }
             }
         }
 
-        Spacer(Modifier.height(6.dp))
-
+        Spacer(Modifier.height(5.dp))
         SubtyText(
             item.query,
-            fontSize = 12,
+            fontSize = 11,
             weight = FontWeight.SemiBold,
             color = SubtyText1,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
 
-        Spacer(Modifier.height(6.dp))
-
-        // "Find next episode" button — only for TV series
         if (isTv) {
+            Spacer(Modifier.height(5.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -581,22 +591,13 @@ private fun RecentShowCard(
                         enabled = !isLoadingNext,
                         onClick = onFindNext,
                     )
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 if (isLoadingNext) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(14.dp),
-                        strokeWidth = 1.5.dp,
-                        color = SubtyMocha,
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = SubtyMocha)
                 } else {
-                    SubtyText(
-                        "Find next episode",
-                        fontSize = 11,
-                        weight = FontWeight.SemiBold,
-                        color = SubtyMocha,
-                    )
+                    SubtyText("Find next episode", fontSize = 10, weight = FontWeight.SemiBold, color = SubtyMocha)
                 }
             }
         }

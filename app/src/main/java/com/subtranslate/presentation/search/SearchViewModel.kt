@@ -73,7 +73,7 @@ class SearchViewModel @Inject constructor(
 
     init {
         // Load recent shows for the home carousel
-        searchHistoryDao.getRecentTvShows()
+        searchHistoryDao.getRecentContent()
             .onEach { items -> _uiState.value = _uiState.value.copy(recentShows = items) }
             .launchIn(viewModelScope)
 

@@ -22,15 +22,14 @@ interface SearchHistoryDao {
     @Query("DELETE FROM search_history")
     suspend fun deleteAll()
 
-    /** Most recent unique-by-title TV searches — for the home carousel */
+    /** Most recent unique-by-title searches (all content types) — for the home carousel */
     @Query("""
         SELECT * FROM search_history
         WHERE id IN (
             SELECT MAX(id) FROM search_history
-            WHERE contentType = 'tv'
             GROUP BY query
         )
         ORDER BY searchedAt DESC LIMIT 10
     """)
-    fun getRecentTvShows(): Flow<List<SearchHistoryEntity>>
+    fun getRecentContent(): Flow<List<SearchHistoryEntity>>
 }
