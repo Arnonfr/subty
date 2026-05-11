@@ -110,10 +110,12 @@ fun SearchScreen(
                 items(state.recentShows, key = { it.id }) { item ->
                     RecentShowCard(
                         item = item,
+                        isLoadingNext = state.nextEpisodeLoadingId == item.id,
                         onFindNext = {
-                            val q = viewModel.prepareNextEpisodeSearch(item)
-                            viewModel.search()
-                            onSearch(q)
+                            viewModel.findNextEpisode(item) { q ->
+                                viewModel.search()
+                                onSearch(q)
+                            }
                         },
                     )
                 }
@@ -498,13 +500,12 @@ fun SearchScreen(
 @Composable
 private fun RecentShowCard(
     item: SearchHistoryEntity,
+    isLoadingNext: Boolean,
     onFindNext: () -> Unit,
 ) {
     val isTv = item.contentType == "tv"
-    val nextEp = (item.episode ?: 0) + 1
     val episodeLabel = if (item.season != null && item.episode != null)
         "S${item.season} E${item.episode}" else ""
-    val nextLabel = if (item.season != null) "S${item.season} E$nextEp" else "Next"
 
     Column(
         modifier = Modifier
@@ -573,21 +574,30 @@ private fun RecentShowCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, SubtyMocha)
+                    .border(1.dp, if (isLoadingNext) SubtyBorderDim else SubtyMocha)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
+                        enabled = !isLoadingNext,
                         onClick = onFindNext,
                     )
                     .padding(horizontal = 8.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                SubtyText(
-                    "Find $nextLabel",
-                    fontSize = 11,
-                    weight = FontWeight.SemiBold,
-                    color = SubtyMocha,
-                )
+                if (isLoadingNext) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(14.dp),
+                        strokeWidth = 1.5.dp,
+                        color = SubtyMocha,
+                    )
+                } else {
+                    SubtyText(
+                        "Find next episode",
+                        fontSize = 11,
+                        weight = FontWeight.SemiBold,
+                        color = SubtyMocha,
+                    )
+                }
             }
         }
     }
