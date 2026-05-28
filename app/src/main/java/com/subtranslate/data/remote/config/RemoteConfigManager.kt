@@ -1,6 +1,7 @@
 package com.subtranslate.data.remote.config
 
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.coroutines.tasks.await
@@ -41,6 +42,7 @@ class RemoteConfigManager @Inject constructor() {
     }
 
     private val remoteConfig = Firebase.remoteConfig
+    private val firestore = Firebase.firestore
 
     init {
         remoteConfig.setConfigSettingsAsync(
@@ -58,7 +60,16 @@ class RemoteConfigManager @Inject constructor() {
         withTimeoutOrNull(FETCH_TIMEOUT_SECONDS * 1000) {
             runCatching { remoteConfig.fetchAndActivate().await() }
         }
-        return current()
+        val base = current()
+        val override = withTimeoutOrNull(1500L) {
+            runCatching {
+                firestore.collection("ops_controls").document("global").get().await()
+            }.getOrNull()
+        }
+        val translateOverride = override?.getBoolean("translate_enabled")
+        return if (translateOverride == null) base else {
+            base.copy(translateEnabled = translateOverride)
+        }
     }
 
     /** Returns the currently cached config without a network call. */

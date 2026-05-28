@@ -3,6 +3,7 @@ package com.subtranslate.presentation.search
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.subtranslate.data.analytics.AnalyticsTracker
 import com.subtranslate.data.local.dao.SearchHistoryDao
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.local.entity.SearchHistoryEntity
@@ -54,6 +55,8 @@ data class SearchUiState(
     val recentShows: List<SearchHistoryEntity> = emptyList(),
     /** ID of the recent-show card currently resolving its next episode via API */
     val nextEpisodeLoadingId: Long? = null,
+    val translationsUsedThisMonth: Int = 0,
+    val monthlyTranslationLimit: Int = 10,
 )
 
 enum class SearchMode { TITLE, IMDB_ID }
@@ -65,6 +68,7 @@ class SearchViewModel @Inject constructor(
     private val searchSession: SearchSession,
     private val searchHistoryDao: SearchHistoryDao,
     private val settings: SettingsDataStore,
+    private val analyticsTracker: AnalyticsTracker,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -75,8 +79,9 @@ class SearchViewModel @Inject constructor(
     private var suggestJob: Job? = null
 
     init {
-        // Load recent shows for the home carousel
-        searchHistoryDao.getRecentTvShows()
+        refreshUsage()
+        // Load recent titles (movies + TV) for the home carousel
+        searchHistoryDao.getRecentTitles()
             .onEach { items -> _uiState.value = _uiState.value.copy(recentShows = items) }
             .launchIn(viewModelScope)
 
@@ -128,6 +133,13 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    fun refreshUsage() {
+        _uiState.value = _uiState.value.copy(
+            translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
+            monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
+        )
+    }
+
     fun onQueryChange(query: String) {
         _uiState.value = _uiState.value.copy(
             query = query,
@@ -159,13 +171,13 @@ class SearchViewModel @Inject constructor(
                 .getOrDefault(emptyList())
             runCatching { tmdbApi.searchMulti(query) }
                 .onSuccess { response ->
-                    val remoteResults = response.results
+                    val mapped = response.results
                         .filter { it.mediaType != "person" }
                         .map { it.toFeatureDto() }
-                        .take(8)  // TMDB already returns by popularity
+                    val remoteResults = rankSuggestions(mapped, query).take(20)
                     val historySuggestions = historyItems.map { Suggestion.History(it) }
                     val remoteSuggestions = remoteResults.map { Suggestion.Remote(it) }
-                    val combined = (historySuggestions + remoteSuggestions).take(8)
+                    val combined = (historySuggestions + remoteSuggestions).take(12)
                     _uiState.value = _uiState.value.copy(
                         suggestions = remoteResults,
                         combinedSuggestions = combined,
@@ -188,7 +200,68 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    private fun rankSuggestions(results: List<FeatureDto>, query: String): List<FeatureDto> {
+        val q = query.lowercase().trim()
+        val qWords = q.split(Regex("\\s+")).filter { it.isNotBlank() }
+        return results.mapIndexed { index, feature ->
+            val title = feature.attributes.title?.lowercase() ?: ""
+            val attrs = feature.attributes
+            var score = 0
+            // Keep strong bias to API order (usually already popularity-tuned server-side)
+            score += (results.size - index) * 5
+            // 1. Exact prefix match is highest signal
+            if (title.startsWith(q)) score += 100
+            // 2. Query matches at word boundary
+            if (title.split(" ").any { it.startsWith(q) }) score += 50
+            // 2.5 Fuzzy per-word match to handle typos like "bpys" -> "boys"
+            if (qWords.isNotEmpty()) {
+                val titleWords = title.split(Regex("[^a-z0-9]+")).filter { it.isNotBlank() }
+                val fuzzyMatches = qWords.count { qw ->
+                    titleWords.any { tw ->
+                        tw == qw || tw.startsWith(qw) || editDistance(tw, qw) <= 1
+                    }
+                }
+                score += fuzzyMatches * 30
+            }
+            // 3. Popular TV shows (many seasons/episodes)
+            score += (attrs.seasonsCount ?: 0) * 10
+            score += minOf((attrs.episodesCount ?: 0) / 10, 50)
+            // 4. Recent content (2010+ gets bonus)
+            val year = attrs.year ?: 2000
+            if (year >= 2010) score += 20
+            if (year >= 2015) score += 10
+            // 5. Movies get slight boost for recency (higher IMDB ID = more recent)
+            if (attrs.featureType == "Movie") score += 5
+            feature to score
+        }.sortedByDescending { it.second }.map { it.first }
+    }
+
+    private fun editDistance(a: String, b: String): Int {
+        if (a == b) return 0
+        if (a.isEmpty()) return b.length
+        if (b.isEmpty()) return a.length
+        val dp = IntArray(b.length + 1) { it }
+        for (i in 1..a.length) {
+            var prev = dp[0]
+            dp[0] = i
+            for (j in 1..b.length) {
+                val tmp = dp[j]
+                val cost = if (a[i - 1] == b[j - 1]) 0 else 1
+                dp[j] = minOf(
+                    dp[j] + 1,
+                    dp[j - 1] + 1,
+                    prev + cost,
+                )
+                prev = tmp
+            }
+        }
+        return dp[b.length]
+    }
     fun onSuggestionSelected(feature: FeatureDto) {
+        analyticsTracker.track(
+            "search_suggestion_selected",
+            mapOf("type" to (feature.type ?: "unknown"))
+        )
         val title = feature.attributes.title ?: feature.attributes.originalTitle ?: ""
         val posterUrl = feature.attributes.imgUrl
         val imdbId = feature.attributes.imdbId?.toString()
@@ -219,6 +292,7 @@ class SearchViewModel @Inject constructor(
     }
 
     fun onHistorySuggestionSelected(item: SearchHistoryEntity) {
+        analyticsTracker.track("search_history_suggestion_selected")
         searchSession.movieTitle  = item.query
         searchSession.season      = item.season
         searchSession.episode     = item.episode
@@ -335,6 +409,14 @@ class SearchViewModel @Inject constructor(
 
     fun search() {
         val state = _uiState.value
+        analyticsTracker.track(
+            "search_submitted",
+            mapOf(
+                "mode" to state.searchMode.name.lowercase(),
+                "has_season_episode" to (state.season.isNotBlank() || state.episode.isNotBlank()).toString(),
+                "languages_count" to state.selectedLanguages.size.toString(),
+            )
+        )
         // Persist search params to session — ResultsViewModel runs the actual search
         searchSession.season = state.season.toIntOrNull()
         searchSession.episode = state.episode.toIntOrNull()

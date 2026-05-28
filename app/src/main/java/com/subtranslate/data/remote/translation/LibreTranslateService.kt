@@ -29,6 +29,7 @@ class LibreTranslateService @Inject constructor() {
         "https://translate.argosopentech.com/translate",
         "https://libretranslate.de/translate"
     )
+    private val googleFreeEndpoint = "https://translate.googleapis.com/translate_a/single"
 
     suspend fun translateEntries(
         entries: List<SubtitleEntry>,
@@ -85,6 +86,11 @@ class LibreTranslateService @Inject constructor() {
                 lastError = e
             }
         }
+        try {
+            return callGoogleFreeTranslate(text, sourceLang, targetLang)
+        } catch (e: Exception) {
+            lastError = e
+        }
         throw lastError ?: Exception("LibreTranslate fallback failed")
     }
 
@@ -112,6 +118,38 @@ class LibreTranslateService @Inject constructor() {
             }
             val json = JSONObject(response.body?.string().orEmpty())
             return json.optString("translatedText").ifBlank { text }
+        }
+    }
+
+    private fun callGoogleFreeTranslate(
+        text: String,
+        sourceLang: String,
+        targetLang: String
+    ): String {
+        val encoded = java.net.URLEncoder.encode(text, Charsets.UTF_8.name())
+        val url = "$googleFreeEndpoint?client=gtx&sl=$sourceLang&tl=$targetLang&dt=t&q=$encoded"
+        val request = Request.Builder()
+            .url(url)
+            .get()
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw Exception("Google Free Translate HTTP ${response.code}")
+            }
+            val body = response.body?.string().orEmpty()
+            val root = org.json.JSONArray(body)
+            val sentenceArray = root.optJSONArray(0) ?: return text
+            val builder = StringBuilder()
+            for (i in 0 until sentenceArray.length()) {
+                val item = sentenceArray.optJSONArray(i) ?: continue
+                val translated = item.optString(0)
+                if (translated.isNotBlank()) {
+                    if (builder.isNotEmpty()) builder.append(" ")
+                    builder.append(translated)
+                }
+            }
+            return builder.toString().ifBlank { text }
         }
     }
 

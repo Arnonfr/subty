@@ -436,14 +436,20 @@ fun SubtyProgressBar(
 
 @Composable
 fun SubtyErrorBanner(text: String, modifier: Modifier = Modifier) {
-    Box(
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .border(1.dp, SubtyError)
             .background(Color(0xFF3D0000))
             .padding(horizontal = 24.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        SubtyText(text, fontSize = 12, color = SubtyError)
+        SubtyText("!", fontSize = 14, weight = FontWeight.Black, color = SubtyError)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SubtyText("ERROR", fontSize = 10, weight = FontWeight.Bold, color = SubtyError, letterSpacing = 0.1f, uppercase = true)
+            SubtyText(text, fontSize = 12, color = SubtyError)
+        }
     }
 }
 

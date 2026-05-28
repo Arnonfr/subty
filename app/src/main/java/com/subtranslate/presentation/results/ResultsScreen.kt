@@ -24,6 +24,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -36,18 +37,22 @@ import coil3.compose.AsyncImage
 import com.subtranslate.domain.model.SubtitleSearchResult
 import com.subtranslate.presentation.theme.*
 import java.net.URLEncoder
+import kotlinx.coroutines.launch
 
 @Composable
 fun ResultsScreen(
     query: String,
     onTranslate: (fileId: Int, fileName: String, languageCode: String) -> Unit,
     onBack: () -> Unit,
+    translateEnabled: Boolean = true,
+    maintenanceMessage: String = "",
     viewModel: ResultsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(query) { viewModel.search(query) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     // observe download events
@@ -240,11 +245,18 @@ fun ResultsScreen(
                                 result = result,
                                 downloadState = state.downloadStates[result.fileId] ?: DownloadState.IDLE,
                                 downloadError = state.downloadErrors[result.fileId],
+                                translateEnabled = translateEnabled,
                                 onDownload = {
                                     viewModel.downloadAndSave(result.fileId, result.languageCode, result.fileName)
                                 },
                                 onTranslate = {
+                                    viewModel.trackTranslateClick(result.fileId, result.languageCode)
                                     onTranslate(result.fileId, result.fileName, result.languageCode)
+                                },
+                                onTranslateUnavailable = {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Translation is currently unavailable")
+                                    }
                                 },
                             )
                         }
@@ -260,8 +272,10 @@ fun SubtitleResultRow(
     result: SubtitleSearchResult,
     downloadState: DownloadState,
     downloadError: String?,
+    translateEnabled: Boolean,
     onDownload: () -> Unit,
     onTranslate: () -> Unit,
+    onTranslateUnavailable: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -363,10 +377,15 @@ fun SubtitleResultRow(
                 Spacer(Modifier.width((-1).dp))
                 SubtyButton(
                     text = "Translate",
-                    onClick = onTranslate,
+                    onClick = {
+                        if (translateEnabled) onTranslate() else onTranslateUnavailable()
+                    },
                     style = SubtyButtonStyle.MOCHA,
+                    enabled = true,
                     small = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .alpha(if (translateEnabled) 1f else 0.55f),
                 )
             }
 

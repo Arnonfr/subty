@@ -57,6 +57,10 @@ fun SearchScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.refreshUsage()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -96,38 +100,12 @@ fun SearchScreen(
             modifier = Modifier.padding(start = 24.dp, bottom = if (state.recentShows.isEmpty()) 20.dp else 12.dp),
         )
 
-        // ── Recent shows carousel ─────────────────────────────────────────────
-        if (state.recentShows.isNotEmpty()) {
-            SubtyLabel(
-                "Continue watching",
-                modifier = Modifier.padding(start = 24.dp, bottom = 10.dp),
-            )
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(bottom = 20.dp),
-            ) {
-                items(state.recentShows, key = { it.id }) { item ->
-                    RecentShowCard(
-                        item = item,
-                        isLoadingNext = state.nextEpisodeLoadingId == item.id,
-                        onFindNext = {
-                            viewModel.findNextEpisode(item) { q ->
-                                viewModel.search()
-                                onSearch(q)
-                            }
-                        },
-                    )
-                }
-            }
-        }
-
         // ── Search field + autocomplete ───────────────────────────────────────
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, if (state.query.isNotEmpty()) SubtyMocha else SubtyBorderDim)
+                    .border(2.dp, if (state.query.isNotEmpty()) SubtyMocha else SubtyBorder)
                     .background(SubtyBg2)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -139,7 +117,9 @@ fun SearchScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = {
-                        viewModel.search(); onSearch(state.query.ifBlank { state.imdbId })
+                        viewModel.search()
+                        val q = state.query.ifBlank { state.imdbId }
+                        if (state.imdbId.isNotBlank()) onSearch(q) else onShowAll(state.query)
                     }),
                     textStyle = TextStyle(
                         color = SubtyText1,
@@ -181,6 +161,18 @@ fun SearchScreen(
                 }
             }
 
+            val used = state.translationsUsedThisMonth
+            val limit = state.monthlyTranslationLimit
+            val left = (limit - used).coerceAtLeast(0)
+            if (used > 0) {
+                Spacer(Modifier.height(10.dp))
+                SubtyText(
+                    text = "You have $left of $limit subtitle translations left this month.",
+                    fontSize = 11,
+                    color = SubtyText3,
+                )
+            }
+
             // Advanced search toggle
             Spacer(Modifier.height(6.dp))
             SubtyText(
@@ -204,7 +196,7 @@ fun SearchScreen(
                 )
             }
 
-            // Autocomplete dropdown — no posters, just text (faster)
+            // Autocomplete dropdown with posters + title type
             if (state.showSuggestions && state.combinedSuggestions.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
                 Column(
@@ -277,20 +269,29 @@ fun SearchScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
-                                    // Initials badge instead of poster (much faster — no extra network request)
                                     Box(
                                         modifier = Modifier
-                                            .size(width = 28.dp, height = 28.dp)
+                                            .size(width = 36.dp, height = 50.dp)
                                             .background(SubtyBg3)
                                             .border(1.dp, SubtyBorderDim),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        SubtyText(
-                                            title.take(1).uppercase(),
-                                            fontSize = 11,
-                                            weight = FontWeight.Bold,
-                                            color = SubtyMocha,
-                                        )
+                                        val poster = result.attributes.imgUrl
+                                        if (poster != null) {
+                                            AsyncImage(
+                                                model = poster,
+                                                contentDescription = title,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        } else {
+                                            SubtyText(
+                                                title.take(1).uppercase(),
+                                                fontSize = 11,
+                                                weight = FontWeight.Bold,
+                                                color = SubtyMocha,
+                                            )
+                                        }
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
                                         SubtyText(
@@ -316,29 +317,76 @@ fun SearchScreen(
                         if (idx < state.combinedSuggestions.lastIndex) SubtyDividerDim()
                     }
 
-                    // "Show All" footer — always shown when there are any remote results
-                    if (state.suggestions.isNotEmpty()) {
-                        SubtyDivider()
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) { onShowAll(state.query) }
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            SubtyText(
-                                "Show all results for \"${state.query}\"",
-                                fontSize = 12,
-                                color = SubtyMocha,
-                                weight = FontWeight.SemiBold,
-                            )
-                            SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
-                        }
+                    SubtyDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { onShowAll(state.query) }
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SubtyText(
+                            "Show all results for \"${state.query}\"",
+                            fontSize = 12,
+                            color = SubtyMocha,
+                            weight = FontWeight.SemiBold,
+                        )
+                        SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
                     }
+                }
+            }
+
+            if (state.query.isNotBlank() && !state.showSuggestions) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, SubtyBorderDim)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { onShowAll(state.query) }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SubtyText(
+                        "Show all results for \"${state.query}\"",
+                        fontSize = 12,
+                        color = SubtyText2,
+                    )
+                    SubtyText("→", fontSize = 14, color = SubtyMocha, weight = FontWeight.Bold)
+                }
+            }
+        }
+
+        // ── Recent titles carousel (movies + TV) under search ─────────────────
+        if (state.recentShows.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            SubtyLabel(
+                "Recent titles",
+                modifier = Modifier.padding(start = 24.dp, bottom = 10.dp),
+            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(bottom = 16.dp),
+            ) {
+                items(state.recentShows, key = { it.id }) { item ->
+                    RecentShowCard(
+                        item = item,
+                        isLoadingNext = state.nextEpisodeLoadingId == item.id,
+                        onFindNext = {
+                            viewModel.findNextEpisode(item) { q ->
+                                viewModel.search()
+                                onSearch(q)
+                            }
+                        },
+                    )
                 }
             }
         }
@@ -479,7 +527,11 @@ fun SearchScreen(
         Spacer(Modifier.height(24.dp))
         SubtyButton(
             text = "Search Subtitles",
-            onClick = { viewModel.search(); onSearch(state.query.ifBlank { state.imdbId }) },
+            onClick = {
+                viewModel.search()
+                val q = state.query.ifBlank { state.imdbId }
+                if (state.imdbId.isNotBlank()) onSearch(q) else onShowAll(state.query)
+            },
             style = SubtyButtonStyle.FILLED,
             enabled = searchEnabled && !state.isLoading && (state.query.isNotBlank() || state.imdbId.isNotBlank()),
             loading = state.isLoading,

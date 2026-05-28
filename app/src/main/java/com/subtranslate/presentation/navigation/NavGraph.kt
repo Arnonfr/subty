@@ -51,7 +51,9 @@ fun NavGraph(
                 onTranslate = { fileId, fileName, languageCode ->
                     navController.navigate(Screen.Translate.createRoute(fileId, fileName, languageCode))
                 },
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                translateEnabled = appConfig.translateEnabled,
+                maintenanceMessage = appConfig.maintenanceMessage,
             )
         }
 

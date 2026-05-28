@@ -2,6 +2,7 @@ package com.subtranslate.presentation.results
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.subtranslate.data.analytics.AnalyticsTracker
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.remote.tmdb.SearchSession
 import com.subtranslate.data.repository.SubtitleRepositoryImpl
@@ -44,6 +45,7 @@ class ResultsViewModel @Inject constructor(
     private val searchSession: SearchSession,
     private val settings: SettingsDataStore,
     private val historyRepository: HistoryRepository,
+    private val analyticsTracker: AnalyticsTracker,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ResultsUiState())
@@ -53,6 +55,7 @@ class ResultsViewModel @Inject constructor(
     val downloadDoneEvents: SharedFlow<String> = _downloadDoneEvents.asSharedFlow()
 
     fun search(query: String) {
+        analyticsTracker.track("search_results_loaded", mapOf("query_length" to query.length.toString()))
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             error = null,
@@ -123,6 +126,10 @@ class ResultsViewModel @Inject constructor(
 
     /** Download-only: downloads the file and saves it directly — no translation */
     fun downloadAndSave(fileId: Int, languageCode: String, fileName: String) {
+        analyticsTracker.track(
+            "download_clicked",
+            mapOf("file_id" to fileId.toString(), "language_code" to languageCode)
+        )
         setDownloadState(fileId, DownloadState.DOWNLOADING)
         viewModelScope.launch {
             val fileResult = downloadUseCase(fileId, languageCode)
@@ -179,6 +186,13 @@ class ResultsViewModel @Inject constructor(
             downloadErrors = if (error != null)
                 _uiState.value.downloadErrors + (fileId to error)
             else _uiState.value.downloadErrors
+        )
+    }
+
+    fun trackTranslateClick(fileId: Int, languageCode: String) {
+        analyticsTracker.track(
+            "translate_clicked",
+            mapOf("file_id" to fileId.toString(), "language_code" to languageCode)
         )
     }
 }
