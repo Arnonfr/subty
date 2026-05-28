@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Live events coming from app clients
+    match /live_events/{eventId} {
+      allow create: if request.resource.data.keys().hasAll(['event', 'event_key', 'platform', 'client_ts'])
+                    && request.resource.data.platform == 'android'
+                    && request.resource.data.event is string
+                    && request.resource.data.event.size() > 0
+                    && request.resource.data.event.size() < 80;
+      allow read: if false;
+      allow update, delete: if false;
+    }
+
+    // Aggregated live metrics doc
+    match /live_metrics/{docId} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    // Ops toggles controlled by live dashboard
+    match /ops_controls/{docId} {
+      allow read: if true;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

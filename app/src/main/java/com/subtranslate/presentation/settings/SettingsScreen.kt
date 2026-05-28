@@ -32,8 +32,9 @@ import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 private val MODELS = listOf(
     "microsoft"                      to "Microsoft",
     "gemini-2.5-flash"               to "Gemini",
-    "gemini-3.1-flash-lite-preview"  to "Gemini Lite",
+    "gemini-2.5-flash-lite"          to "Gemini Lite",
     "deepl"                          to "DeepL",
+    "libretranslate"                 to "LibreTranslate (Free)",
     "mymemory"                       to "MyMemory (Free)",
 )
 
@@ -45,6 +46,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) { viewModel.refreshUsage() }
 
     Column(
         modifier = Modifier
@@ -111,6 +113,48 @@ fun SettingsScreen(
             description = "Save to Downloads automatically when done",
             checked = state.autoSave,
             onCheckedChange = viewModel::onAutoSaveChange,
+        )
+        SubtyDivider()
+
+        Spacer(Modifier.height(24.dp))
+
+        // ── Usage ─────────────────────────────────────────────────────────────
+        SettingsSectionHeader("Usage", Modifier.padding(horizontal = 24.dp))
+        SubtyDivider()
+        UsageRow(
+            label = "Monthly translations",
+            used = state.translationsUsedThisMonth,
+            limit = state.monthlyTranslationLimit,
+        )
+        SubtyDividerDim()
+        UsageRow(
+            label = "MyMemory characters",
+            used = state.usage.myMemory,
+            limit = Int.MAX_VALUE,
+        )
+        SubtyDividerDim()
+        UsageRow(
+            label = "LibreTranslate characters",
+            used = state.usage.libreTranslate,
+            limit = Int.MAX_VALUE,
+        )
+        SubtyDividerDim()
+        UsageRow(
+            label = "Microsoft characters",
+            used = state.usage.microsoft,
+            limit = Int.MAX_VALUE,
+        )
+        SubtyDividerDim()
+        UsageRow(
+            label = "Gemini characters",
+            used = state.usage.gemini,
+            limit = Int.MAX_VALUE,
+        )
+        SubtyDividerDim()
+        UsageRow(
+            label = "DeepL characters",
+            used = state.usage.deepL,
+            limit = Int.MAX_VALUE,
         )
         SubtyDivider()
 

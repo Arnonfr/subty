@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.subtranslate.BuildConfig
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,6 +51,7 @@ class SettingsDataStore(context: Context) {
     var translationModel: String
         get() = when (val model = prefs.getString(KEY_MODEL, "")) {
             "google" -> "mymemory"
+            "gemini-3.1-flash-lite-preview" -> "gemini-2.5-flash-lite"
             "" -> "microsoft"
             null -> "microsoft"
             else -> model
@@ -151,7 +153,7 @@ class SettingsDataStore(context: Context) {
         if (storedMonth != currentMonth) {
             // Reset all engine counters for new month
             editor.putString("usage_month", currentMonth)
-            listOf("mymemory", "deepl", "microsoft", "gemini").forEach {
+            listOf("mymemory", "deepl", "microsoft", "gemini", "libretranslate").forEach {
                 editor.putInt("chars_used_$it", 0)
             }
         }
@@ -177,6 +179,17 @@ class SettingsDataStore(context: Context) {
             .apply()
     }
 
+    fun getMonthlyTranslationLimit(): Int = MONTHLY_TRANSLATION_LIMIT
+
+    val analyticsUserId: String
+        get() {
+            val existing = prefs.getString(KEY_ANALYTICS_USER_ID, null)
+            if (!existing.isNullOrBlank()) return existing
+            val generated = "u_${UUID.randomUUID().toString().replace("-", "").take(16)}"
+            prefs.edit().putString(KEY_ANALYTICS_USER_ID, generated).apply()
+            return generated
+        }
+
     companion object {
         private const val KEY_SOURCE_LANG = "source_lang"
         private const val KEY_TARGET_LANG = "target_lang"
@@ -193,5 +206,7 @@ class SettingsDataStore(context: Context) {
         private const val KEY_OPENSUBTITLES_API_KEY = "opensubtitles_api_key"
         private const val KEY_TRANSLATION_LIMIT_MONTH = "translation_limit_month"
         private const val KEY_TRANSLATIONS_USED = "translations_used"
+        private const val KEY_ANALYTICS_USER_ID = "analytics_user_id"
+        private const val MONTHLY_TRANSLATION_LIMIT = 10
     }
 }

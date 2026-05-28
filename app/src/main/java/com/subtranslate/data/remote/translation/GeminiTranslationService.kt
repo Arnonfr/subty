@@ -46,7 +46,7 @@ class GeminiTranslationService @Inject constructor(
         sourceLang: String,
         targetLang: String,
         title: String?,
-        modelId: String = "gemini-3.1-flash-lite-preview",
+        modelId: String = "gemini-2.5-flash-lite",
         onProgress: (translated: Int, total: Int, batch: Int, totalBatches: Int) -> Unit
     ): List<SubtitleEntry> = withContext(Dispatchers.IO) {
 

@@ -6,6 +6,7 @@ import com.subtranslate.BuildConfig
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.remote.translation.DeepLTranslationService
 import com.subtranslate.data.remote.translation.GeminiTranslationService
+import com.subtranslate.data.remote.translation.LibreTranslateService
 import com.subtranslate.data.remote.translation.MicrosoftTranslationService
 import com.subtranslate.data.remote.translation.MyMemoryTranslationService
 import com.subtranslate.domain.model.SubtitleFile
@@ -20,6 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class TranslationRepositoryImpl @Inject constructor(
     private val myMemoryService: MyMemoryTranslationService,
+    private val libreTranslateService: LibreTranslateService,
     private val geminiService: GeminiTranslationService,
     private val deeplService: DeepLTranslationService,
     private val microsoftService: MicrosoftTranslationService,
@@ -56,6 +58,7 @@ class TranslationRepositoryImpl @Inject constructor(
                 modelId.startsWith("gemini") -> "gemini"
                 modelId == "deepl" -> "deepl"
                 modelId == "microsoft" -> "microsoft"
+                modelId == "libretranslate" -> "libretranslate"
                 else -> "mymemory"
             }
             var fallbackUsed = false
@@ -158,9 +161,8 @@ class TranslationRepositoryImpl @Inject constructor(
                         }
                     }
                 }
-                else -> {
-                    // Basic: MyMemory (free, no API key, non-AI)
-                    myMemoryService.translateEntries(
+                modelId == "libretranslate" -> {
+                    libreTranslateService.translateEntries(
                         entries = subtitleFile.entries,
                         sourceLang = sourceLang,
                         targetLang = targetLang
@@ -172,6 +174,45 @@ class TranslationRepositoryImpl @Inject constructor(
                             totalBatches = 1,
                             status = TranslationStatus.TRANSLATING
                         ))
+                    }
+                }
+                else -> {
+                    // Basic: MyMemory (free, no API key, non-AI)
+                    try {
+                        myMemoryService.translateEntries(
+                            entries = subtitleFile.entries,
+                            sourceLang = sourceLang,
+                            targetLang = targetLang
+                        ) { translated, total ->
+                            trySend(TranslationProgress(
+                                totalEntries = total,
+                                translatedEntries = translated,
+                                currentBatch = 1,
+                                totalBatches = 1,
+                                status = TranslationStatus.TRANSLATING
+                            ))
+                        }
+                    } catch (_: Exception) {
+                        engineKey = "libretranslate"
+                        fallbackUsed = true
+                        trySend(TranslationProgress(
+                            totalEntries = subtitleFile.entries.size,
+                            status = TranslationStatus.TRANSLATING,
+                            warningMessage = "MyMemory unavailable. Falling back to LibreTranslate."
+                        ))
+                        libreTranslateService.translateEntries(
+                            entries = subtitleFile.entries,
+                            sourceLang = sourceLang,
+                            targetLang = targetLang
+                        ) { translated, total ->
+                            trySend(TranslationProgress(
+                                totalEntries = total,
+                                translatedEntries = translated,
+                                currentBatch = 1,
+                                totalBatches = 1,
+                                status = TranslationStatus.TRANSLATING
+                            ))
+                        }
                     }
                 }
             }

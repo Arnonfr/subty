@@ -51,6 +51,7 @@ jobs:
           SUBDL_API_KEY: ${{ secrets.SUBDL_API }}
           MICROSOFT_API_KEY: ${{ secrets.MICROSOFT_API_KEY }}
           MICROSOFT_REGION: ${{ secrets.MICROSOFT_REGION }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           KEYSTORE_PATH: ${{ github.workspace }}/app/subty-release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}

@@ -11,6 +11,7 @@ import javax.inject.Inject
 
 data class UsageStats(
     val myMemory: Int = 0,
+    val libreTranslate: Int = 0,
     val deepL: Int = 0,
     val microsoft: Int = 0,
     val gemini: Int = 0,
@@ -37,6 +38,8 @@ data class SettingsUiState(
     val availableModels: List<String> = emptyList(),
     // Usage
     val usage: UsageStats = UsageStats(),
+    val translationsUsedThisMonth: Int = 0,
+    val monthlyTranslationLimit: Int = 10,
     val saved: Boolean = false
 )
 
@@ -65,6 +68,8 @@ class SettingsViewModel @Inject constructor(
             microsoftRegion = settings.microsoftRegion,
             availableModels = loadAvailableModels(),
             usage = loadUsage(),
+            translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
+            monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
         )
     )
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -104,12 +109,19 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun refreshUsage() {
-        update { copy(usage = loadUsage()) }
+        update {
+            copy(
+                usage = loadUsage(),
+                translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
+                monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
+            )
+        }
     }
 
     private fun loadUsage(): UsageStats {
         return UsageStats(
             myMemory = settings.getCharsUsed("mymemory"),
+            libreTranslate = settings.getCharsUsed("libretranslate"),
             deepL = settings.getCharsUsed("deepl"),
             microsoft = settings.getCharsUsed("microsoft"),
             gemini = settings.getCharsUsed("gemini"),
@@ -120,9 +132,10 @@ class SettingsViewModel @Inject constructor(
         if (!settings.effectiveMicrosoftApiKey.isNullOrBlank()) add("microsoft")
         if (!settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()) {
             add("gemini-2.5-flash")
-            add("gemini-3.1-flash-lite-preview")
+            add("gemini-2.5-flash-lite")
         }
         if (!settings.deeplApiKey.isNullOrBlank()) add("deepl")
+        add("libretranslate")
         add("mymemory") // always available — no key required
     }
 

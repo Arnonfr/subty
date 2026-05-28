@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.subtranslate.BuildConfig
+import com.subtranslate.data.analytics.AnalyticsTracker
 import com.subtranslate.data.local.datastore.SettingsDataStore
 import com.subtranslate.data.repository.TranslationRepositoryImpl
 import com.subtranslate.domain.model.HistoryItem
@@ -42,6 +43,8 @@ data class TranslateUiState(
     val savedPath: String? = null,
     val saveError: String? = null,
     val availableModels: List<String> = emptyList(),
+    val translationsUsedThisMonth: Int = 0,
+    val monthlyTranslationLimit: Int = 10,
 )
 
 @HiltViewModel
@@ -53,6 +56,7 @@ class TranslateViewModel @Inject constructor(
     private val settings: SettingsDataStore,
     private val stateHolder: TranslationStateHolder,
     private val historyRepository: HistoryRepository,
+    private val analyticsTracker: AnalyticsTracker,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -73,6 +77,8 @@ class TranslateViewModel @Inject constructor(
             targetLang = settings.defaultTargetLanguage,
             selectedModel = settings.translationModel,
             availableModels = models,
+            translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
+            monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
         )
         ensureSelectedModelAvailable()
     }
@@ -139,6 +145,14 @@ class TranslateViewModel @Inject constructor(
     }
 
     fun startTranslation(file: SubtitleFile) {
+        analyticsTracker.track(
+            event = "translation_start_clicked",
+            params = mapOf(
+                "model" to _uiState.value.selectedModel,
+                "target_lang" to _uiState.value.targetLang,
+                "source_lang" to _uiState.value.sourceLang,
+            )
+        )
         pendingFile = file
         stateHolder.reset()
         TranslationForegroundService.pendingFile = file
@@ -157,7 +171,12 @@ class TranslateViewModel @Inject constructor(
                 } else null
                 _uiState.value = _uiState.value.copy(
                     progress = progress,
-                    translatedFile = translatedFile ?: _uiState.value.translatedFile
+                    translatedFile = translatedFile ?: _uiState.value.translatedFile,
+                    translationsUsedThisMonth = if (progress.status == TranslationStatus.COMPLETE) {
+                        settings.getTranslationsUsedThisMonth()
+                    } else {
+                        _uiState.value.translationsUsedThisMonth
+                    }
                 )
             }
         }
@@ -216,9 +235,10 @@ class TranslateViewModel @Inject constructor(
         if (!settings.effectiveMicrosoftApiKey.isNullOrBlank()) add("microsoft")
         if (!settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()) {
             add("gemini-2.5-flash")
-            add("gemini-3.1-flash-lite-preview")
+            add("gemini-2.5-flash-lite")
         }
         if (!settings.deeplApiKey.isNullOrBlank()) add("deepl")
+        add("libretranslate")
         add("mymemory") // always available — no key required
     }
 

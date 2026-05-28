@@ -232,6 +232,11 @@ fun TranslateScreen(
             // ── Start button ──────────────────────────────────────────────────
             item {
                 val isTranslating = progress.status == TranslationStatus.TRANSLATING
+                val used = state.translationsUsedThisMonth
+                val limit = state.monthlyTranslationLimit
+                val isQuotaReached = used >= limit
+                val left = (limit - used).coerceAtLeast(0)
+
                 SubtyButton(
                     text = when {
                         isTranslating -> "Translating…"
@@ -259,11 +264,24 @@ fun TranslateScreen(
                         }
                     },
                     style = SubtyButtonStyle.FILLED,
-                    enabled = translateEnabled && !isTranslating && viewModel.pendingFile != null,
+                    enabled = translateEnabled && !isTranslating && viewModel.pendingFile != null && !isQuotaReached,
                     loading = isTranslating,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(24.dp),
+                )
+
+                SubtyText(
+                    text = if (isQuotaReached) {
+                        "Monthly limit reached. You have 0 of $limit subtitle translations left this month."
+                    } else {
+                        "You have $left of $limit subtitle translations left this month."
+                    },
+                    fontSize = 11,
+                    color = SubtyText3,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
                 )
             }
 
@@ -409,8 +427,9 @@ fun TranslateScreen(
 private val TRANSLATION_MODELS = listOf(
     "microsoft"                     to "Microsoft",
     "gemini-2.5-flash"              to "Gemini",
-    "gemini-3.1-flash-lite-preview" to "Gemini Lite",
+    "gemini-2.5-flash-lite"         to "Gemini Lite",
     "deepl"                         to "DeepL",
+    "libretranslate"                to "LibreTranslate (Free)",
     "mymemory"                      to "MyMemory (Free)",
 )
 
