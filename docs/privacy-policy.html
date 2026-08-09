@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy – Subty</title>
+  <title>Privacy Policy - Subty</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f6f2; color: #2c2c2c; line-height: 1.7; }
@@ -22,53 +22,51 @@
 <body>
   <div class="container">
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: May 28, 2026</p>
+    <p class="updated">Last updated: August 9, 2026</p>
 
-    <p>Subty ("we", "our", or "us") is a subtitle search and translation app. This Privacy Policy explains how we handle information when you use our Android application.</p>
+    <p>Subty ("we", "our", or "us") is a subtitle search, download, and translation app for Android. This Privacy Policy explains how information is handled when you use the app.</p>
 
-    <h2>1. Information We Do Not Collect</h2>
-    <p>Subty does not collect, store, or transmit any personally identifiable information to our servers. We do not have user accounts, and we do not track your activity.</p>
+    <h2>1. Information We Do Not Ask For</h2>
+    <p>Subty does not require a user account and does not ask for your name, email address, contacts, photos, precise location, or media library.</p>
 
-    <h2>2. API Keys You Provide</h2>
-    <p>To use optional translation providers, you may enter your own API keys (for example Gemini, DeepL, or Microsoft Translator). These keys are stored locally on your device using Android encrypted storage and are never sent to our own servers.</p>
+    <h2>2. App Diagnostics and Usage Events</h2>
+    <p>Subty does not use Firebase, advertising SDKs, or a hosted analytics/telemetry service in this release. Search, download, and translation history is stored locally on your device.</p>
 
     <h2>3. Third-Party Services</h2>
-    <p>Subty uses the following third-party services, each governed by their own privacy policies:</p>
+    <p>Subty uses third-party services to search titles and find or download subtitles. These services are governed by their own privacy policies:</p>
     <ul>
-      <li><strong>OpenSubtitles API</strong> – subtitle search and download. <a href="https://www.opensubtitles.com/en/privacypolicy" target="_blank">Privacy Policy</a>.</li>
-      <li><strong>SubDL API</strong> – fallback subtitle source.</li>
-      <li><strong>TMDB API</strong> – title lookup and posters. <a href="https://www.themoviedb.org/privacy-policy" target="_blank">Privacy Policy</a>.</li>
-      <li><strong>MyMemory / LibreTranslate</strong> – free translation fallbacks.</li>
-      <li><strong>Google Gemini API</strong> – optional AI translation provider. <a href="https://policies.google.com/privacy" target="_blank">Privacy Policy</a>.</li>
-      <li><strong>Microsoft Translator API</strong> – optional translation provider. <a href="https://privacy.microsoft.com/" target="_blank">Privacy Policy</a>.</li>
-      <li><strong>DeepL API</strong> – optional translation provider. <a href="https://www.deepl.com/privacy" target="_blank">Privacy Policy</a>.</li>
-      <li><strong>Firebase (Analytics, Crashlytics, Remote Config, Firestore)</strong> – app operations and diagnostics. <a href="https://firebase.google.com/support/privacy" target="_blank">Privacy Policy</a>.</li>
+      <li><strong>OpenSubtitles API</strong> - subtitle search and download. <a href="https://www.opensubtitles.com/en/privacypolicy" target="_blank">Privacy Policy</a>.</li>
+      <li><strong>SubDL API</strong> - subtitle search and download.</li>
+      <li><strong>Screwzira / ktuvit.me</strong> - optional Hebrew-focused subtitle source when enabled.</li>
+      <li><strong>TMDB API</strong> - title lookup and posters. <a href="https://www.themoviedb.org/privacy-policy" target="_blank">Privacy Policy</a>.</li>
+      <li><strong>Google ML Kit on-device Translation</strong> - downloads language models and translates subtitles on your device.</li>
     </ul>
+    <p>When you search for subtitles, your search query, selected title, language, season, episode, and related identifiers may be sent to subtitle and title providers. Subtitle translation is performed on your device after the required language models have been downloaded.</p>
 
     <h2>4. Local Storage</h2>
     <p>Subty stores the following data locally on your device:</p>
     <ul>
-      <li>Search and translation history (stored in a local database)</li>
-      <li>App settings (dark mode, preferred languages, etc.)</li>
-      <li>Downloaded subtitle files (saved to your Downloads folder)</li>
+      <li>Search and translation history</li>
+      <li>App settings, such as preferred languages and display options</li>
+      <li>Downloaded subtitle files saved to your device</li>
     </ul>
     <p>Most of this data remains on-device. When you use network features, relevant request data is sent directly to the selected third-party provider.</p>
 
     <h2>5. Permissions</h2>
     <p>Subty requests the following Android permissions:</p>
     <ul>
-      <li><strong>INTERNET</strong> – required to search and download subtitles and to perform translations.</li>
-      <li><strong>FOREGROUND_SERVICE</strong> – used to continue translation while the app is in the background.</li>
-      <li><strong>POST_NOTIFICATIONS</strong> – used to show translation progress notifications (Android 13+).</li>
-      <li><strong>WRITE_EXTERNAL_STORAGE</strong> – used to save translated subtitle files to your Downloads folder.</li>
-      <li><strong>READ_EXTERNAL_STORAGE</strong> – used for compatibility with older Android versions when opening subtitle files.</li>
+      <li><strong>INTERNET</strong> - required to search and download subtitles and to download optional on-device language models.</li>
+      <li><strong>FOREGROUND_SERVICE</strong> and <strong>FOREGROUND_SERVICE_DATA_SYNC</strong> - used to continue translation while the app is in the background.</li>
+      <li><strong>POST_NOTIFICATIONS</strong> - used to show translation progress notifications on Android 13 and newer.</li>
+      <li><strong>READ_EXTERNAL_STORAGE</strong> - used for compatibility with older Android versions when opening subtitle files.</li>
+      <li><strong>WRITE_EXTERNAL_STORAGE</strong> - used for compatibility with older Android versions when saving subtitle files.</li>
     </ul>
 
     <h2>6. Children's Privacy</h2>
-    <p>Subty is not directed at children under 13. We do not knowingly collect any information from children.</p>
+    <p>Subty is not directed at children under 13. We do not knowingly collect personal information from children.</p>
 
     <h2>7. Changes to This Policy</h2>
-    <p>We may update this Privacy Policy from time to time. We will notify users of any significant changes through the app or by updating the date above.</p>
+    <p>We may update this Privacy Policy from time to time. We will notify users of significant changes by updating this page or through the app when appropriate.</p>
 
     <h2>8. Contact</h2>
     <p>If you have any questions about this Privacy Policy, please contact us at: <a href="mailto:frielabsdev@gmail.com">frielabsdev@gmail.com</a></p>
