@@ -13,6 +13,11 @@ on:
           - alpha
           - beta
           - production
+      release_tag:
+        description: 'Optional draft GitHub Release tag containing app-stable-release.aab'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build_and_deploy:
@@ -40,7 +45,18 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_PLAY_JSON_KEY_B64 }}" | base64 -d > fastlane/google-play-key.json
 
+      - name: Download prebuilt AAB
+        if: github.event.inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p app/build/outputs/bundle/stableRelease
+          gh release download "${{ github.event.inputs.release_tag }}" \
+            --pattern app-stable-release.aab \
+            --dir app/build/outputs/bundle/stableRelease
+
       - name: Build Release AAB
+        if: github.event.inputs.release_tag == ''
         run: ./gradlew bundleStableRelease
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
