@@ -5,11 +5,12 @@ platform :android do
   lane :internal do
     gradle(
       task: "bundle",
+      flavor: "stable",
       build_type: "Release"
     )
     upload_to_play_store(
       track: 'internal',
-      aab: 'app/build/outputs/bundle/release/app-release.aab'
+      aab: 'app/build/outputs/bundle/stableRelease/app-stable-release.aab'
     )
   end
 

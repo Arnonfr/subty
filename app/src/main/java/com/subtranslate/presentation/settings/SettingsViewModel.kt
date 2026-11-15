@@ -1,145 +1,110 @@
 package com.subtranslate.presentation.settings
 
 import androidx.lifecycle.ViewModel
-import com.subtranslate.BuildConfig
+import androidx.lifecycle.viewModelScope
 import com.subtranslate.data.local.datastore.SettingsDataStore
+import com.subtranslate.data.remote.translation.MlKitTranslationProvider
+import com.subtranslate.data.remote.translation.TranslationModelCatalog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-
-data class UsageStats(
-    val myMemory: Int = 0,
-    val libreTranslate: Int = 0,
-    val deepL: Int = 0,
-    val microsoft: Int = 0,
-    val gemini: Int = 0,
-)
+import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-    // Translation
     val defaultTargetLang: String = "he",
-    val translationModel: String = "microsoft",
     val autoTranslate: Boolean = false,
-    // Display
     val showPosters: Boolean = true,
     val compactResults: Boolean = false,
     val isDarkTheme: Boolean = false,
     val useSeasonEpisodeTextFields: Boolean = false,
-    // Save
     val preferredSaveFormat: String = "srt",
+    val saveDestinationMode: String = "movies",
+    val customSaveFolderUri: String? = null,
     val autoSave: Boolean = false,
-    // API Keys
-    val geminiApiKey: String = "",
-    val deeplApiKey: String = "",
-    val microsoftApiKey: String = "",
-    val microsoftRegion: String = "global",
-    val availableModels: List<String> = emptyList(),
-    // Usage
-    val usage: UsageStats = UsageStats(),
-    val translationsUsedThisMonth: Int = 0,
-    val monthlyTranslationLimit: Int = 10,
-    val saved: Boolean = false
+    val liveAnalyticsEnabled: Boolean = true,
+    val shareSearchTerms: Boolean = false,
+    val saved: Boolean = false,
+    val downloadedOfflineLanguages: Set<String> = emptySet(),
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val settings: SettingsDataStore
+    private val settings: SettingsDataStore,
+    private val mlKitTranslationProvider: MlKitTranslationProvider,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(
         SettingsUiState(
             defaultTargetLang = settings.defaultTargetLanguage,
-            translationModel = settings.translationModel
-                .takeIf { it in loadAvailableModels() }
-                ?: loadAvailableModels().firstOrNull()
-                ?: settings.translationModel,
             autoTranslate = settings.autoTranslateAfterDownload,
             showPosters = settings.showPosters,
             compactResults = settings.compactResults,
             isDarkTheme = settings.isDarkTheme,
             useSeasonEpisodeTextFields = settings.useSeasonEpisodeTextFields,
             preferredSaveFormat = settings.preferredSaveFormat,
+            saveDestinationMode = settings.saveDestinationMode,
+            customSaveFolderUri = settings.customSaveFolderUri,
             autoSave = settings.autoSaveTranslated,
-            geminiApiKey = settings.geminiApiKey ?: "",
-            deeplApiKey = settings.deeplApiKey ?: "",
-            microsoftApiKey = settings.customMicrosoftApiKey ?: "",
-            microsoftRegion = settings.microsoftRegion,
-            availableModels = loadAvailableModels(),
-            usage = loadUsage(),
-            translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
-            monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
-        )
+            liveAnalyticsEnabled = settings.liveAnalyticsEnabled,
+            shareSearchTerms = settings.shareSearchTerms,
+        ),
     )
-    val uiState: StateFlow<SettingsUiState> = _uiState
+    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    init { refreshOfflineLanguages() }
 
     fun onTargetLangChange(v: String) = update { copy(defaultTargetLang = v, saved = false) }
-    fun onModelChange(v: String) = update { copy(translationModel = v, saved = false) }
     fun onAutoTranslateChange(v: Boolean) = update { copy(autoTranslate = v, saved = false) }
     fun onShowPostersChange(v: Boolean) = update { copy(showPosters = v, saved = false) }
     fun onCompactResultsChange(v: Boolean) = update { copy(compactResults = v, saved = false) }
-    fun onSeasonEpisodeInputModeChange(v: Boolean) = update { copy(useSeasonEpisodeTextFields = v, saved = false) }
-    fun onDarkThemeChange(v: Boolean) {
-        settings.isDarkTheme = v
-        update { copy(isDarkTheme = v, saved = false) }
-    }
+    fun onDarkThemeChange(v: Boolean) = update { copy(isDarkTheme = v, saved = false) }
+    fun onUseSeasonEpisodeTextFieldsChange(v: Boolean) = update { copy(useSeasonEpisodeTextFields = v, saved = false) }
     fun onSaveFormatChange(v: String) = update { copy(preferredSaveFormat = v, saved = false) }
+    fun onSaveDestinationModeChange(v: String) = update { copy(saveDestinationMode = v, saved = false) }
+    fun onCustomSaveFolderUriChange(v: String?) = update { copy(customSaveFolderUri = v, saved = false) }
     fun onAutoSaveChange(v: Boolean) = update { copy(autoSave = v, saved = false) }
-    fun onGeminiApiKeyChange(v: String) = update { copy(geminiApiKey = v, saved = false) }
-    fun onDeepLApiKeyChange(v: String) = update { copy(deeplApiKey = v, saved = false) }
-    fun onMicrosoftApiKeyChange(v: String) = update { copy(microsoftApiKey = v, saved = false) }
-    fun onMicrosoftRegionChange(v: String) = update { copy(microsoftRegion = v, saved = false) }
+    fun onLiveAnalyticsEnabledChange(v: Boolean) = update { copy(liveAnalyticsEnabled = v, saved = false) }
+    fun onShareSearchTermsChange(v: Boolean) = update { copy(shareSearchTerms = v, saved = false) }
 
     fun save() {
-        val s = _uiState.value
-        settings.defaultTargetLanguage = s.defaultTargetLang
-        settings.translationModel = s.translationModel
-        settings.autoTranslateAfterDownload = s.autoTranslate
-        settings.showPosters = s.showPosters
-        settings.compactResults = s.compactResults
-        settings.useSeasonEpisodeTextFields = s.useSeasonEpisodeTextFields
-        settings.preferredSaveFormat = s.preferredSaveFormat
-        settings.autoSaveTranslated = s.autoSave
-        settings.geminiApiKey = s.geminiApiKey.ifBlank { null }
-        settings.deeplApiKey = s.deeplApiKey.ifBlank { null }
-        settings.microsoftApiKey = s.microsoftApiKey.ifBlank { null }
-        settings.microsoftRegion = s.microsoftRegion.ifBlank { "global" }
-        update { copy(saved = true, availableModels = loadAvailableModels()) }
+        val state = _uiState.value
+        settings.defaultTargetLanguage = state.defaultTargetLang
+        settings.translationModel = TranslationModelCatalog.MLKIT_ON_DEVICE
+        settings.autoTranslateAfterDownload = state.autoTranslate
+        settings.showPosters = state.showPosters
+        settings.compactResults = state.compactResults
+        settings.isDarkTheme = state.isDarkTheme
+        settings.useSeasonEpisodeTextFields = state.useSeasonEpisodeTextFields
+        settings.preferredSaveFormat = state.preferredSaveFormat
+        settings.saveDestinationMode = state.saveDestinationMode
+        settings.customSaveFolderUri = state.customSaveFolderUri
+        settings.autoSaveTranslated = state.autoSave
+        settings.liveAnalyticsEnabled = state.liveAnalyticsEnabled
+        settings.shareSearchTerms = state.shareSearchTerms
+        _uiState.value = state.copy(saved = true)
     }
 
-    fun refreshUsage() {
-        update {
-            copy(
-                usage = loadUsage(),
-                translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
-                monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
-            )
+    fun refreshOfflineLanguages() {
+        viewModelScope.launch {
+            runCatching { mlKitTranslationProvider.downloadedLanguageCodes() }
+                .onSuccess { downloaded -> _uiState.value = _uiState.value.copy(downloadedOfflineLanguages = downloaded) }
         }
     }
 
-    private fun loadUsage(): UsageStats {
-        return UsageStats(
-            myMemory = settings.getCharsUsed("mymemory"),
-            libreTranslate = settings.getCharsUsed("libretranslate"),
-            deepL = settings.getCharsUsed("deepl"),
-            microsoft = settings.getCharsUsed("microsoft"),
-            gemini = settings.getCharsUsed("gemini"),
-        )
-    }
-
-    private fun loadAvailableModels(): List<String> = buildList {
-        if (!settings.effectiveMicrosoftApiKey.isNullOrBlank()) add("microsoft")
-        if (!settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()) {
-            add("gemini-2.5-flash")
-            add("gemini-2.5-flash-lite")
+    fun downloadOfflineLanguage(code: String) {
+        viewModelScope.launch {
+            runCatching { mlKitTranslationProvider.downloadLanguage(code) }
+                .onSuccess { refreshOfflineLanguages() }
         }
-        if (!settings.deeplApiKey.isNullOrBlank()) add("deepl")
-        add("libretranslate")
-        add("mymemory") // always available — no key required
     }
 
-    private fun update(block: SettingsUiState.() -> SettingsUiState) {
-        _uiState.value = _uiState.value.block()
+    fun removeOfflineLanguage(code: String) {
+        viewModelScope.launch {
+            runCatching { mlKitTranslationProvider.deleteLanguage(code) }
+                .onSuccess { refreshOfflineLanguages() }
+        }
     }
+
+    private fun update(block: SettingsUiState.() -> SettingsUiState) { _uiState.value = _uiState.value.block() }
 }

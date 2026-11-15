@@ -5,9 +5,9 @@ import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.subtranslate.BuildConfig
 import com.subtranslate.data.analytics.AnalyticsTracker
 import com.subtranslate.data.local.datastore.SettingsDataStore
+import com.subtranslate.data.remote.translation.TranslationModelCatalog
 import com.subtranslate.data.repository.TranslationRepositoryImpl
 import com.subtranslate.domain.model.HistoryItem
 import com.subtranslate.domain.model.SubtitleFile
@@ -16,244 +16,150 @@ import com.subtranslate.domain.model.TranslationStatus
 import com.subtranslate.domain.repository.HistoryRepository
 import com.subtranslate.domain.usecase.DownloadSubtitleUseCase
 import com.subtranslate.domain.usecase.SaveSubtitleUseCase
-import com.subtranslate.domain.usecase.TranslateSubtitleUseCase
 import com.subtranslate.service.TranslationForegroundService
 import com.subtranslate.service.TranslationStateHolder
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class TranslateUiState(
-    // sourceLang is auto-detected from the subtitle file — never entered manually
     val sourceLang: String = "en",
     val targetLang: String = "he",
-    val selectedModel: String = "microsoft",
     val isLoadingFile: Boolean = false,
     val progress: TranslationProgress = TranslationProgress(),
     val translatedFile: SubtitleFile? = null,
     val savedPath: String? = null,
     val saveError: String? = null,
-    val availableModels: List<String> = emptyList(),
-    val translationsUsedThisMonth: Int = 0,
-    val monthlyTranslationLimit: Int = 10,
 )
 
 @HiltViewModel
 class TranslateViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val downloadUseCase: DownloadSubtitleUseCase,
-    private val translateUseCase: TranslateSubtitleUseCase,
     private val saveUseCase: SaveSubtitleUseCase,
-    private val translationRepo: TranslationRepositoryImpl,
-    private val settings: SettingsDataStore,
-    private val stateHolder: TranslationStateHolder,
     private val historyRepository: HistoryRepository,
     private val analyticsTracker: AnalyticsTracker,
-    @ApplicationContext private val context: Context,
+    private val translationRepository: TranslationRepositoryImpl,
+    private val settings: SettingsDataStore,
+    private val stateHolder: TranslationStateHolder,
 ) : ViewModel() {
-
-    private val _uiState = MutableStateFlow(TranslateUiState())
-    val uiState: StateFlow<TranslateUiState> = _uiState
-
+    private val _uiState = MutableStateFlow(
+        TranslateUiState(
+            sourceLang = settings.defaultSourceLanguage,
+            targetLang = settings.defaultTargetLanguage,
+        ),
+    )
+    val uiState: StateFlow<TranslateUiState> = _uiState.asStateFlow()
     private val _saveDoneEvents = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val saveDoneEvents: SharedFlow<String> = _saveDoneEvents.asSharedFlow()
 
-    // The subtitle file to translate - set by the owning screen via shared ViewModel or nav args
     var pendingFile: SubtitleFile? = null
+        private set
+    private var progressJob: Job? = null
 
-    private var translationJob: Job? = null
+    init { observeProgress() }
 
-    init {
-        val models = availableModels()
-        _uiState.value = _uiState.value.copy(
-            targetLang = settings.defaultTargetLanguage,
-            selectedModel = settings.translationModel,
-            availableModels = models,
-            translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
-            monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
-        )
-        ensureSelectedModelAvailable()
-    }
-
-    /**
-     * Called when a subtitle is selected. Sets sourceLang from the file's detected language
-     * so the user never needs to enter it manually.
-     */
-    /** Downloads the subtitle and auto-sets source language — no user input required. */
     fun downloadAndLoad(fileId: Int, languageCode: String) {
         _uiState.value = _uiState.value.copy(isLoadingFile = true)
         viewModelScope.launch {
-            val result = downloadUseCase(fileId, languageCode)
-            _uiState.value = _uiState.value.copy(isLoadingFile = false)
-            result.getOrNull()?.let { loadSubtitle(it) }
-                ?: run {
-                    val err = result.exceptionOrNull()
-                    val msg = when {
-                        err?.message?.contains("406") == true ->
-                            "Daily download limit reached (5/day free plan). Try again tomorrow."
-                        err?.message?.contains("401") == true || err?.message?.contains("403") == true ->
-                            "API key error. Contact app support."
-                        err?.message?.contains("503") == true ->
-                            "Server temporarily unavailable. Try again in a moment."
-                        else -> err?.message ?: "Download failed"
-                    }
+            downloadUseCase(fileId, languageCode).fold(
+                onSuccess = { file -> loadSubtitle(file); _uiState.value = _uiState.value.copy(isLoadingFile = false) },
+                onFailure = { err ->
                     _uiState.value = _uiState.value.copy(
-                        progress = _uiState.value.progress.copy(
-                            status = com.subtranslate.domain.model.TranslationStatus.ERROR,
-                            errorMessage = msg
-                        )
+                        isLoadingFile = false,
+                        progress = _uiState.value.progress.copy(status = TranslationStatus.ERROR, errorMessage = err.message ?: "Download failed"),
                     )
-                }
+                },
+            )
         }
     }
 
     fun loadSubtitle(file: SubtitleFile) {
         pendingFile = file
-        val detectedLang = file.sourceLanguage ?: "en"
-        val autoTarget = if (detectedLang == settings.defaultTargetLanguage)
-            settings.defaultSourceLanguage
-        else
-            settings.defaultTargetLanguage
+        val source = file.sourceLanguage ?: settings.defaultSourceLanguage
         _uiState.value = _uiState.value.copy(
-            sourceLang = detectedLang,
-            targetLang = autoTarget,
-            progress = TranslationProgress(),
-            translatedFile = null,
-            savedPath = null,
-            saveError = null
+            sourceLang = source,
+            targetLang = if (source == settings.defaultTargetLanguage) settings.defaultSourceLanguage else settings.defaultTargetLanguage,
+            progress = TranslationProgress(), translatedFile = null, savedPath = null, saveError = null,
         )
-    }
-
-    fun onModelChange(model: String) {
-        _uiState.value = _uiState.value.copy(selectedModel = model)
     }
 
     fun onSourceLangChange(lang: String) {
-        _uiState.value = _uiState.value.copy(sourceLang = lang)
+        if (_uiState.value.progress.status == TranslationStatus.TRANSLATING || lang == _uiState.value.sourceLang) return
+        _uiState.value = _uiState.value.copy(sourceLang = lang, translatedFile = null, savedPath = null, saveError = null, progress = TranslationProgress())
     }
-
     fun onTargetLangChange(lang: String) {
-        _uiState.value = _uiState.value.copy(targetLang = lang)
+        if (_uiState.value.progress.status == TranslationStatus.TRANSLATING || lang == _uiState.value.targetLang) return
+        _uiState.value = _uiState.value.copy(targetLang = lang, translatedFile = null, savedPath = null, saveError = null, progress = TranslationProgress())
     }
 
     fun startTranslation(file: SubtitleFile) {
-        analyticsTracker.track(
-            event = "translation_start_clicked",
-            params = mapOf(
-                "model" to _uiState.value.selectedModel,
-                "target_lang" to _uiState.value.targetLang,
-                "source_lang" to _uiState.value.sourceLang,
-            )
-        )
+        val state = _uiState.value
+        analyticsTracker.track("translation_start_clicked", mapOf("model" to TranslationModelCatalog.MLKIT_ON_DEVICE, "source_lang" to state.sourceLang, "target_lang" to state.targetLang))
         pendingFile = file
-        stateHolder.reset()
+        val jobId = stateHolder.beginTranslation()
         TranslationForegroundService.pendingFile = file
-        val intent = Intent(context, TranslationForegroundService::class.java).apply {
-            putExtra(TranslationForegroundService.EXTRA_SOURCE_LANG, _uiState.value.sourceLang)
-            putExtra(TranslationForegroundService.EXTRA_TARGET_LANG, _uiState.value.targetLang)
-            putExtra(TranslationForegroundService.EXTRA_MODEL_ID,    _uiState.value.selectedModel)
-        }
-        ContextCompat.startForegroundService(context, intent)
+        ContextCompat.startForegroundService(context, Intent(context, TranslationForegroundService::class.java).apply {
+            putExtra(TranslationForegroundService.EXTRA_SOURCE_LANG, state.sourceLang)
+            putExtra(TranslationForegroundService.EXTRA_TARGET_LANG, state.targetLang)
+            putExtra(TranslationForegroundService.EXTRA_MODEL_ID, TranslationModelCatalog.MLKIT_ON_DEVICE)
+            putExtra(TranslationForegroundService.EXTRA_JOB_ID, jobId)
+        })
+    }
 
-        // Observe service state in ViewModel for UI updates
-        translationJob = viewModelScope.launch {
-            stateHolder.progress.collect { progress ->
-                val translatedFile = if (progress.status == TranslationStatus.COMPLETE) {
-                    translationRepo.lastTranslatedFile
-                } else null
-                _uiState.value = _uiState.value.copy(
-                    progress = progress,
-                    translatedFile = translatedFile ?: _uiState.value.translatedFile,
-                    translationsUsedThisMonth = if (progress.status == TranslationStatus.COMPLETE) {
-                        settings.getTranslationsUsedThisMonth()
-                    } else {
-                        _uiState.value.translationsUsedThisMonth
-                    }
-                )
-            }
-        }
+    fun cancelTranslation() {
+        context.stopService(Intent(context, TranslationForegroundService::class.java))
+        stateHolder.reset()
+        _uiState.value = _uiState.value.copy(progress = _uiState.value.progress.copy(status = TranslationStatus.IDLE))
     }
 
     fun save() {
         val file = _uiState.value.translatedFile ?: return
         val ext = file.format.name.lowercase()
-        val name = "${file.title?.substringBeforeLast(".")}_${_uiState.value.targetLang}.$ext"
-
+        val baseName = file.title?.substringBeforeLast(".").orEmpty().ifBlank { "translated_subtitle" }
+        val saveName = "$baseName.${_uiState.value.targetLang}.$ext"
         viewModelScope.launch {
-            val result = saveUseCase(file, name)
-            _uiState.value = _uiState.value.copy(
-                savedPath = result.getOrNull()?.absolutePath,
-                saveError = result.exceptionOrNull()?.message
-            )
+            val result = saveUseCase(file, saveName)
+            _uiState.value = _uiState.value.copy(savedPath = result.getOrNull()?.absolutePath, saveError = result.exceptionOrNull()?.message)
             if (result.isSuccess) {
-                _saveDoneEvents.tryEmit(name)
-                // Save to history DB
+                _saveDoneEvents.tryEmit(saveName)
                 runCatching {
                     historyRepository.save(
                         HistoryItem(
                             id = 0,
-                            movieTitle = file.title?.substringBeforeLast(".") ?: name.substringBeforeLast("."),
+                            movieTitle = file.title?.substringBeforeLast(".") ?: saveName.substringBeforeLast("."),
                             originalLanguage = _uiState.value.sourceLang,
                             translatedLanguage = _uiState.value.targetLang,
                             format = ext,
                             openSubtitlesFileId = null,
                             originalFilePath = null,
-                            translatedFilePath = name,
+                            translatedFilePath = result.getOrNull()?.path ?: saveName,
                             downloadedAt = System.currentTimeMillis(),
-                            translatedAt = System.currentTimeMillis()
-                        )
+                            translatedAt = System.currentTimeMillis(),
+                        ),
                     )
                 }
             }
         }
     }
 
-    fun hasTranslateApiKey(): Boolean {
-        val model = _uiState.value.selectedModel
-        val msKey = settings.effectiveMicrosoftApiKey
-        val result = when {
-            model.startsWith("gemini") ->
-                !settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()
-            model == "deepl" ->
-                !settings.deeplApiKey.isNullOrBlank()
-            model == "microsoft" ->
-                !msKey.isNullOrBlank()
-            else -> true // MyMemory and other free services need no key
-        }
-        return result
-    }
-
-    private fun availableModels(): List<String> = buildList {
-        if (!settings.effectiveMicrosoftApiKey.isNullOrBlank()) add("microsoft")
-        if (!settings.geminiApiKey.isNullOrBlank() || BuildConfig.GEMINI_API_KEY.isNotBlank()) {
-            add("gemini-2.5-flash")
-            add("gemini-2.5-flash-lite")
-        }
-        if (!settings.deeplApiKey.isNullOrBlank()) add("deepl")
-        add("libretranslate")
-        add("mymemory") // always available — no key required
-    }
-
-    private fun ensureSelectedModelAvailable() {
-        val models = _uiState.value.availableModels
-        if (models.isNotEmpty() && _uiState.value.selectedModel !in models) {
-            _uiState.value = _uiState.value.copy(selectedModel = models.first())
-        }
-    }
-
-    fun cancelTranslation() {
-        translationJob?.cancel()
-        context.stopService(Intent(context, TranslationForegroundService::class.java))
-        _uiState.value = _uiState.value.copy(
-            progress = _uiState.value.progress.copy(status = TranslationStatus.IDLE)
-        )
+    private fun observeProgress() {
+        progressJob?.cancel()
+        progressJob = stateHolder.progress.onEach { progress ->
+            _uiState.value = _uiState.value.copy(
+                progress = progress,
+                translatedFile = if (progress.status == TranslationStatus.COMPLETE) translationRepository.lastTranslatedFile ?: _uiState.value.translatedFile else _uiState.value.translatedFile,
+            )
+        }.launchIn(viewModelScope)
     }
 }

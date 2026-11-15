@@ -10,11 +10,14 @@ import com.subtranslate.data.remote.opensubtitles.SessionStore
 import com.subtranslate.data.remote.opensubtitles.dto.DownloadRequest
 import com.subtranslate.data.remote.opensubtitles.dto.LoginRequest
 import com.subtranslate.data.remote.opensubtitles.mapper.toDomain
+import com.subtranslate.data.remote.screwzira.ScrewziraClient
+import com.subtranslate.data.remote.screwzira.ScrewziraSubtitleEntry
 import com.subtranslate.data.remote.subdl.SubDLApi
 import com.subtranslate.data.remote.subdl.SubDLSubtitleDto
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.SubtitleFormat
 import com.subtranslate.domain.model.SubtitleSearchResult
+import com.subtranslate.domain.model.SubtitleSource
 import com.subtranslate.domain.repository.SubtitleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -35,14 +38,15 @@ private const val SUBDL_DL_BASE = "https://dl.subdl.com"
 class SubtitleRepositoryImpl @Inject constructor(
     private val osApi: OpenSubtitlesApi,
     private val subDLApi: SubDLApi,
+    private val screwziraClient: ScrewziraClient,
     @Named("opensubtitles") private val osHttpClient: OkHttpClient,
     @Named("subdl")         private val subDLHttpClient: OkHttpClient,
     private val session: SessionStore,
 ) : SubtitleRepository {
 
-    // Negative IDs are SubDL results; OpenSubtitles always uses positive ints.
-    private val subDLIdGen    = AtomicInteger(-1)
-    private val subDLRegistry = mutableMapOf<Int, SubDLSubtitleDto>()
+    // Negative IDs are reserved for non-OpenSubtitles sources.
+    private val externalIdGen = AtomicInteger(-1)
+    private val externalRegistry = mutableMapOf<Int, ExternalSubtitleHandle>()
 
     /** Login with VIP credentials from BuildConfig if not already logged in. */
     private suspend fun ensureLoggedIn() {
@@ -125,9 +129,11 @@ class SubtitleRepositoryImpl @Inject constructor(
             // SubDL can return results either in 'subtitles' (when imdb_id is used)
             // or 'results' (when title is used, which might be movies instead of subtitles)
             // For now, we only handle direct subtitle results.
-            (resp.subtitles ?: emptyList()).map { dto ->
-                val id = subDLIdGen.getAndDecrement()
-                subDLRegistry[id] = dto
+            (resp.subtitles ?: emptyList())
+                .filter { dto -> dto.matchesRequestedEpisode(season, episode) }
+                .map { dto ->
+                val id = externalIdGen.getAndDecrement()
+                externalRegistry[id] = ExternalSubtitleHandle.SubDL(dto)
                 dto.toSearchResult(id)
             }
         } catch (e: Exception) {
@@ -136,13 +142,60 @@ class SubtitleRepositoryImpl @Inject constructor(
         }
     }
 
+    suspend fun searchScrewzira(
+        title: String?,
+        season: Int? = null,
+        episode: Int? = null,
+        languages: String? = null,
+        type: String? = null,
+    ): List<SubtitleSearchResult> {
+        val normalizedTitle = title?.trim().orEmpty()
+        if (normalizedTitle.isBlank()) return emptyList()
+        if (!supportsHebrew(languages)) return emptyList()
+
+        return try {
+            val result = screwziraClient.search(
+                query = normalizedTitle,
+                isSeries = type == "tv",
+                season = season,
+                episode = episode,
+            ) ?: return emptyList()
+
+            result.subtitles.map { entry ->
+                val id = externalIdGen.getAndDecrement()
+                externalRegistry[id] = ExternalSubtitleHandle.Screwzira(
+                    filmId = result.filmId,
+                    subtitle = entry,
+                )
+                entry.toSearchResult(
+                    id = id,
+                    movieTitle = normalizedTitle,
+                    imdbId = result.imdbId,
+                )
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Screwzira search failed: ${e.message}")
+            emptyList()
+        }
+    }
+
     // ── Download dispatcher ───────────────────────────────────────────────────
 
     override suspend fun download(fileId: Int, languageCode: String?): SubtitleFile {
         if (fileId < 0) {
-            val dto = subDLRegistry[fileId]
-                ?: error("SubDL entry $fileId not found")
-            return downloadFromSubDLUrl(dto.url, dto.releaseName ?: dto.name ?: "subtitle", languageCode)
+            return when (val handle = externalRegistry[fileId]
+                ?: error("External subtitle entry $fileId not found")) {
+                is ExternalSubtitleHandle.SubDL -> {
+                    downloadFromSubDLUrl(
+                        handle.dto.url,
+                        handle.dto.releaseName ?: handle.dto.name ?: "subtitle",
+                        languageCode,
+                    )
+                }
+                is ExternalSubtitleHandle.Screwzira -> {
+                    downloadFromScrewzira(handle.filmId, handle.subtitle, languageCode)
+                }
+            }
         }
 
         return try {
@@ -203,6 +256,19 @@ class SubtitleRepositoryImpl @Inject constructor(
         }
 
         return parseSubtitle(content, entryName.ifBlank { fileName }, languageCode)
+    }
+
+    private suspend fun downloadFromScrewzira(
+        filmId: String,
+        subtitle: ScrewziraSubtitleEntry,
+        languageCode: String?,
+    ): SubtitleFile {
+        val (fileName, content) = screwziraClient.downloadSubtitle(
+            filmId = filmId,
+            subtitleId = subtitle.subtitleId,
+            fallbackFileName = subtitle.name,
+        )
+        return parseSubtitle(content, fileName, languageCode ?: "he")
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -280,6 +346,46 @@ class SubtitleRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun supportsHebrew(languages: String?): Boolean {
+        if (languages.isNullOrBlank()) return true
+        return languages
+            .split(",", " ")
+            .map { it.trim().lowercase() }
+            .any { it == "he" || it == "heb" || it == "hebrew" }
+    }
+
+    private fun SubDLSubtitleDto.matchesRequestedEpisode(season: Int?, episode: Int?): Boolean {
+        if (season == null && episode == null) return true
+
+        val dtoSeasonMatches = season == null || this.season == null || this.season == season
+        if (episode != null && this.episode != null) {
+            return this.episode == episode && dtoSeasonMatches
+        }
+        if (episode == null && season != null && this.season != null) {
+            return this.season == season
+        }
+
+        val text = listOfNotNull(releaseName, name).joinToString(" ").lowercase()
+        if (season != null && episode != null) {
+            val paddedSeason = season.toString().padStart(2, '0')
+            val paddedEpisode = episode.toString().padStart(2, '0')
+            val patterns = listOf(
+                Regex("""s0?$season\s*e0?$episode\b""", RegexOption.IGNORE_CASE),
+                Regex("""s$paddedSeason\s*e$paddedEpisode\b""", RegexOption.IGNORE_CASE),
+                Regex("""\b0?$season[x.]0?$episode\b""", RegexOption.IGNORE_CASE),
+            )
+            return patterns.any { it.containsMatchIn(text) }
+        }
+
+        if (season != null) {
+            val paddedSeason = season.toString().padStart(2, '0')
+            return Regex("""\bs0?$season\b|\bs$paddedSeason\b""", RegexOption.IGNORE_CASE)
+                .containsMatchIn(text)
+        }
+
+        return true
+    }
+
     private fun SubDLSubtitleDto.toSearchResult(id: Int): SubtitleSearchResult {
         val isoCode = lang?.let { subdlLangToIsoCode(it) } ?: "?"
         Log.d(TAG, "SubDL result: lang='$lang' → isoCode='$isoCode'  file=${releaseName ?: name}")
@@ -298,6 +404,39 @@ class SubtitleRepositoryImpl @Inject constructor(
         isHearingImpaired = hi ?: false,
         isTrusted         = false,
         uploaderName      = author,
+        source            = SubtitleSource.SUBDL,
         )
+    }
+
+    private fun ScrewziraSubtitleEntry.toSearchResult(
+        id: Int,
+        movieTitle: String,
+        imdbId: String?,
+    ): SubtitleSearchResult {
+        return SubtitleSearchResult(
+            fileId = id,
+            fileName = name,
+            language = "Hebrew",
+            languageCode = "he",
+            downloadCount = 0,
+            rating = null,
+            format = "srt",
+            uploadedAt = null,
+            movieTitle = movieTitle,
+            movieYear = null,
+            imdbId = imdbId,
+            isHearingImpaired = false,
+            isTrusted = false,
+            uploaderName = null,
+            source = SubtitleSource.SCREWZIRA,
+        )
+    }
+
+    private sealed interface ExternalSubtitleHandle {
+        data class SubDL(val dto: SubDLSubtitleDto) : ExternalSubtitleHandle
+        data class Screwzira(
+            val filmId: String,
+            val subtitle: ScrewziraSubtitleEntry,
+        ) : ExternalSubtitleHandle
     }
 }

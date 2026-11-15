@@ -1,0 +1,5 @@
+Improved subtitle search reliability for recent TV shows and next-episode searches.
+Added stronger multi-source results with OpenSubtitles, SubDL, and optional Screwzira support.
+Improved duplicate handling and source labels in subtitle results.
+Translation is now available on-device after downloading the required language model.
+Fixed several search, download, and translation flow issues found in phone QA.

@@ -2,6 +2,9 @@ package com.subtranslate.presentation.titlebrowser
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.subtranslate.data.local.dao.SearchHistoryDao
+import com.subtranslate.data.local.entity.SearchHistoryEntity
+import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.dto.FeatureDto
 import com.subtranslate.data.remote.tmdb.SearchSession
 import com.subtranslate.data.remote.tmdb.TmdbApi
@@ -11,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 
 enum class TitleSortOrder { POPULARITY, YEAR_DESC, YEAR_ASC }
@@ -48,7 +52,9 @@ data class TitleBrowserUiState(
 @HiltViewModel
 class TitleBrowserViewModel @Inject constructor(
     private val tmdbApi: TmdbApi,
+    private val openSubtitlesApi: OpenSubtitlesApi,
     private val searchSession: SearchSession,
+    private val searchHistoryDao: SearchHistoryDao,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TitleBrowserUiState())
@@ -65,8 +71,15 @@ class TitleBrowserViewModel @Inject constructor(
                         .map { it.toFeatureDto() }
                     _uiState.update { it.copy(allResults = features, isLoading = false) }
                 }
-                .onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load") }
+                .onFailure {
+                    // Fallback for missing/invalid TMDB key
+                    runCatching { openSubtitlesApi.searchFeatures(query) }
+                        .onSuccess { os ->
+                            _uiState.update { it.copy(allResults = os.data, isLoading = false, error = null) }
+                        }
+                        .onFailure { e ->
+                            _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load") }
+                        }
                 }
         }
     }
@@ -77,16 +90,44 @@ class TitleBrowserViewModel @Inject constructor(
         it.copy(viewMode = if (it.viewMode == TitleViewMode.LIST) TitleViewMode.GRID else TitleViewMode.LIST)
     }
 
-    fun selectFeature(feature: FeatureDto) {
+    fun selectFeature(feature: FeatureDto, onReady: () -> Unit) {
         val title = feature.attributes.title ?: feature.attributes.originalTitle ?: ""
         val isTv = feature.type == "tv" || feature.attributes.featureType?.lowercase() == "tvshow"
-        searchSession.pendingSelectedFeatureId = feature.id
+        val contentType = if (isTv) "tv" else "movie"
+
+        searchSession.movieTitle = title
+        searchSession.posterUrl = feature.attributes.imgUrl
+        searchSession.imdbId = feature.attributes.imdbId?.toString()
+        searchSession.tmdbId = feature.attributes.tmdbId
+        searchSession.contentType = contentType
+        searchSession.seasonsCount = feature.attributes.seasonsCount
+        searchSession.episodesCount = feature.attributes.episodesCount
+        searchSession.season = if (isTv) 1 else null
+        searchSession.episode = if (isTv) 1 else null
+
+        searchSession.pendingSelectedFeatureId = if (isTv) feature.id else null
         searchSession.pendingSelectedFeatureTitle = title
         searchSession.pendingSelectedFeaturePoster = feature.attributes.imgUrl
         searchSession.pendingSelectedFeatureImdbId = feature.attributes.imdbId
         searchSession.pendingSelectedFeatureTmdbId = feature.attributes.tmdbId
-        searchSession.pendingSelectedFeatureType = if (isTv) "tv" else "movie"
+        searchSession.pendingSelectedFeatureType = contentType
         searchSession.pendingSelectedFeatureSeasons = feature.attributes.seasonsCount
         searchSession.pendingSelectedFeatureEpisodes = feature.attributes.episodesCount
+        // Movie selection navigates directly to results, bypassing SearchViewModel's
+        // history path. Persist before leaving this screen so its scope is still alive.
+        viewModelScope.launch {
+            if (!isTv && title.isNotBlank()) {
+                runCatching {
+                    searchHistoryDao.insert(SearchHistoryEntity(
+                        query = title, season = null, episode = null,
+                        languages = searchSession.languages, contentType = "movie",
+                        posterUrl = feature.attributes.imgUrl,
+                        imdbId = feature.attributes.imdbId?.toString(),
+                        tmdbId = feature.attributes.tmdbId,
+                    ))
+                }.onFailure { if (it is CancellationException) throw it }
+            }
+            onReady()
+        }
     }
 }

@@ -31,6 +31,8 @@ fun HistoryScreen(
 ) {
     val downloads by viewModel.history.collectAsState()
     val searches  by viewModel.searchHistory.collectAsState()
+    val translations = downloads.filter { it.translatedFilePath != null }
+    val downloadedFiles = downloads.filter { it.translatedFilePath == null }
     val hasAny = downloads.isNotEmpty() || searches.isNotEmpty()
 
     Column(
@@ -57,7 +59,7 @@ fun HistoryScreen(
             }
         }
         SubtyLabel(
-            "Searches and downloads",
+            "Searches, downloads, and translations",
             modifier = Modifier.padding(start = 24.dp, bottom = 20.dp),
         )
 
@@ -101,7 +103,32 @@ fun HistoryScreen(
                 }
 
                 // ── Download history ──────────────────────────────────────────
-                if (downloads.isNotEmpty()) {
+                if (translations.isNotEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(SubtyBg2)
+                                .padding(horizontal = 24.dp, vertical = 10.dp),
+                        ) {
+                            SubtyLabel("Translated subtitles")
+                        }
+                        SubtyDividerDim()
+                    }
+                    items(translations, key = { "t${it.id}" }) { item ->
+                        DownloadHistoryRow(
+                            item = item,
+                            onSearchAgain = {
+                                val query = viewModel.restoreDownloadSearch(item)
+                                onSearchDownloadAgain(query)
+                            },
+                            onDelete = { viewModel.delete(item.id) },
+                        )
+                        SubtyDividerDim()
+                    }
+                }
+
+                if (downloadedFiles.isNotEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -113,7 +140,7 @@ fun HistoryScreen(
                         }
                         SubtyDividerDim()
                     }
-                    items(downloads, key = { "d${it.id}" }) { item ->
+                    items(downloadedFiles, key = { "d${it.id}" }) { item ->
                         DownloadHistoryRow(
                             item = item,
                             onSearchAgain = {
@@ -210,8 +237,9 @@ private fun DownloadHistoryRow(
             SubtyText(
                 buildString {
                     append(item.originalLanguage.uppercase())
-                    if (item.translatedLanguage != null) {
-                        append(" → ${item.translatedLanguage.uppercase()}")
+                    if (item.translatedFilePath != null) {
+                        append("  ·  Translated to ")
+                        append(item.translatedLanguage?.uppercase() ?: "")
                     } else {
                         append("  ·  Downloaded")
                     }
@@ -219,6 +247,9 @@ private fun DownloadHistoryRow(
                 },
                 fontSize = 11, color = SubtyMocha, letterSpacing = 0.04f,
             )
+            item.translatedFilePath?.let { path ->
+                SubtyText(path.substringAfterLast('/'), fontSize = 10, color = SubtyText3)
+            }
             SubtyText(sdf.format(Date(item.downloadedAt)), fontSize = 10, color = SubtyText3)
         }
         SubtyButton(

@@ -1,0 +1,30 @@
+services:
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: subty-libretranslate
+    restart: unless-stopped
+    environment:
+      LT_DISABLE_FILES_TRANSLATION: "true"
+      LT_DISABLE_WEB_UI: "false"
+      LT_UPDATE_MODELS: "true"
+      LT_API_KEYS: "${LIBRETRANSLATE_API_KEY}"
+    volumes:
+      - ./data:/home/libretranslate/.local
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  gateway:
+    image: nginx:stable-alpine
+    container_name: subty-libretranslate-gateway
+    restart: unless-stopped
+    depends_on:
+      libretranslate:
+        condition: service_healthy
+    ports:
+      - "${LIBRETRANSLATE_PORT:-5001}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro

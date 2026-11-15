@@ -24,7 +24,7 @@ import com.subtranslate.presentation.theme.*
 fun TitleBrowserScreen(
     query: String,
     onBack: () -> Unit,
-    onSelected: () -> Unit,
+    onSelected: (FeatureDto) -> Unit,
     viewModel: TitleBrowserViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -40,7 +40,7 @@ fun TitleBrowserScreen(
         SubtyDivider()
 
         SubtyLabel(
-            text = "${state.results.size} titles found",
+            text = "${state.displayResults.size} titles found",
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         )
 
@@ -58,15 +58,13 @@ fun TitleBrowserScreen(
             }
             else -> {
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy((-1).dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                 ) {
-                    items(state.results, key = { it.id }) { feature ->
+                    items(state.displayResults, key = { it.id }) { feature ->
                         TitleBrowserRow(
                             feature = feature,
                             onClick = {
-                                viewModel.selectFeature(feature)
-                                onSelected()
+                                viewModel.selectFeature(feature) { onSelected(feature) }
                             },
                         )
                     }
@@ -87,82 +85,75 @@ private fun TitleBrowserRow(
     val seasons = feature.attributes.seasonsCount
     val posterUrl = feature.attributes.imgUrl
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(SubtyBg)
-            .border(1.dp, SubtyBorderDim)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            )
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // Poster thumbnail
-        Box(
+    Column(modifier = Modifier.fillMaxWidth().background(SubtyBg)) {
+        Row(
             modifier = Modifier
-                .size(width = 48.dp, height = 68.dp)
-                .background(SubtyBg3)
-                .border(1.dp, SubtyBorderDim),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (posterUrl != null) {
-                AsyncImage(
-                    model = posterUrl,
-                    contentDescription = title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick,
                 )
-            } else {
+                .padding(horizontal = 4.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 40.dp, height = 58.dp)
+                    .background(SubtyBg3)
+                    .border(1.dp, SubtyBorderDim),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (posterUrl != null) {
+                    AsyncImage(
+                        model = posterUrl,
+                        contentDescription = title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    SubtyText(
+                        title.take(1).uppercase(),
+                        fontSize = 16,
+                        weight = FontWeight.Bold,
+                        color = SubtyMocha,
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
                 SubtyText(
-                    title.take(1).uppercase(),
-                    fontSize = 18,
-                    weight = FontWeight.Bold,
-                    color = SubtyMocha,
+                    title,
+                    fontSize = 14,
+                    weight = FontWeight.SemiBold,
+                    color = SubtyText1,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(3.dp))
+                SubtyText(
+                    buildString {
+                        if (year.isNotEmpty()) { append(year); append(" · ") }
+                        if (isTv) {
+                            append("Series")
+                            if (seasons != null && seasons > 0) append(" · $seasons seasons")
+                        } else {
+                            append("Movie")
+                        }
+                    },
+                    fontSize = 12,
+                    color = SubtyText3,
                 )
             }
-        }
 
-        Column(modifier = Modifier.weight(1f)) {
             SubtyText(
-                title,
-                fontSize = 14,
-                weight = FontWeight.SemiBold,
-                color = SubtyText1,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(4.dp))
-            SubtyText(
-                buildString {
-                    if (year.isNotEmpty()) { append(year); append(" · ") }
-                    if (isTv) {
-                        append("Series")
-                        if (seasons != null && seasons > 0) append(" · $seasons seasons")
-                    } else {
-                        append("Movie")
-                    }
-                },
-                fontSize = 12,
-                color = SubtyText3,
-            )
-        }
-
-        // Type badge
-        Box(
-            modifier = Modifier
-                .border(1.dp, if (isTv) SubtyMocha else SubtyBorderDim)
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-        ) {
-            SubtyText(
-                if (isTv) "TV" else "Film",
+                if (isTv) "Series" else "Movie",
                 fontSize = 11,
                 weight = FontWeight.SemiBold,
-                color = if (isTv) SubtyMocha else SubtyText3,
+                color = if (isTv) SubtyAccent else SubtyText3,
             )
         }
+        SubtyDividerDim()
     }
 }

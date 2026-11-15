@@ -13,7 +13,6 @@ import com.subtranslate.data.remote.config.AppConfig
 import com.subtranslate.presentation.history.HistoryScreen
 import com.subtranslate.presentation.results.ResultsScreen
 import com.subtranslate.presentation.search.SearchScreen
-import com.subtranslate.presentation.settings.ApiKeysScreen
 import com.subtranslate.presentation.settings.SettingsScreen
 import com.subtranslate.presentation.titlebrowser.TitleBrowserScreen
 import com.subtranslate.presentation.translate.TranslateScreen
@@ -51,7 +50,15 @@ fun NavGraph(
                 onTranslate = { fileId, fileName, languageCode ->
                     navController.navigate(Screen.Translate.createRoute(fileId, fileName, languageCode))
                 },
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    val returnedToPreviousScreen = navController.popBackStack()
+                    if (!returnedToPreviousScreen) {
+                        navController.navigate(Screen.Search.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                },
                 translateEnabled = appConfig.translateEnabled,
                 maintenanceMessage = appConfig.maintenanceMessage,
             )
@@ -73,11 +80,6 @@ fun NavGraph(
                 fileName = fileName,
                 languageCode = languageCode,
                 onBack = { navController.popBackStack() },
-                onNavigateToSettings = {
-                    navController.navigate(Screen.ApiKeys.route) {
-                        launchSingleTop = true
-                    }
-                },
                 translateEnabled = appConfig.translateEnabled,
                 maintenanceMessage = appConfig.maintenanceMessage,
             )
@@ -98,15 +100,7 @@ fun NavGraph(
         }
 
         composable(Screen.Settings.route) {
-            SettingsScreen(
-                onOpenApiKeys = { navController.navigate(Screen.ApiKeys.route) }
-            )
-        }
-
-        composable(Screen.ApiKeys.route) {
-            ApiKeysScreen(
-                onBack = { navController.popBackStack() }
-            )
+            SettingsScreen()
         }
 
         composable(
@@ -117,10 +111,18 @@ fun NavGraph(
             TitleBrowserScreen(
                 query = query,
                 onBack = { navController.popBackStack() },
-                onSelected = {
-                    // Navigate to Search (fresh instance picks up pendingSelectedFeature from SearchSession)
-                    navController.navigate(Screen.Search.route) {
-                        popUpTo(Screen.Search.route) { inclusive = true }
+                onSelected = { feature ->
+                    val title = feature.attributes.title ?: feature.attributes.originalTitle ?: query
+                    val isTv = feature.type == "tv" ||
+                        feature.attributes.featureType?.lowercase() == "tvshow"
+                    if (isTv) {
+                        navController.navigate(Screen.Search.route) {
+                            popUpTo(Screen.Search.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Screen.Results.createRoute(title)) {
+                            popUpTo(Screen.Search.route)
+                        }
                     }
                 },
             )

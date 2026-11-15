@@ -143,4 +143,14 @@ object NetworkModule {
         .build()
         .create(SubDLApi::class.java)
 
+    @Provides
+    @Singleton
+    @Named("screwzira")
+    fun provideScrewziraOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor())
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .build()
+
 }

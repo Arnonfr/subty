@@ -14,10 +14,20 @@ import androidx.compose.ui.unit.dp
 
 // ── Always-static tokens (same in both themes) ────────────────────────────────
 val SubtyBlack     = Color(0xFF0A0908)
-val SubtyWhite     = Color(0xFFF5F0EB)
-val SubtyMocha     = Color(0xFFB5926A)
-val SubtyMochaDark = Color(0xFF7A5C3A)
+val SubtyWhite     = Color(0xFFFFFAF7)
+val SubtyMocha     = Color(0xFF9C6BFF)
+val SubtyMochaSoft = Color(0xFFB18AFF)
+val SubtyMochaDark = Color(0xFF6E46CC)
 val SubtyError     = Color(0xFFFF6B6B)
+val SubtyAccent    = Color(0xFFE56A4A)
+val SubtyHeroBg    = Color(0xFF0B0D13)
+val SubtyHeroMask  = Color(0xA3000000)
+val SubtyPanelBg   = Color(0xFFFFF7F2)
+val SubtyPanelAlt  = Color(0xFFFEF3EE)
+val SubtyPanelHit  = Color(0xFFFBE9E1)
+val SubtyPanelLine = Color(0xFFFFC2AB)
+val SubtyPanelText = Color(0xFF2E2135)
+val SubtySelectedBg = Color(0xFF22172D)
 
 // ── Raw dark palette (private) ────────────────────────────────────────────────
 private val _DarkBg        = Color(0xFF0A0908)
@@ -30,14 +40,14 @@ private val _DarkText2     = Color(0xFFC8BFB5)
 private val _DarkText3     = Color(0xFF7A6E65)
 
 // ── Raw light palette (private) ───────────────────────────────────────────────
-private val _LightBg        = Color(0xFFF5F0EB)
-private val _LightBg2       = Color(0xFFE8E0D5)
-private val _LightBg3       = Color(0xFFD8CEC0)
-private val _LightBorder    = Color(0xFF1A1410)
-private val _LightBorderDim = Color(0xFFBBAFA4)
-private val _LightText1     = Color(0xFF1A1410)
-private val _LightText2     = Color(0xFF4A3E30)
-private val _LightText3     = Color(0xFF9A8878)
+private val _LightBg        = Color(0xFFFFFCFA)
+private val _LightBg2       = Color(0xFFFFF6F0)
+private val _LightBg3       = Color(0xFFFFEEE5)
+private val _LightBorder    = Color(0xFF23172C)
+private val _LightBorderDim = Color(0xFFD9C9E7)
+private val _LightText1     = Color(0xFF201727)
+private val _LightText2     = Color(0xFF4B2F63)
+private val _LightText3     = Color(0xFF7F5A99)
 
 // ── Theme-aware color data class ──────────────────────────────────────────────
 data class SubtyColors(
@@ -119,8 +129,8 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary             = SubtyMocha,
     onPrimary           = SubtyWhite,
-    primaryContainer    = Color(0xFFFFDEB3),
-    onPrimaryContainer  = Color(0xFF2C1600),
+    primaryContainer    = Color(0xFFFFE5DB),
+    onPrimaryContainer  = Color(0xFF2E2135),
     secondary           = _LightText2,
     onSecondary         = SubtyWhite,
     background          = _LightBg,

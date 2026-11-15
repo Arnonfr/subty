@@ -14,7 +14,6 @@ sealed class Screen(val route: String) {
     }
     object History : Screen("history")
     object Settings : Screen("settings")
-    object ApiKeys : Screen("settings/api-keys")
     object TitleBrowser : Screen("title-browser/{query}") {
         fun createRoute(query: String) = "title-browser/${Uri.encode(query)}"
     }

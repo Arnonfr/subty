@@ -30,6 +30,16 @@ captures/
 # Test/debug screenshots from emulator sessions
 screen_*.png
 appicon*.png
+/.tmp_*.png
+/.tmp_*.xml
+/artifacts/
+/.firebase/
+/fastlane/report.xml
+/server/libretranslate/.argos_server.log
+/server/libretranslate/.argos_server.pid
+/release/**/*.aab
+/release/**/*.apk
+/release/**/mapping.txt
 
 # Kotlin / Gradle cache
 .kotlin/

@@ -1,0 +1,4 @@
+Offline subtitle translation is more reliable and preserves subtitle structure better.
+Translated subtitles are now easier to find in History and can be saved directly from the result screen.
+Improved the search, download, and translation experience based on real-device testing.
+Optional anonymous usage diagnostics help us identify reliability issues; subtitle content is never collected.

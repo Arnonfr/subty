@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -124,11 +125,21 @@ class MainActivity : ComponentActivity() {
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .fillMaxHeight()
-                                                    .background(if (selected) SubtyBorder else SubtyBg)
+                                                    .background(if (selected) SubtyMochaSoft else SubtyBg)
                                                     .clickable(
                                                         interactionSource = remember { MutableInteractionSource() },
                                                         indication = null,
                                                     ) {
+                                                        val isReselectSearch =
+                                                            selected && item.screen.route == Screen.Search.route
+                                                        if (isReselectSearch) {
+                                                            navController.navigate(Screen.Search.route) {
+                                                                popUpTo(Screen.Search.route) { saveState = true }
+                                                                launchSingleTop = true
+                                                                restoreState = true
+                                                            }
+                                                            return@clickable
+                                                        }
                                                         navController.navigate(item.screen.route) {
                                                             popUpTo(navController.graph.findStartDestination().id) {
                                                                 saveState = true
@@ -139,6 +150,15 @@ class MainActivity : ComponentActivity() {
                                                     },
                                                 contentAlignment = Alignment.Center,
                                             ) {
+                                                if (selected) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .align(Alignment.TopCenter)
+                                                            .fillMaxWidth()
+                                                            .height(3.dp)
+                                                            .background(SubtyMocha),
+                                                    )
+                                                }
                                                 Column(
                                                     horizontalAlignment = Alignment.CenterHorizontally,
                                                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -146,12 +166,16 @@ class MainActivity : ComponentActivity() {
                                                     Icon(
                                                         imageVector = item.icon,
                                                         contentDescription = item.label,
-                                                        tint = if (selected) SubtyBg else SubtyText3,
+                                                        tint = if (selected) SubtyWhite else SubtyText3,
                                                         modifier = Modifier.size(20.dp),
                                                     )
-                                                    SubtyLabel(
-                                                        item.label,
-                                                        color = if (selected) SubtyBg else SubtyText3,
+                                                    SubtyText(
+                                                        text = item.label,
+                                                        fontSize = 10,
+                                                        weight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
+                                                        uppercase = true,
+                                                        letterSpacing = 0.06f,
+                                                        color = if (selected) SubtyWhite else SubtyText3,
                                                     )
                                                 }
                                             }

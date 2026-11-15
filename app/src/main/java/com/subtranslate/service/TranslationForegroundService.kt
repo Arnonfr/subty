@@ -7,7 +7,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
+import com.subtranslate.data.remote.translation.TranslationModelCatalog
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationStatus
 import com.subtranslate.domain.usecase.TranslateSubtitleUseCase
@@ -23,7 +25,8 @@ class TranslationForegroundService : Service() {
     @Inject lateinit var translateUseCase: TranslateSubtitleUseCase
     @Inject lateinit var stateHolder: TranslationStateHolder
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var translationJob: Job? = null
     private val notificationManager by lazy {
         getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
@@ -35,6 +38,7 @@ class TranslationForegroundService : Service() {
         const val EXTRA_SOURCE_LANG = "source_lang"
         const val EXTRA_TARGET_LANG = "target_lang"
         const val EXTRA_MODEL_ID    = "model_id"
+        const val EXTRA_JOB_ID = "job_id"
 
         // Static slot to pass the SubtitleFile (too large for Intent extras)
         var pendingFile: SubtitleFile? = null
@@ -54,40 +58,54 @@ class TranslationForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val sourceLang = intent?.getStringExtra(EXTRA_SOURCE_LANG) ?: "en"
+        val jobId = intent?.getLongExtra(EXTRA_JOB_ID, -1L) ?: -1L
         val targetLang = intent?.getStringExtra(EXTRA_TARGET_LANG) ?: "he"
-        val modelId    = intent?.getStringExtra(EXTRA_MODEL_ID)    ?: "mymemory"
+        val modelId = TranslationModelCatalog.normalize(
+            intent?.getStringExtra(EXTRA_MODEL_ID),
+        )
         val file       = pendingFile ?: run { stopSelf(); return START_NOT_STICKY }
+        pendingFile = null
+        translationJob?.cancel()
 
         startForeground(NOTIFICATION_ID, buildNotification("Starting\u2026", 0, 0))
 
-        serviceScope.launch {
+        translationJob = serviceScope.launch {
+            var lastNotificationAt = 0L
+            var lastPercent = -1
             translateUseCase(
                 subtitleFile = file,
                 sourceLang   = sourceLang,
                 targetLang   = targetLang,
                 modelId      = modelId
             ).onEach { progress ->
-                stateHolder.update(progress)
+                stateHolder.update(progress, jobId)
                 val msg = when (progress.status) {
                     TranslationStatus.TRANSLATING ->
-                        "Batch ${progress.currentBatch}/${progress.totalBatches} \u00b7 ${progress.translatedEntries}/${progress.totalEntries}"
+                        "${progress.translatedEntries}/${progress.totalEntries} subtitles"
                     TranslationStatus.COMPLETE -> "Translation complete \u2713"
                     TranslationStatus.ERROR    -> "Translation failed"
                     else -> "Translating\u2026"
                 }
                 val pct = if (progress.totalEntries > 0) (progress.translatedEntries * 100 / progress.totalEntries) else 0
-                notificationManager.notify(NOTIFICATION_ID, buildNotification(msg, pct, progress.totalEntries))
+                val terminal = progress.status == TranslationStatus.COMPLETE || progress.status == TranslationStatus.ERROR
+                val now = SystemClock.elapsedRealtime()
+                if (terminal || (pct != lastPercent && now - lastNotificationAt >= 500)) {
+                    notificationManager.notify(NOTIFICATION_ID, buildNotification(msg, pct, 100))
+                    lastNotificationAt = now
+                    lastPercent = pct
+                }
                 if (progress.status == TranslationStatus.COMPLETE || progress.status == TranslationStatus.ERROR) {
                     // Keep notification briefly then stop
                     delay(3000)
                     stopSelf()
                 }
             }.catch { e ->
+                if (e is CancellationException) throw e
                 stateHolder.update(
                     stateHolder.progress.value.copy(
                         status = TranslationStatus.ERROR,
                         errorMessage = e.message
-                    )
+                    ), jobId
                 )
                 stopSelf()
             }.collect {}

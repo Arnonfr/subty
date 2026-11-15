@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subty Live Ops Dashboard</title>
+  <style>
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0f1115;color:#e9edf2}
+    .wrap{max-width:1200px;margin:0 auto;padding:20px}
+    h1{margin:0 0 8px;font-size:28px}
+    .sub{color:#9aa6b2;margin-bottom:16px}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .card{background:#171b21;border:1px solid #2a313b;border-radius:12px;padding:14px}
+    .k{font-size:12px;color:#9aa6b2;text-transform:uppercase;letter-spacing:.08em}
+    .v{font-size:24px;font-weight:700;margin-top:6px}
+    .row{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #2a313b;font-size:13px;text-align:left;vertical-align:top}
+    th{color:#9aa6b2;font-weight:600}
+    .pill{display:inline-block;padding:2px 8px;border:1px solid #3b4553;border-radius:999px;font-size:12px;color:#cdd6df}
+    .ok{color:#43d18d}.warn{color:#ffcc66}
+    .toolbar{display:flex;gap:8px;align-items:center;margin:10px 0 0}
+    button{background:#26303d;color:#e9edf2;border:1px solid #3a4758;padding:7px 10px;border-radius:8px;cursor:pointer}
+    input{background:#11161d;color:#e9edf2;border:1px solid #3a4758;padding:7px 10px;border-radius:8px;min-width:220px}
+    @media (max-width:980px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Subty Live Ops Dashboard</h1>
+    <div class="sub">Realtime stream from Firestore (updates within ~1 second of user actions).</div>
+
+    <div class="toolbar">
+      <span class="pill">Project: <b>subty-ca344</b></span>
+      <span id="status" class="pill">Connecting…</span>
+      <button id="loginBtn">Sign in</button>
+      <button id="pauseBtn">Pause Stream</button>
+      <input id="eventFilter" placeholder="Filter by event (e.g. translation)" />
+      <button id="toggleTranslateBtn">Disable Translation</button>
+      <span id="translateState" class="pill">Translation: ON</span>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div class="card"><div class="k">Total Events</div><div id="totalEvents" class="v">0</div></div>
+      <div class="card"><div class="k">Search Submitted</div><div id="searchSubmitted" class="v">0</div></div>
+      <div class="card"><div class="k">Translate Clicked</div><div id="translateClicked" class="v">0</div></div>
+      <div class="card"><div class="k">Translation Complete</div><div id="translationComplete" class="v">0</div></div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <div class="k">Live Event Stream</div>
+        <table>
+          <thead><tr><th>Time</th><th>Event</th><th>Params</th></tr></thead>
+          <tbody id="eventsBody"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="k">Event Distribution (Top)</div>
+        <table>
+          <thead><tr><th>Event</th><th>Count</th></tr></thead>
+          <tbody id="distBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
+    import { getFirestore, collection, doc, onSnapshot, query, orderBy, limit, setDoc } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+    import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAM_K8BpGhoXNoIYIurxbWCyOp_7eKDwYU',
+      authDomain: 'subty-ca344.firebaseapp.com',
+      projectId: 'subty-ca344',
+      storageBucket: 'subty-ca344.firebasestorage.app',
+      messagingSenderId: '629153402724',
+      appId: '1:629153402724:web:liveopsdashboard'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const statusEl = document.getElementById('status');
+    const totalEl = document.getElementById('totalEvents');
+    const searchEl = document.getElementById('searchSubmitted');
+    const translateEl = document.getElementById('translateClicked');
+    const completeEl = document.getElementById('translationComplete');
+    const eventsBody = document.getElementById('eventsBody');
+    const distBody = document.getElementById('distBody');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const filterInput = document.getElementById('eventFilter');
+    const toggleTranslateBtn = document.getElementById('toggleTranslateBtn');
+    const translateStateEl = document.getElementById('translateState');
+    const loginBtn = document.getElementById('loginBtn');
+    const pendingSubscriptions = [];
+
+    function whenAuthenticated(callback) { pendingSubscriptions.push(callback); }
+    loginBtn.onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        statusEl.textContent = 'Sign in required';
+        statusEl.className = 'pill warn';
+        return;
+      }
+      loginBtn.textContent = user.email || 'Signed in';
+      loginBtn.disabled = true;
+      while (pendingSubscriptions.length) pendingSubscriptions.shift()();
+    });
+
+    let paused = false;
+    pauseBtn.onclick = () => {
+      paused = !paused;
+      pauseBtn.textContent = paused ? 'Resume Stream' : 'Pause Stream';
+      statusEl.textContent = paused ? 'Paused' : 'Live';
+      statusEl.className = paused ? 'pill warn' : 'pill ok';
+    };
+
+    function safe(v){return (v ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function prettyParams(p){
+      if (!p || typeof p !== 'object') return '-';
+      return Object.entries(p).slice(0,6).map(([k,v])=>`${k}: ${v}`).join(' | ') || '-';
+    }
+
+    let translateEnabled = true;
+    const translateControlRef = doc(db, 'ops_controls', 'global');
+
+    toggleTranslateBtn.onclick = async () => {
+      const next = !translateEnabled;
+      await setDoc(translateControlRef, { translate_enabled: next }, { merge: true });
+    };
+
+    whenAuthenticated(() => onSnapshot(translateControlRef, (snap) => {
+      const d = snap.data() || {};
+      translateEnabled = d.translate_enabled !== false;
+      translateStateEl.textContent = `Translation: ${translateEnabled ? 'ON' : 'OFF'}`;
+      translateStateEl.className = translateEnabled ? 'pill ok' : 'pill warn';
+      toggleTranslateBtn.textContent = translateEnabled ? 'Disable Translation' : 'Enable Translation';
+    }));
+
+    whenAuthenticated(() => onSnapshot(doc(db, 'live_metrics', 'global'), (snap) => {
+      const d = snap.data() || {};
+      const events = d.events || {};
+      totalEl.textContent = d.total_events || 0;
+      searchEl.textContent = events.search_submitted || 0;
+      translateEl.textContent = events.translate_clicked || 0;
+      completeEl.textContent = events.translation_complete || 0;
+
+      const rows = Object.entries(events)
+        .sort((a,b)=>b[1]-a[1])
+        .slice(0,25)
+        .map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`)
+        .join('');
+      distBody.innerHTML = rows || '<tr><td colspan="2">No data</td></tr>';
+    }, () => {
+      statusEl.textContent = 'Metrics error';
+      statusEl.className = 'pill warn';
+    }));
+
+    const q = query(collection(db, 'live_events'), orderBy('server_ts', 'desc'), limit(120));
+    whenAuthenticated(() => onSnapshot(q, (snap) => {
+      if (paused) return;
+      const filter = safe(filterInput.value).trim().toLowerCase();
+      const rows = [];
+      const counts = {};
+      snap.docs.forEach((docSnap) => {
+        const d = docSnap.data();
+        const event = safe(d.event);
+        counts[event] = (counts[event] || 0) + 1;
+        if (filter && !event.toLowerCase().includes(filter)) return;
+        const t = d.server_ts?.toDate ? d.server_ts.toDate() : new Date(d.client_ts || Date.now());
+        rows.push(`<tr><td>${t.toLocaleTimeString()}</td><td><span class="pill">${event}</span></td><td>${prettyParams(d.params)}</td></tr>`);
+      });
+      totalEl.textContent = snap.size;
+      searchEl.textContent = counts.search_submitted || 0;
+      translateEl.textContent = counts.translate_clicked || 0;
+      completeEl.textContent = counts.translation_complete || 0;
+      distBody.innerHTML = Object.entries(counts)
+        .sort((a,b) => b[1] - a[1])
+        .map(([event, count]) => `<tr><td>${event}</td><td>${count}</td></tr>`)
+        .join('') || '<tr><td colspan="2">No data</td></tr>';
+      eventsBody.innerHTML = rows.join('') || '<tr><td colspan="3">No events yet</td></tr>';
+      statusEl.textContent = 'Live';
+      statusEl.className = 'pill ok';
+    }, () => {
+      statusEl.textContent = 'Stream error';
+      statusEl.className = 'pill warn';
+    }));
+  </script>
+</body>
+</html>

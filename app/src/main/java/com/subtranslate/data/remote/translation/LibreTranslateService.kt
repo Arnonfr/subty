@@ -1,5 +1,8 @@
 package com.subtranslate.data.remote.translation
 
+import com.subtranslate.data.local.dao.TranslationCacheDao
+import com.subtranslate.data.local.datastore.SettingsDataStore
+import com.subtranslate.data.local.entity.TranslationCacheEntity
 import com.subtranslate.domain.model.SubtitleEntry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,16 +11,20 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Free/open-source translation fallback via LibreTranslate-compatible endpoints.
- * Uses a small list of public instances and falls back between them.
+ * Free/open-source translation via LibreTranslate-compatible endpoints.
+ * Prefers a configured self-hosted endpoint and falls back to public instances.
  */
 @Singleton
-class LibreTranslateService @Inject constructor() {
+class LibreTranslateService @Inject constructor(
+    private val settings: SettingsDataStore,
+    private val translationCacheDao: TranslationCacheDao
+) : TranslationGateway {
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
@@ -25,27 +32,40 @@ class LibreTranslateService @Inject constructor() {
         .build()
 
     private val maxChars = 450
-    private val endpoints = listOf(
-        "https://translate.argosopentech.com/translate",
-        "https://libretranslate.de/translate"
+    private val fallbackEndpoints = listOf(
+        "https://translate.argosopentech.com",
+        "https://libretranslate.de"
     )
-    private val googleFreeEndpoint = "https://translate.googleapis.com/translate_a/single"
 
-    suspend fun translateEntries(
+    override suspend fun translateEntries(
         entries: List<SubtitleEntry>,
         sourceLang: String,
         targetLang: String,
+        modelId: String,
+        title: String?,
         onProgress: (translated: Int, total: Int) -> Unit
     ): List<SubtitleEntry> = withContext(Dispatchers.IO) {
         val resultMap = mutableMapOf<Int, String>()
         var done = 0
 
         entries.forEach { entry ->
-            val translated = translateSingleWithFallback(
+            val normalizedText = entry.text.trim()
+            val cacheKey = cacheKey(normalizedText, sourceLang, targetLang)
+            val cached = translationCacheDao.get(cacheKey)
+
+            val translated = cached ?: translateSingleWithFallback(
                 text = entry.text.trim(),
                 sourceLang = sourceLang,
                 targetLang = targetLang
-            )
+            ).also { fresh ->
+                translationCacheDao.upsert(
+                    TranslationCacheEntity(
+                        cacheKey = cacheKey,
+                        translatedText = fresh,
+                        createdAt = System.currentTimeMillis()
+                    )
+                )
+            }
             resultMap[entry.index] = fixRtlPunctuation(translated, targetLang)
             done += 1
             onProgress(done, entries.size)
@@ -53,9 +73,14 @@ class LibreTranslateService @Inject constructor() {
 
         entries.map { entry ->
             val t = resultMap[entry.index] ?: entry.text
+            val raw = TranslationTextFormatter.translatedRawText(
+                originalRaw = entry.rawText,
+                translated = t,
+                targetLang = targetLang,
+            )
             entry.copy(
-                text = t,
-                rawText = reinsertOverrideTags(entry.rawText, t)
+                text = raw,
+                rawText = raw,
             )
         }
     }
@@ -78,18 +103,19 @@ class LibreTranslateService @Inject constructor() {
         sourceLang: String,
         targetLang: String
     ): String {
+        val configured = settings.libreTranslateBaseUrl.trim().removeSuffix("/")
+        val apiKey = settings.libreTranslateApiKey?.trim()?.ifBlank { null }
         var lastError: Exception? = null
+        val endpoints = buildList {
+            if (configured.isNotBlank()) add(configured)
+            addAll(fallbackEndpoints.filter { it != configured })
+        }
         for (endpoint in endpoints) {
             try {
-                return callLibreTranslate(endpoint, text, sourceLang, targetLang)
+                return callLibreTranslate("$endpoint/translate", text, sourceLang, targetLang, apiKey)
             } catch (e: Exception) {
                 lastError = e
             }
-        }
-        try {
-            return callGoogleFreeTranslate(text, sourceLang, targetLang)
-        } catch (e: Exception) {
-            lastError = e
         }
         throw lastError ?: Exception("LibreTranslate fallback failed")
     }
@@ -98,13 +124,15 @@ class LibreTranslateService @Inject constructor() {
         endpoint: String,
         text: String,
         sourceLang: String,
-        targetLang: String
+        targetLang: String,
+        apiKey: String?
     ): String {
         val body = JSONObject().apply {
             put("q", text)
             put("source", sourceLang)
             put("target", targetLang)
             put("format", "text")
+            if (!apiKey.isNullOrBlank()) put("api_key", apiKey)
         }
 
         val request = Request.Builder()
@@ -121,43 +149,9 @@ class LibreTranslateService @Inject constructor() {
         }
     }
 
-    private fun callGoogleFreeTranslate(
-        text: String,
-        sourceLang: String,
-        targetLang: String
-    ): String {
-        val encoded = java.net.URLEncoder.encode(text, Charsets.UTF_8.name())
-        val url = "$googleFreeEndpoint?client=gtx&sl=$sourceLang&tl=$targetLang&dt=t&q=$encoded"
-        val request = Request.Builder()
-            .url(url)
-            .get()
-            .build()
-
-        httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw Exception("Google Free Translate HTTP ${response.code}")
-            }
-            val body = response.body?.string().orEmpty()
-            val root = org.json.JSONArray(body)
-            val sentenceArray = root.optJSONArray(0) ?: return text
-            val builder = StringBuilder()
-            for (i in 0 until sentenceArray.length()) {
-                val item = sentenceArray.optJSONArray(i) ?: continue
-                val translated = item.optString(0)
-                if (translated.isNotBlank()) {
-                    if (builder.isNotEmpty()) builder.append(" ")
-                    builder.append(translated)
-                }
-            }
-            return builder.toString().ifBlank { text }
-        }
-    }
-
-    private fun reinsertOverrideTags(originalRaw: String, translated: String): String {
-        val overrideRegex = Regex("""\{[^}]*\}""")
-        val leadingTags = overrideRegex.findAll(originalRaw)
-            .takeWhile { it.range.first < originalRaw.indexOf(it.value) + it.value.length }
-            .joinToString("") { it.value }
-        return if (leadingTags.isNotEmpty()) "$leadingTags$translated" else translated
+    private fun cacheKey(text: String, sourceLang: String, targetLang: String): String {
+        val raw = "libretranslate|$sourceLang|$targetLang|$text"
+        val digest = MessageDigest.getInstance("SHA-256").digest(raw.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
     }
 }

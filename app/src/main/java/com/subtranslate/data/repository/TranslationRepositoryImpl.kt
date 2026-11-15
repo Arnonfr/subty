@@ -1,260 +1,89 @@
 package com.subtranslate.data.repository
 
-import com.google.firebase.analytics.FirebaseAnalytics
-import com.google.firebase.analytics.logEvent
-import com.subtranslate.BuildConfig
-import com.subtranslate.data.local.datastore.SettingsDataStore
-import com.subtranslate.data.remote.translation.DeepLTranslationService
-import com.subtranslate.data.remote.translation.GeminiTranslationService
-import com.subtranslate.data.remote.translation.LibreTranslateService
-import com.subtranslate.data.remote.translation.MicrosoftTranslationService
-import com.subtranslate.data.remote.translation.MyMemoryTranslationService
+import com.subtranslate.data.analytics.TranslationEventLogger
+import com.subtranslate.data.remote.translation.TranslationGateway
+import com.subtranslate.data.remote.translation.TranslationModelCatalog
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
 import com.subtranslate.domain.model.TranslationStatus
 import com.subtranslate.domain.repository.TranslationRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.CancellationException
 
 @Singleton
 class TranslationRepositoryImpl @Inject constructor(
-    private val myMemoryService: MyMemoryTranslationService,
-    private val libreTranslateService: LibreTranslateService,
-    private val geminiService: GeminiTranslationService,
-    private val deeplService: DeepLTranslationService,
-    private val microsoftService: MicrosoftTranslationService,
-    private val settings: SettingsDataStore,
-    private val firebaseAnalytics: FirebaseAnalytics
+    private val translationGateway: TranslationGateway,
+    private val eventLogger: TranslationEventLogger,
 ) : TranslationRepository {
 
     var lastTranslatedFile: SubtitleFile? = null
+        private set
 
     override fun translate(
         subtitleFile: SubtitleFile,
         sourceLang: String,
         targetLang: String,
-        modelId: String
+        modelId: String,
     ): Flow<TranslationProgress> = channelFlow {
-        if (settings.getTranslationsUsedThisMonth() >= MONTHLY_TRANSLATION_LIMIT) {
-            send(TranslationProgress(
+        send(
+            TranslationProgress(
                 totalEntries = subtitleFile.entries.size,
-                status = TranslationStatus.ERROR,
-                errorMessage = "Monthly translation limit reached (10/month). Try again next month."
-            ))
-            return@channelFlow
-        }
-
-        // channelFlow allows send() from any thread/coroutine context,
-        // fixing the "Flow invariant is violated" crash caused by runBlocking inside flow{}
-        send(TranslationProgress(
-            totalEntries = subtitleFile.entries.size,
-            status = TranslationStatus.TRANSLATING
-        ))
-
+                currentBatch = 1,
+                totalBatches = 1,
+                status = TranslationStatus.TRANSLATING,
+                warningMessage = "Preparing offline translation. Language models download once and are reused.",
+            ),
+        )
         try {
-            var engineKey = when {
-                modelId.startsWith("gemini") -> "gemini"
-                modelId == "deepl" -> "deepl"
-                modelId == "microsoft" -> "microsoft"
-                modelId == "libretranslate" -> "libretranslate"
-                else -> "mymemory"
-            }
-            var fallbackUsed = false
-
-            val translatedEntries = when {
-                modelId.startsWith("gemini") -> {
-                    // Premium: Gemini (context-aware, batched with overlap)
-                    geminiService.translateEntries(
-                        entries = subtitleFile.entries,
-                        sourceLang = sourceLang,
-                        targetLang = targetLang,
-                        title = subtitleFile.title,
-                        modelId = modelId
-                    ) { translated, total, batch, totalBatches ->
-                        trySend(TranslationProgress(
-                            totalEntries = total,
-                            translatedEntries = translated,
-                            currentBatch = batch,
-                            totalBatches = totalBatches,
-                            status = TranslationStatus.TRANSLATING
-                        ))
-                    }
-                }
-                modelId == "deepl" -> {
-                    val apiKey = settings.deeplApiKey
-                        ?: throw IllegalStateException("DeepL API key not configured. Add it in Settings.")
-                    val batchesTotal = (subtitleFile.entries.size + 49) / 50
-                    deeplService.translateEntries(
-                        entries = subtitleFile.entries,
-                        sourceLang = sourceLang,
-                        targetLang = targetLang,
-                        apiKey = apiKey
-                    ) { translated, total ->
-                        trySend(TranslationProgress(
-                            totalEntries = total,
-                            translatedEntries = translated,
-                            currentBatch = (translated + 49) / 50,
-                            totalBatches = batchesTotal,
-                            status = TranslationStatus.TRANSLATING
-                        ))
-                    }
-                }
-                modelId == "microsoft" -> {
-                    // Use centrally-configured key from BuildConfig (shared for all users).
-                    // User can override via Settings if they want.
-                    val apiKey = settings.effectiveMicrosoftApiKey
-                        ?: throw IllegalStateException("Microsoft API key not configured. Add it in Settings.")
-                    val region = settings.microsoftRegion
-                        .takeIf { !it.isNullOrBlank() }
-                        ?: BuildConfig.MICROSOFT_REGION.takeIf { it.isNotBlank() }
-                        ?: "westeurope"
-                    val batchesTotal = (subtitleFile.entries.size + 99) / 100
-                    try {
-                        microsoftService.translateEntries(
-                            entries = subtitleFile.entries,
-                            sourceLang = sourceLang,
-                            targetLang = targetLang,
-                            apiKey = apiKey,
-                            region = region
-                        ) { translated, total ->
-                            trySend(TranslationProgress(
-                                totalEntries = total,
-                                translatedEntries = translated,
-                                currentBatch = (translated + 99) / 100,
-                                totalBatches = batchesTotal,
-                                status = TranslationStatus.TRANSLATING
-                            ))
-                        }
-                    } catch (e: Exception) {
-                        val msg = e.message ?: ""
-                        val isQuotaError = msg.contains("quota", ignoreCase = true)
-                                || msg.contains("exceeded", ignoreCase = true)
-                                || msg.contains("limit", ignoreCase = true)
-                                || msg.contains("429", ignoreCase = true)
-                                || msg.contains("403", ignoreCase = true)
-                        if (isQuotaError) {
-                            engineKey = "mymemory"
-                            fallbackUsed = true
-                            // Fallback to MyMemory with warning
-                            trySend(TranslationProgress(
-                                totalEntries = subtitleFile.entries.size,
-                                status = TranslationStatus.TRANSLATING,
-                                warningMessage = "Microsoft quota exceeded. Falling back to MyMemory (free)."
-                            ))
-                            myMemoryService.translateEntries(
-                                entries = subtitleFile.entries,
-                                sourceLang = sourceLang,
-                                targetLang = targetLang
-                            ) { translated, total ->
-                                trySend(TranslationProgress(
-                                    totalEntries = total,
-                                    translatedEntries = translated,
-                                    currentBatch = 1,
-                                    totalBatches = 1,
-                                    status = TranslationStatus.TRANSLATING
-                                ))
-                            }
-                        } else {
-                            throw e
-                        }
-                    }
-                }
-                modelId == "libretranslate" -> {
-                    libreTranslateService.translateEntries(
-                        entries = subtitleFile.entries,
-                        sourceLang = sourceLang,
-                        targetLang = targetLang
-                    ) { translated, total ->
-                        trySend(TranslationProgress(
+            val translatedEntries = translationGateway.translateEntries(
+                entries = subtitleFile.entries,
+                sourceLang = sourceLang,
+                targetLang = targetLang,
+                modelId = TranslationModelCatalog.MLKIT_ON_DEVICE,
+                title = subtitleFile.title,
+                onProgress = { translated, total ->
+                    trySend(
+                        TranslationProgress(
                             totalEntries = total,
                             translatedEntries = translated,
                             currentBatch = 1,
                             totalBatches = 1,
-                            status = TranslationStatus.TRANSLATING
-                        ))
-                    }
-                }
-                else -> {
-                    // Basic: MyMemory (free, no API key, non-AI)
-                    try {
-                        myMemoryService.translateEntries(
-                            entries = subtitleFile.entries,
-                            sourceLang = sourceLang,
-                            targetLang = targetLang
-                        ) { translated, total ->
-                            trySend(TranslationProgress(
-                                totalEntries = total,
-                                translatedEntries = translated,
-                                currentBatch = 1,
-                                totalBatches = 1,
-                                status = TranslationStatus.TRANSLATING
-                            ))
-                        }
-                    } catch (_: Exception) {
-                        engineKey = "libretranslate"
-                        fallbackUsed = true
-                        trySend(TranslationProgress(
-                            totalEntries = subtitleFile.entries.size,
                             status = TranslationStatus.TRANSLATING,
-                            warningMessage = "MyMemory unavailable. Falling back to LibreTranslate."
-                        ))
-                        libreTranslateService.translateEntries(
-                            entries = subtitleFile.entries,
-                            sourceLang = sourceLang,
-                            targetLang = targetLang
-                        ) { translated, total ->
-                            trySend(TranslationProgress(
-                                totalEntries = total,
-                                translatedEntries = translated,
-                                currentBatch = 1,
-                                totalBatches = 1,
-                                status = TranslationStatus.TRANSLATING
-                            ))
-                        }
-                    }
-                }
-            }
-
-            // Track usage (local per-device)
-            val totalChars = subtitleFile.entries.sumOf { it.text.length }
-            settings.addCharsUsed(engineKey, totalChars)
-            settings.addTranslationUsed()
-
-            // Track globally via Firebase Analytics (visible in Firebase Console)
-            try {
-                firebaseAnalytics.logEvent("translation_complete") {
-                    param("engine", engineKey)
-                    param("chars", totalChars.toLong())
-                    param("entries", subtitleFile.entries.size.toLong())
-                    param("source_lang", sourceLang)
-                    param("target_lang", targetLang)
-                    param("fallback_used", fallbackUsed.toString())
-                }
-            } catch (_: Exception) {
-                // Analytics is best-effort; don't crash if Firebase isn't ready
-            }
-
+                        ),
+                    )
+                },
+            )
             lastTranslatedFile = subtitleFile.copy(entries = translatedEntries)
-
-            send(TranslationProgress(
-                totalEntries = subtitleFile.entries.size,
-                translatedEntries = subtitleFile.entries.size,
-                currentBatch = 0,
-                totalBatches = 0,
-                status = TranslationStatus.COMPLETE
-            ))
+            eventLogger.logTranslationComplete(
+                engine = TranslationModelCatalog.MLKIT_ON_DEVICE,
+                chars = translatedEntries.sumOf { it.text.length },
+                entries = subtitleFile.entries.size,
+                sourceLang = sourceLang,
+                targetLang = targetLang,
+                stars = 0,
+            )
+            send(
+                TranslationProgress(
+                    totalEntries = subtitleFile.entries.size,
+                    translatedEntries = translatedEntries.size,
+                    currentBatch = 1,
+                    totalBatches = 1,
+                    status = TranslationStatus.COMPLETE,
+                ),
+            )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            send(TranslationProgress(
-                totalEntries = subtitleFile.entries.size,
-                status = TranslationStatus.ERROR,
-                errorMessage = e.message
-            ))
+            send(
+                TranslationProgress(
+                    totalEntries = subtitleFile.entries.size,
+                    status = TranslationStatus.ERROR,
+                    errorMessage = e.message ?: "Offline translation failed",
+                ),
+            )
         }
-    }
-
-    private companion object {
-        private const val MONTHLY_TRANSLATION_LIMIT = 10
     }
 }

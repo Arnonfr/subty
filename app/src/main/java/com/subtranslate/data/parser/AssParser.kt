@@ -14,7 +14,7 @@ class AssParser : SubtitleParser {
     override fun supportedFormat() = SubtitleFormat.ASS
 
     // Override tags like {\an8}, {\b1}, {\pos(320,240)} etc.
-    private val OVERRIDE_TAG_REGEX = Regex("""\{[^}]*\}""")
+    private val OVERRIDE_TAG_REGEX = Regex("""[{][^}]*[}]""")
 
     // ASS timestamp: H:MM:SS.cc  (centiseconds, not milliseconds)
     private val TIMESTAMP_REGEX = Regex("""(\d):(\d{2}):(\d{2})\.(\d{2})""")
@@ -40,7 +40,7 @@ class AssParser : SubtitleParser {
                     headerLines.add(line)
                 }
                 inEvents && line.startsWith("Format:", ignoreCase = true) -> {
-                    formatFields = line.removePrefix("Format:").split(",").map { it.trim() }
+                    formatFields = line.substringAfter(":").split(",").map { it.trim() }
                     headerLines.add(line)
                 }
                 inEvents && line.startsWith("Dialogue:", ignoreCase = true) -> {
@@ -54,14 +54,17 @@ class AssParser : SubtitleParser {
         }
 
         val rawHeader = headerLines.joinToString("\n")
-        val textIndex = formatFields.indexOf("Text").takeIf { it >= 0 } ?: -1
-        val startIndex = formatFields.indexOf("Start").takeIf { it >= 0 } ?: 1
-        val endIndex = formatFields.indexOf("End").takeIf { it >= 0 } ?: 2
+        if (formatFields.isEmpty()) formatFields = listOf("Layer", "Start", "End", "Style", "Name", "MarginL", "MarginR", "MarginV", "Effect", "Text")
+        val textIndex = formatFields.indexOfFirst { it.equals("Text", true) }
+        val startIndex = formatFields.indexOfFirst { it.equals("Start", true) }.takeIf { it >= 0 } ?: 1
+        val endIndex = formatFields.indexOfFirst { it.equals("End", true) }.takeIf { it >= 0 } ?: 2
+        val metadata = mutableMapOf("formatFields" to formatFields.joinToString(","))
 
         val entries = mutableListOf<SubtitleEntry>()
 
         eventLines.forEachIndexed { i, line ->
-            val values = line.removePrefix("Dialogue:").split(",", limit = formatFields.size)
+            val payload = line.substringAfter(":").trimStart()
+            val values = payload.split(",", limit = formatFields.size)
             if (values.size < formatFields.size) return@forEachIndexed
 
             val startRaw = values.getOrNull(startIndex)?.trim() ?: return@forEachIndexed
@@ -71,6 +74,7 @@ class AssParser : SubtitleParser {
             val startMs = assTimestampToMs(startRaw)
             val endMs = assTimestampToMs(endRaw)
             val plainText = rawText.replace(OVERRIDE_TAG_REGEX, "").replace("\\N", "\n").replace("\\n", "\n")
+            metadata["assDialogue:${i + 1}"] = payload
 
             entries.add(
                 SubtitleEntry(
@@ -89,7 +93,7 @@ class AssParser : SubtitleParser {
             format = SubtitleFormat.ASS,
             entries = entries,
             rawHeader = rawHeader,
-            metadata = mapOf("formatFields" to formatFields.joinToString(","))
+            metadata = metadata
         )
     }
 
@@ -105,12 +109,13 @@ class AssParser : SubtitleParser {
         subtitleFile.entries.forEach { entry ->
             val fieldCount = formatFields.size
             // Build dialogue values: re-insert rawText into Text field position
-            val textIdx = formatFields.indexOf("Text").takeIf { it >= 0 } ?: (fieldCount - 1)
-            val startIdx = formatFields.indexOf("Start").takeIf { it >= 0 } ?: 1
-            val endIdx = formatFields.indexOf("End").takeIf { it >= 0 } ?: 2
+            val textIdx = formatFields.indexOfFirst { it.equals("Text", true) }.takeIf { it >= 0 } ?: (fieldCount - 1)
+            val startIdx = formatFields.indexOfFirst { it.equals("Start", true) }.takeIf { it >= 0 } ?: 1
+            val endIdx = formatFields.indexOfFirst { it.equals("End", true) }.takeIf { it >= 0 } ?: 2
 
             // Use a template of empty fields and fill known ones
-            val fields = Array(fieldCount) { "" }
+            val original = subtitleFile.metadata["assDialogue:${entry.index}"]?.split(",", limit = fieldCount)
+            val fields = Array(fieldCount) { original?.getOrNull(it) ?: "" }
             fields[startIdx] = entry.startTimeRaw
             fields[endIdx] = entry.endTimeRaw
             fields[textIdx] = entry.rawText

@@ -1,5 +1,11 @@
 package com.subtranslate.domain.model
 
+enum class SubtitleSource(val label: String) {
+    OPEN_SUBTITLES("OpenSubtitles"),
+    SUBDL("SubDL"),
+    SCREWZIRA("Screwzira"),
+}
+
 data class SubtitleSearchResult(
     val fileId: Int,
     val fileName: String,
@@ -15,5 +21,6 @@ data class SubtitleSearchResult(
     val isHearingImpaired: Boolean,
     val isTrusted: Boolean,
     val uploaderName: String?,
-    val posterUrl: String? = null   // injected from TMDB via SearchSession
+    val posterUrl: String? = null,   // injected from TMDB via SearchSession
+    val source: SubtitleSource = SubtitleSource.OPEN_SUBTITLES,
 )

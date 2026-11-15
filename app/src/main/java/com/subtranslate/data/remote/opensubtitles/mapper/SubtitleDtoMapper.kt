@@ -2,6 +2,7 @@ package com.subtranslate.data.remote.opensubtitles.mapper
 
 import com.subtranslate.data.remote.opensubtitles.dto.SubtitleSearchDto
 import com.subtranslate.domain.model.SubtitleSearchResult
+import com.subtranslate.domain.model.SubtitleSource
 
 fun SubtitleSearchDto.toDomain(): SubtitleSearchResult? {
     val file = attributes.files?.firstOrNull() ?: return null
@@ -20,6 +21,7 @@ fun SubtitleSearchDto.toDomain(): SubtitleSearchResult? {
         imdbId = attributes.featureDetails?.imdbId?.toString(),
         isHearingImpaired = attributes.hearingImpaired ?: false,
         isTrusted = attributes.fromTrusted ?: false,
-        uploaderName = attributes.uploader?.name
+        uploaderName = attributes.uploader?.name,
+        source = SubtitleSource.OPEN_SUBTITLES,
     )
 }

@@ -22,7 +22,7 @@
 <body>
   <div class="container">
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: August 9, 2026</p>
+    <p class="updated">Last updated: October 19, 2026</p>
 
     <p>Subty ("we", "our", or "us") is a subtitle search, download, and translation app for Android. This Privacy Policy explains how information is handled when you use the app.</p>
 
@@ -30,7 +30,8 @@
     <p>Subty does not require a user account and does not ask for your name, email address, contacts, photos, precise location, or media library.</p>
 
     <h2>2. App Diagnostics and Usage Events</h2>
-    <p>Subty does not use Firebase, advertising SDKs, or a hosted analytics/telemetry service in this release. Search, download, and translation history is stored locally on your device.</p>
+    <p>Subty uses Firebase Firestore for anonymous operational usage events, such as searches submitted, subtitle downloads, translation starts and completions, selected languages, and coarse counts. These events are associated with a randomly generated app-install identifier, not your name, email address, or account. We do not use advertising SDKs.</p>
+    <p>Subtitle text, translated text, downloaded files, API keys, and device folders are never included in usage events. Search words are only included when you explicitly enable <strong>Include search words</strong> in Settings. You can turn off anonymous usage events at any time in Settings.</p>
 
     <h2>3. Third-Party Services</h2>
     <p>Subty uses third-party services to search titles and find or download subtitles. These services are governed by their own privacy policies:</p>
@@ -39,9 +40,10 @@
       <li><strong>SubDL API</strong> - subtitle search and download.</li>
       <li><strong>Screwzira / ktuvit.me</strong> - optional Hebrew-focused subtitle source when enabled.</li>
       <li><strong>TMDB API</strong> - title lookup and posters. <a href="https://www.themoviedb.org/privacy-policy" target="_blank">Privacy Policy</a>.</li>
-      <li><strong>Google ML Kit on-device Translation</strong> - downloads language models and translates subtitles on your device.</li>
+      <li><strong>Google ML Kit on-device Translation</strong> - downloads language models and translates subtitles on your device. <a href="https://developers.google.com/ml-kit/android-data-disclosure" target="_blank">SDK data disclosure</a>.</li>
     </ul>
     <p>When you search for subtitles, your search query, selected title, language, season, episode, and related identifiers may be sent to subtitle and title providers. Subtitle translation is performed on your device after the required language models have been downloaded.</p>
+    <p>ML Kit also collects device and app information, installation identifiers, performance metrics, model events, and configured source and target languages for diagnostics and usage analytics. These SDK diagnostics are separate from the optional Subty usage-events setting. ML Kit does not send subtitle text or translated output to Google servers.</p>
 
     <h2>4. Local Storage</h2>
     <p>Subty stores the following data locally on your device:</p>

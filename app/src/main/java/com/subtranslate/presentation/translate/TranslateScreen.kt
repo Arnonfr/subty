@@ -1,12 +1,5 @@
 package com.subtranslate.presentation.translate
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import android.Manifest
 import android.app.DownloadManager
 import android.content.Intent
@@ -15,33 +8,72 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.subtranslate.domain.model.TranslationStatus
-import com.subtranslate.presentation.theme.*
+import com.subtranslate.presentation.theme.LanguagePickerDialogPublic
+import com.subtranslate.presentation.theme.SubtyBg
+import com.subtranslate.presentation.theme.SubtyBg2
+import com.subtranslate.presentation.theme.SubtyBg3
+import com.subtranslate.presentation.theme.SubtyBorderDim
+import com.subtranslate.presentation.theme.SubtyButton
+import com.subtranslate.presentation.theme.SubtyButtonStyle
+import com.subtranslate.presentation.theme.SubtyDivider
+import com.subtranslate.presentation.theme.SubtyDividerDim
+import com.subtranslate.presentation.theme.SubtyErrorBanner
+import com.subtranslate.presentation.theme.SubtyLabel
+import com.subtranslate.presentation.theme.SubtyMocha
+import com.subtranslate.presentation.theme.SubtyProgressBar
+import com.subtranslate.presentation.theme.SubtySuccessBanner
+import com.subtranslate.presentation.theme.SubtyText
+import com.subtranslate.presentation.theme.SubtyText1
+import com.subtranslate.presentation.theme.SubtyText3
+import com.subtranslate.presentation.theme.SubtyTopBar
+import com.subtranslate.presentation.theme.SubtyWarningBanner
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
 
 @Composable
@@ -50,51 +82,29 @@ fun TranslateScreen(
     fileName: String,
     languageCode: String,
     onBack: () -> Unit,
-    onNavigateToSettings: () -> Unit = {},
     translateEnabled: Boolean = true,
     maintenanceMessage: String = "",
     viewModel: TranslateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val progress = state.progress
-    val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-    var showApiKeyDialog by remember { mutableStateOf(false) }
-    var shouldStartTranslationAfterPermission by remember { mutableStateOf(false) }
-
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted && shouldStartTranslationAfterPermission) {
-            viewModel.pendingFile?.let { viewModel.startTranslation(it) }
-        }
-        shouldStartTranslationAfterPermission = false
+    val snackbarHostState = remember { SnackbarHostState() }
+    var startAfterPermission by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+        // Android permits a foreground translation even when notifications are denied.
+        if (startAfterPermission) viewModel.pendingFile?.let(viewModel::startTranslation)
+        startAfterPermission = false
     }
 
-    LaunchedEffect(fileId, languageCode) {
-        viewModel.downloadAndLoad(fileId, languageCode)
-    }
-
+    LaunchedEffect(fileId, languageCode) { viewModel.downloadAndLoad(fileId, languageCode) }
     LaunchedEffect(Unit) {
         viewModel.saveDoneEvents.collect { savedName ->
-            val result = snackbarHostState.showSnackbar(
-                message = "Saved: $savedName",
-                actionLabel = "Open Folder",
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                // Open Downloads folder — try document tree URI first, fallback to generic
-                val docUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(docUri, "vnd.android.document/directory")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                runCatching { context.startActivity(intent) }.onFailure {
-                    // fallback
-                    runCatching {
-                        context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        })
-                    }
+            if (snackbarHostState.showSnackbar("Saved: $savedName", "Open folder") == SnackbarResult.ActionPerformed) {
+                val folder = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
+                runCatching {
+                    context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(folder, "vnd.android.document/directory").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION))
+                }.onFailure {
+                    runCatching { context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 }
             }
         }
@@ -102,446 +112,142 @@ fun TranslateScreen(
 
     Scaffold(
         containerColor = SubtyBg,
-        snackbarHost = {
-            SnackbarHost(snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = SubtyBg2,
-                    contentColor = SubtyText1,
-                    actionColor = SubtyMocha,
+        snackbarHost = { SnackbarHost(snackbarHostState) { data -> Snackbar(data, containerColor = SubtyBg2, contentColor = SubtyText1, actionColor = SubtyMocha) } },
+        bottomBar = {
+            if (!state.isLoadingFile && translateEnabled) {
+                TranslateBottomBar(
+                    state = state,
+                    onStart = {
+                        viewModel.pendingFile?.let { file ->
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) viewModel.startTranslation(file)
+                            else { startAfterPermission = true; notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+                        }
+                    },
+                    onCancel = viewModel::cancelTranslation,
+                    onSave = viewModel::save,
+                    enabled = viewModel.pendingFile != null,
                 )
             }
-        }
+        },
     ) { innerPadding ->
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SubtyBg)
-            .padding(bottom = innerPadding.calculateBottomPadding()),
-    ) {
-        SubtyTopBar(title = "Translate", onBack = onBack)
-
-        // ── Feature-disabled banner ────────────────────────────────────────────
-        if (!translateEnabled) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(SubtyMocha)
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                SubtyText(
-                    text = maintenanceMessage.ifBlank { "Translation is temporarily unavailable." },
-                    color = androidx.compose.ui.graphics.Color.White,
-                    fontSize = 13,
-                    modifier = Modifier.fillMaxWidth(),
+        Column(Modifier.fillMaxSize().background(SubtyBg).padding(bottom = innerPadding.calculateBottomPadding())) {
+            SubtyTopBar(title = "Translate", onBack = onBack)
+            if (!translateEnabled) {
+                SubtyWarningBanner(maintenanceMessage.ifBlank { "Translation is temporarily unavailable." }, Modifier.padding(16.dp))
+            }
+            if (state.isLoadingFile) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        CircularProgressIndicator(color = SubtyMocha, strokeWidth = 1.5.dp)
+                        SubtyText("Loading subtitle…", color = SubtyText3)
+                    }
+                }
+            } else {
+                TranslateContent(
+                    state = state,
+                    onSourceChange = viewModel::onSourceLangChange,
+                    onTargetChange = viewModel::onTargetLangChange,
                 )
             }
         }
-
-        if (state.isLoadingFile) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    CircularProgressIndicator(color = SubtyMocha, strokeWidth = 1.5.dp)
-                    SubtyText("Loading subtitle…", color = SubtyText3)
-                }
-            }
-        } else LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 32.dp),
-        ) {
-            // ── Language + Engine selector ────────────────────────────────────
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(width = 0.dp, color = SubtyBg) // just for structure
-                        .background(SubtyBg2)
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp),
-                ) {
-                    // Source / Target row — forced LTR so layout never flips on RTL devices
-                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // Source (always left)
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.Start,
-                            ) {
-                                SubtyLabel("SOURCE", color = SubtyMocha)
-                                Spacer(Modifier.height(6.dp))
-                                LanguageSelector(
-                                    selected = state.sourceLang,
-                                    options = GOOGLE_TRANSLATE_LANGUAGES,
-                                    onSelect = viewModel::onSourceLangChange,
-                                )
-                            }
-
-                            // Arrow
-                            Box(
-                                modifier = Modifier.padding(horizontal = 8.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                SubtyText("→", fontSize = 16, color = SubtyMocha, weight = FontWeight.Bold)
-                            }
-
-                            // Target (always right)
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.End,
-                            ) {
-                                SubtyLabel("TARGET", color = SubtyMocha)
-                                Spacer(Modifier.height(6.dp))
-                                LanguageSelector(
-                                    selected = state.targetLang,
-                                    options = GOOGLE_TRANSLATE_LANGUAGES,
-                                    onSelect = viewModel::onTargetLangChange,
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-                    SubtyDivider()
-                    Spacer(Modifier.height(16.dp))
-
-                    // ── Model selector ────────────────────────────────────────
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        SubtyLabel("ENGINE")
-                        ModelDropdown(
-                            selected = state.selectedModel,
-                            availableModelIds = state.availableModels,
-                            onSelect = viewModel::onModelChange,
-                            onMoreOptions = onNavigateToSettings,
-                        )
-                    }
-                }
-                SubtyDivider()
-            }
-
-            // ── Start button ──────────────────────────────────────────────────
-            item {
-                val isTranslating = progress.status == TranslationStatus.TRANSLATING
-                val used = state.translationsUsedThisMonth
-                val limit = state.monthlyTranslationLimit
-                val isQuotaReached = used >= limit
-                val left = (limit - used).coerceAtLeast(0)
-
-                SubtyButton(
-                    text = when {
-                        isTranslating -> "Translating…"
-                        state.translatedFile != null -> "Re-translate"
-                        else -> "Start translation"
-                    },
-                    onClick = {
-                        if (!viewModel.hasTranslateApiKey()) {
-                            showApiKeyDialog = true
-                        } else {
-                            val file = viewModel.pendingFile
-                            if (file != null) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    when (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)) {
-                                        PackageManager.PERMISSION_GRANTED -> viewModel.startTranslation(file)
-                                        else -> {
-                                            shouldStartTranslationAfterPermission = true
-                                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                        }
-                                    }
-                                } else {
-                                    viewModel.startTranslation(file)
-                                }
-                            }
-                        }
-                    },
-                    style = SubtyButtonStyle.FILLED,
-                    enabled = translateEnabled && !isTranslating && viewModel.pendingFile != null && !isQuotaReached,
-                    loading = isTranslating,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                )
-
-                SubtyText(
-                    text = if (isQuotaReached) {
-                        "Monthly limit reached. You have 0 of $limit subtitle translations left this month."
-                    } else {
-                        "You have $left of $limit subtitle translations left this month."
-                    },
-                    fontSize = 11,
-                    color = SubtyText3,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                )
-            }
-
-            // ── Progress bar ──────────────────────────────────────────────────
-            if (progress.status == TranslationStatus.TRANSLATING) {
-                item {
-                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                        SubtyProgressBar(progress = progress.progressFraction)
-                        Spacer(Modifier.height(6.dp))
-                        SubtyText(
-                            "${(progress.progressFraction * 100).toInt()}% translated",
-                            fontSize = 10,
-                            color = SubtyText3,
-                            uppercase = true,
-                            letterSpacing = 0.06f,
-                        )
-                    }
-                }
-            }
-
-            // ── Error ─────────────────────────────────────────────────────────
-            progress.errorMessage?.let { err ->
-                item {
-                    SubtyErrorBanner(
-                        err,
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                    )
-                }
-            }
-
-            // ── Warning (e.g. fallback to MyMemory) ───────────────────────────
-            progress.warningMessage?.let { warn ->
-                item {
-                    SubtyWarningBanner(
-                        warn,
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                    )
-                }
-            }
-
-            // ── Saved path ────────────────────────────────────────────────────
-            state.savedPath?.let { path ->
-                item {
-                    SubtySuccessBanner(
-                        "Saved: $path",
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                    )
-                }
-            }
-
-            // ── Save FAB-equivalent ───────────────────────────────────────────
-            if (progress.status == TranslationStatus.COMPLETE && state.translatedFile != null) {
-                item {
-                    SubtyButton(
-                        text = "Save",
-                        onClick = viewModel::save,
-                        style = SubtyButtonStyle.MOCHA,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 8.dp),
-                    )
-                }
-            }
-
-            // ── Translated preview ────────────────────────────────────────────
-            if (state.translatedFile != null) {
-                item {
-                    Spacer(Modifier.height(8.dp))
-                    SubtyDivider()
-                    SubtyLabel(
-                        "Translated preview",
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                    )
-                }
-
-                items(state.translatedFile!!.entries.take(50)) { entry ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        SubtyText(
-                            entry.startTimeRaw,
-                            fontSize = 10,
-                            weight = FontWeight.Bold,
-                            color = SubtyMocha,
-                            modifier = Modifier.width(52.dp),
-                        )
-                        SubtyText(
-                            entry.text,
-                            fontSize = 13,
-                            color = SubtyText1,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    SubtyDividerDim()
-                }
-
-                if (state.translatedFile!!.entries.size > 50) {
-                    item {
-                        SubtyText(
-                            "… and ${state.translatedFile!!.entries.size - 50} more lines",
-                            fontSize = 10,
-                            color = SubtyText3,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                        )
-                    }
-                }
-            }
-        }
-    } // end Column
-
-    if (showApiKeyDialog) {
-        val engineName = when {
-            state.selectedModel.startsWith("gemini") -> "Gemini"
-            state.selectedModel == "deepl" -> "DeepL"
-            state.selectedModel == "microsoft" -> "Microsoft Azure"
-            else -> "Translation"
-        }
-        AlertDialog(
-            onDismissRequest = { showApiKeyDialog = false },
-            title = { androidx.compose.material3.Text("$engineName API Key Required") },
-            text = { androidx.compose.material3.Text("To use this translation engine, add your API key in Settings. Alternatively, select MyMemory (free) or another engine with a free tier.") },
-            confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    showApiKeyDialog = false
-                    onNavigateToSettings()
-                }) {
-                    androidx.compose.material3.Text("Go to Settings")
-                }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showApiKeyDialog = false }) {
-                    androidx.compose.material3.Text("Cancel")
-                }
-            },
-        )
     }
-    } // end Scaffold
 }
 
-private val TRANSLATION_MODELS = listOf(
-    "microsoft"                     to "Microsoft",
-    "gemini-2.5-flash"              to "Gemini",
-    "gemini-2.5-flash-lite"         to "Gemini Lite",
-    "deepl"                         to "DeepL",
-    "libretranslate"                to "LibreTranslate (Free)",
-    "mymemory"                      to "MyMemory (Free)",
-)
-
 @Composable
-fun ModelDropdown(
-    selected: String,
-    availableModelIds: List<String>,
-    onSelect: (String) -> Unit,
-    onMoreOptions: () -> Unit,
+private fun TranslateContent(
+    state: TranslateUiState,
+    onSourceChange: (String) -> Unit,
+    onTargetChange: (String) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val label = TRANSLATION_MODELS.find { it.first == selected }?.second ?: selected
-    val availableModels = TRANSLATION_MODELS.filter { it.first in availableModelIds }
-
-    Box {
-        Row(
-            modifier = Modifier
-                .border(1.dp, SubtyBorderDim)
-                .background(SubtyBg3)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) { expanded = true }
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            SubtyText(label, fontSize = 13, weight = FontWeight.Bold, color = SubtyText1)
-            Icon(
-                Icons.Default.ArrowDropDown,
-                contentDescription = null,
-                tint = SubtyText3,
-                modifier = Modifier.size(16.dp),
-            )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            availableModels.forEach { (id, name) ->
-                DropdownMenuItem(
-                    text = {
-                        SubtyText(
-                            name,
-                            fontSize = 13,
-                            color = if (id == selected) SubtyMocha else SubtyText1,
-                            weight = if (id == selected) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    },
-                    onClick = { onSelect(id); expanded = false },
-                )
+    val translating = state.progress.status == TranslationStatus.TRANSLATING
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        item {
+            Column(Modifier.fillMaxWidth().background(SubtyBg2).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SubtyText("Offline translation", fontSize = 15, weight = FontWeight.Bold)
+                SubtyText("Processed on this device. Language models download once and are then reused.", fontSize = 11, color = SubtyText3)
+                androidx.compose.runtime.CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) { SubtyLabel("SOURCE", color = SubtyMocha); Spacer(Modifier.height(6.dp)); LanguageSelector(state.sourceLang, GOOGLE_TRANSLATE_LANGUAGES, onSourceChange) }
+                        SubtyText("→", Modifier.padding(horizontal = 8.dp), fontSize = 16, color = SubtyMocha, weight = FontWeight.Bold)
+                        Column(Modifier.weight(1f)) { SubtyLabel("TARGET", color = SubtyMocha); Spacer(Modifier.height(6.dp)); LanguageSelector(state.targetLang, GOOGLE_TRANSLATE_LANGUAGES, onTargetChange) }
+                    }
+                }
             }
-            DropdownMenuItem(
-                text = {
+            SubtyDivider()
+        }
+        item { SubtyText("Free and on-device", fontSize = 11, color = SubtyText3, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+        if (translating) item {
+            Column(Modifier.padding(20.dp)) {
+                SubtyProgressBar(state.progress.progressFraction)
+                Spacer(Modifier.height(6.dp))
+                SubtyText("${(state.progress.progressFraction * 100).toInt()}% translated", fontSize = 10, color = SubtyText3, uppercase = true, letterSpacing = 0.06f)
+            }
+        }
+        state.progress.errorMessage?.let { error -> item { SubtyErrorBanner(error, Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) } }
+        state.saveError?.let { error -> item { SubtyErrorBanner("Could not save: $error", Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) } }
+        state.progress.warningMessage?.let { warning -> item { SubtyWarningBanner(warning, Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) } }
+        state.savedPath?.let { path -> item { SubtySuccessBanner("Saved: $path", Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) } }
+        state.translatedFile?.let { file ->
+            item { SubtyDivider(); SubtyLabel("Translated preview", Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) }
+            items(file.entries.take(50)) { entry ->
+                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SubtyText(entry.startTimeRaw, fontSize = 10, weight = FontWeight.Bold, color = SubtyMocha, modifier = Modifier.width(90.dp), maxLines = 1)
                     SubtyText(
-                        "More options",
-                        fontSize = 13,
-                        color = SubtyMocha,
-                        weight = FontWeight.Bold,
+                        entry.text, fontSize = 13, color = SubtyText1, modifier = Modifier.weight(1f),
+                        textDirection = TextDirection.Content,
+                        textAlign = if (state.targetLang.substringBefore('-').substringBefore('_').lowercase() in setOf("he", "iw", "ar", "fa", "ur", "yi")) TextAlign.Right else TextAlign.Left,
                     )
-                },
-                onClick = { expanded = false; onMoreOptions() },
-            )
+                }
+                SubtyDividerDim()
+            }
         }
     }
 }
 
 @Composable
-fun LanguageSelector(
-    selected: String,
-    options: List<Pair<String, String>>,
-    onSelect: (String) -> Unit,
+private fun TranslateBottomBar(
+    state: TranslateUiState,
+    onStart: () -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+    enabled: Boolean,
 ) {
+    val translating = state.progress.status == TranslationStatus.TRANSLATING
+    Column(Modifier.fillMaxWidth().background(SubtyBg2)) {
+        SubtyDivider()
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (translating) {
+                SubtyButton("Cancel", onCancel, style = SubtyButtonStyle.OUTLINE, small = true, modifier = Modifier.fillMaxWidth())
+            } else {
+                SubtyButton(
+                    text = if (state.translatedFile == null) "Translate" else "Translate again",
+                    onClick = onStart,
+                    style = SubtyButtonStyle.OUTLINE,
+                    enabled = enabled,
+                    small = true,
+                    modifier = Modifier.weight(1f),
+                )
+                if (state.translatedFile != null) {
+                    SubtyButton("Save", onSave, style = SubtyButtonStyle.MOCHA, small = true, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LanguageSelector(selected: String, options: List<Pair<String, String>>, onSelect: (String) -> Unit) {
     var showDialog by remember { mutableStateOf(false) }
-    val displayName = options.find { it.first == selected }?.second ?: selected
-
     Row(
-        modifier = Modifier
-            .border(1.dp, SubtyBorderDim)
-            .background(SubtyBg3)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { showDialog = true }
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        Modifier.border(1.dp, SubtyBorderDim).background(SubtyBg3).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { showDialog = true }.padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        SubtyText(
-            displayName,
-            fontSize = 13,
-            weight = FontWeight.Bold,
-            color = SubtyText1,
-            maxLines = 1,
-        )
-        Icon(
-            Icons.Default.ArrowDropDown,
-            contentDescription = null,
-            tint = SubtyText3,
-            modifier = Modifier.size(16.dp),
-        )
+        SubtyText(options.find { it.first == selected }?.second ?: selected, fontSize = 13, weight = FontWeight.Bold, maxLines = 1)
+        Icon(Icons.Default.ArrowDropDown, contentDescription = "Choose language", tint = SubtyText3, modifier = Modifier.size(16.dp))
     }
-
-    if (showDialog) {
-        com.subtranslate.presentation.theme.LanguagePickerDialogPublic(
-            options = options,
-            selected = selected,
-            onSelect = { code ->
-                onSelect(code)
-                showDialog = false
-            },
-            onDismiss = { showDialog = false },
-        )
-    }
+    if (showDialog) LanguagePickerDialogPublic(options, selected, { code -> onSelect(code); showDialog = false }, { showDialog = false })
 }

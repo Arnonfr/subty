@@ -10,7 +10,7 @@ class VttParser : SubtitleParser {
 
     // 00:02:16.612 --> 00:02:19.376 (optional cue settings after)
     private val TIMING_REGEX = Regex(
-        """(\d{1,2}):(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[.,](\d{3})(.*)"""
+        """(?:(\d+):)?(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(?:(\d+):)?(\d{2}):(\d{2})[.,](\d{3})(.*)"""
     )
 
     override fun parse(content: String): SubtitleFile {
@@ -21,7 +21,8 @@ class VttParser : SubtitleParser {
 
         val lines = normalised.lines()
         val headerEnd = lines.indexOfFirst { it.isBlank() }.takeIf { it >= 0 } ?: 0
-        val rawHeader = lines.take(headerEnd + 1).joinToString("\n")
+        val headerBlocks = mutableListOf(lines.take(headerEnd + 1).joinToString("\n").trimEnd())
+        val metadata = mutableMapOf<String, String>()
 
         // Split into cue blocks (separated by blank lines, after header)
         val body = lines.drop(headerEnd + 1).joinToString("\n")
@@ -33,8 +34,10 @@ class VttParser : SubtitleParser {
         for (block in blocks) {
             val blockLines = block.lines()
             // Skip NOTE and STYLE blocks
-            if (blockLines.firstOrNull()?.startsWith("NOTE") == true) continue
-            if (blockLines.firstOrNull()?.startsWith("STYLE") == true) continue
+            if (blockLines.firstOrNull()?.let { it.startsWith("NOTE") || it == "STYLE" || it == "REGION" } == true) {
+                headerBlocks += block
+                continue
+            }
 
             val timingLineIndex = blockLines.indexOfFirst { TIMING_REGEX.containsMatchIn(it) }
             if (timingLineIndex < 0) continue
@@ -43,10 +46,11 @@ class VttParser : SubtitleParser {
             val match = TIMING_REGEX.find(timingLine) ?: continue
 
             val (h1, m1, s1, ms1, h2, m2, s2, ms2, cueSettings) = match.destructured
-            val startMs = toMs(h1.toInt(), m1.toInt(), s1.toInt(), ms1.toInt())
-            val endMs = toMs(h2.toInt(), m2.toInt(), s2.toInt(), ms2.toInt())
-            val startRaw = "${h1}:${m1}:${s1}.${ms1}"
-            val endRaw = "${h2}:${m2}:${s2}.${ms2}${cueSettings}"
+            val startMs = toMs(h1.toIntOrNull() ?: 0, m1.toInt(), s1.toInt(), ms1.toInt())
+            val endMs = toMs(h2.toIntOrNull() ?: 0, m2.toInt(), s2.toInt(), ms2.toInt())
+            val startRaw = match.value.substringBefore("-->").trim()
+            val endRaw = match.value.substringAfter("-->").trim()
+            if (timingLineIndex > 0) metadata["vttCueId:$index"] = blockLines.take(timingLineIndex).joinToString("\n")
 
             val textLines = blockLines.drop(timingLineIndex + 1)
             val rawText = textLines.joinToString("\n")
@@ -68,7 +72,8 @@ class VttParser : SubtitleParser {
         return SubtitleFile(
             format = SubtitleFormat.VTT,
             entries = entries,
-            rawHeader = rawHeader
+            rawHeader = headerBlocks.joinToString("\n\n"),
+            metadata = metadata,
         )
     }
 
@@ -77,6 +82,7 @@ class VttParser : SubtitleParser {
         sb.append(subtitleFile.rawHeader ?: "WEBVTT")
         sb.append("\n\n")
         subtitleFile.entries.forEachIndexed { i, entry ->
+            subtitleFile.metadata["vttCueId:${entry.index}"]?.let { sb.append(it).append("\n") }
             sb.append("${entry.startTimeRaw} --> ${entry.endTimeRaw}")
             sb.append("\n")
             sb.append(entry.rawText)

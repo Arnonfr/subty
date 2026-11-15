@@ -1,6 +1,7 @@
 package com.subtranslate.presentation.search
 
 import android.util.Log
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.subtranslate.data.analytics.AnalyticsTracker
@@ -11,6 +12,7 @@ import com.subtranslate.data.remote.opensubtitles.OpenSubtitlesApi
 import com.subtranslate.data.remote.opensubtitles.dto.FeatureDto
 import com.subtranslate.data.remote.tmdb.SearchSession
 import com.subtranslate.data.remote.tmdb.TmdbApi
+import com.subtranslate.data.remote.tmdb.heroImageUrl
 import com.subtranslate.data.remote.tmdb.toFeatureDto
 import com.subtranslate.domain.model.SubtitleSearchResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -55,8 +57,7 @@ data class SearchUiState(
     val recentShows: List<SearchHistoryEntity> = emptyList(),
     /** ID of the recent-show card currently resolving its next episode via API */
     val nextEpisodeLoadingId: Long? = null,
-    val translationsUsedThisMonth: Int = 0,
-    val monthlyTranslationLimit: Int = 10,
+    val starBalance: Int = 0,
 )
 
 enum class SearchMode { TITLE, IMDB_ID }
@@ -87,11 +88,18 @@ class SearchViewModel @Inject constructor(
 
         // Pending browse title (from History screen "Browse Episodes")
         val pending = searchSession.pendingBrowseTitle
+        val pendingLangs = searchSession.pendingBrowseLangs
+        val pendingTitle = searchSession.pendingSelectedFeatureTitle
+        val pendingSelectedType = searchSession.pendingSelectedFeatureType
+        val pendingSelectedPoster = searchSession.pendingSelectedFeaturePoster
+        val pendingSelectedImdbId = searchSession.pendingSelectedFeatureImdbId
+        val pendingSelectedTmdbId = searchSession.pendingSelectedFeatureTmdbId
+        val pendingSelectedSeasons = searchSession.pendingSelectedFeatureSeasons
+        val pendingSelectedEpisodes = searchSession.pendingSelectedFeatureEpisodes
+        searchSession.clearSelectionState()
+
         if (!pending.isNullOrBlank()) {
-            searchSession.pendingBrowseTitle = null
-            val langs = searchSession.pendingBrowseLangs
-            searchSession.pendingBrowseLangs = null
-            val langSet = langs?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet()
+            val langSet = pendingLangs?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet()
                 ?: setOf("en", "he")
             _uiState.value = _uiState.value.copy(
                 query = pending,
@@ -103,14 +111,15 @@ class SearchViewModel @Inject constructor(
         }
 
         // Pending selected feature (from TitleBrowserScreen)
-        val pendingTitle = searchSession.pendingSelectedFeatureTitle
         if (!pendingTitle.isNullOrBlank()) {
-            val isTv = searchSession.pendingSelectedFeatureType == "tv"
-            searchSession.posterUrl = searchSession.pendingSelectedFeaturePoster
+            val isTv = pendingSelectedType == "tv"
+            searchSession.posterUrl = pendingSelectedPoster
             searchSession.movieTitle = pendingTitle
-            searchSession.imdbId = searchSession.pendingSelectedFeatureImdbId?.toString()
-            searchSession.tmdbId = searchSession.pendingSelectedFeatureTmdbId
-            searchSession.contentType = searchSession.pendingSelectedFeatureType
+            searchSession.imdbId = pendingSelectedImdbId?.toString()
+            searchSession.tmdbId = pendingSelectedTmdbId
+            searchSession.contentType = pendingSelectedType ?: "movie"
+            searchSession.seasonsCount = pendingSelectedSeasons
+            searchSession.episodesCount = pendingSelectedEpisodes
             _uiState.value = _uiState.value.copy(
                 query = pendingTitle,
                 showSuggestions = false,
@@ -122,8 +131,34 @@ class SearchViewModel @Inject constructor(
                 season = if (isTv) "1" else "",
                 episode = if (isTv) "1" else "",
             )
+            saveSelectedTitleToHistory(
+                title = pendingTitle,
+                isTv = isTv,
+                posterUrl = pendingSelectedPoster,
+                imdbId = pendingSelectedImdbId?.toString(),
+                tmdbId = pendingSelectedTmdbId,
+                seasonsCount = pendingSelectedSeasons,
+            )
             searchSession.pendingSelectedFeatureTitle = null
-            searchSession.pendingSelectedFeaturePoster = null
+                val pendingTmdbId = searchSession.pendingSelectedFeatureTmdbId
+                if (isTv && pendingTmdbId != null) {
+                    viewModelScope.launch {
+                        hydrateSelectedSeries(
+                            tmdbId = pendingTmdbId!!,
+                            fallbackPosterUrl = searchSession.pendingSelectedFeaturePoster,
+                            title = pendingTitle,
+                        )
+                    }
+                } else if (pendingSelectedPoster.isNullOrBlank()) {
+                    viewModelScope.launch {
+                        hydrateVisualsFromTitle(
+                            title = pendingTitle,
+                            isMovie = !isTv,
+                            fallbackPosterUrl = pendingSelectedPoster,
+                        )
+                    }
+                }
+                searchSession.pendingSelectedFeaturePoster = null
             searchSession.pendingSelectedFeatureImdbId = null
             searchSession.pendingSelectedFeatureTmdbId = null
             searchSession.pendingSelectedFeatureType = null
@@ -135,12 +170,14 @@ class SearchViewModel @Inject constructor(
 
     fun refreshUsage() {
         _uiState.value = _uiState.value.copy(
-            translationsUsedThisMonth = settings.getTranslationsUsedThisMonth(),
-            monthlyTranslationLimit = settings.getMonthlyTranslationLimit(),
+            starBalance = settings.starBalance,
         )
     }
 
     fun onQueryChange(query: String) {
+        if (query != _uiState.value.query) {
+            clearSearchSessionSelection()
+        }
         _uiState.value = _uiState.value.copy(
             query = query,
             suggestions = if (query.length < 2) emptyList() else _uiState.value.suggestions,
@@ -149,6 +186,10 @@ class SearchViewModel @Inject constructor(
             suggestionsError = null,
             selectedPosterUrl = null,
             selectedMovieTitle = null,
+            season = "",
+            episode = "",
+            seasonsCount = 0,
+            episodesCount = 0,
             isMovie = false,
         )
         fetchSuggestions(query)
@@ -188,14 +229,31 @@ class SearchViewModel @Inject constructor(
                 }
                 .onFailure { throwable ->
                     Log.e("SearchViewModel", "Suggestions fetch failed: ${throwable.message}")
-                    val historySuggestions = historyItems.map { Suggestion.History(it) }
-                    _uiState.value = _uiState.value.copy(
-                        suggestions = emptyList(),
-                        combinedSuggestions = historySuggestions,
-                        showSuggestions = historySuggestions.isNotEmpty(),
-                        suggestionsLoading = false,
-                        suggestionsError = null,
-                    )
+                    // Fallback to OpenSubtitles features if TMDB fails (e.g. missing API key)
+                    runCatching { openSubtitlesApi.searchFeatures(query) }
+                        .onSuccess { os ->
+                            val remoteResults = rankSuggestions(os.data, query).take(20)
+                            val historySuggestions = historyItems.map { Suggestion.History(it) }
+                            val remoteSuggestions = remoteResults.map { Suggestion.Remote(it) }
+                            val combined = (historySuggestions + remoteSuggestions).take(12)
+                            _uiState.value = _uiState.value.copy(
+                                suggestions = remoteResults,
+                                combinedSuggestions = combined,
+                                showSuggestions = combined.isNotEmpty(),
+                                suggestionsLoading = false,
+                                suggestionsError = null,
+                            )
+                        }
+                        .onFailure {
+                            val historySuggestions = historyItems.map { Suggestion.History(it) }
+                            _uiState.value = _uiState.value.copy(
+                                suggestions = emptyList(),
+                                combinedSuggestions = historySuggestions,
+                                showSuggestions = historySuggestions.isNotEmpty(),
+                                suggestionsLoading = false,
+                                suggestionsError = null,
+                            )
+                        }
                 }
         }
     }
@@ -274,6 +332,14 @@ class SearchViewModel @Inject constructor(
         searchSession.imdbId = imdbId
         searchSession.tmdbId = feature.attributes.tmdbId
         searchSession.contentType = contentType
+        searchSession.pendingSelectedFeatureId = feature.id
+        searchSession.pendingSelectedFeatureTitle = title
+        searchSession.pendingSelectedFeaturePoster = posterUrl
+        searchSession.pendingSelectedFeatureImdbId = imdbId?.removePrefix("tt")?.toIntOrNull()
+        searchSession.pendingSelectedFeatureTmdbId = feature.attributes.tmdbId
+        searchSession.pendingSelectedFeatureType = contentType
+        searchSession.pendingSelectedFeatureSeasons = feature.attributes.seasonsCount
+        searchSession.pendingSelectedFeatureEpisodes = feature.attributes.episodesCount
 
         _uiState.value = _uiState.value.copy(
             query = title,
@@ -289,29 +355,86 @@ class SearchViewModel @Inject constructor(
             season = if (isTv) "1" else "",
             episode = if (isTv) "1" else "",
         )
+        saveSelectedTitleToHistory(
+            title = title,
+            isTv = isTv,
+            posterUrl = posterUrl,
+            imdbId = imdbId,
+            tmdbId = feature.attributes.tmdbId,
+            seasonsCount = feature.attributes.seasonsCount,
+        )
+        val featureTmdbId = feature.attributes.tmdbId
+        if (isTv && featureTmdbId != null) {
+            viewModelScope.launch {
+                hydrateSelectedSeries(
+                    tmdbId = feature.attributes.tmdbId,
+                    fallbackPosterUrl = posterUrl,
+                    title = title,
+                )
+                refreshEpisodeCountForSeason(1)
+            }
+        }
+    }
+
+    fun clearSelectedTitle() {
+        clearSearchSessionSelection()
+        _uiState.value = _uiState.value.copy(
+            selectedMovieTitle = null,
+            selectedPosterUrl = null,
+            season = "",
+            episode = "",
+            seasonsCount = 0,
+            episodesCount = 0,
+            isMovie = false,
+        )
     }
 
     fun onHistorySuggestionSelected(item: SearchHistoryEntity) {
         analyticsTracker.track("search_history_suggestion_selected")
-        searchSession.movieTitle  = item.query
+        val normalizedQuery = Uri.decode(item.query)
+        searchSession.movieTitle  = normalizedQuery
         searchSession.season      = item.season
         searchSession.episode     = item.episode
-        searchSession.languages   = item.languages
-        searchSession.contentType = item.contentType
+        searchSession.languages = item.languages ?: "en,he"
+        val isTvHistoryItem =
+            item.contentType == "tv" ||
+                item.season != null ||
+                item.episode != null ||
+                (item.seasonsCount ?: 0) > 0
+        searchSession.contentType = if (isTvHistoryItem) "tv" else "movie"
         searchSession.imdbId      = item.imdbId
-        searchSession.tmdbId      = null
+        searchSession.tmdbId      = item.tmdbId
         searchSession.posterUrl   = item.posterUrl
+        searchSession.seasonsCount = item.seasonsCount
+        searchSession.pendingSelectedFeatureTitle = normalizedQuery
+        searchSession.pendingSelectedFeaturePoster = item.posterUrl
+        searchSession.pendingSelectedFeatureImdbId = item.imdbId?.removePrefix("tt")?.toIntOrNull()
+        searchSession.pendingSelectedFeatureTmdbId = item.tmdbId
+        searchSession.pendingSelectedFeatureType = if (isTvHistoryItem) "tv" else "movie"
+        searchSession.pendingSelectedFeatureSeasons = item.seasonsCount
         _uiState.value = _uiState.value.copy(
-            query = item.query,
+            query = normalizedQuery,
             showSuggestions = false,
             combinedSuggestions = emptyList(),
             suggestions = emptyList(),
             suggestionsLoading = false,
             suggestionsError = null,
-            selectedPosterUrl = null,
-            selectedMovieTitle = item.query,
-            isMovie = item.contentType == "movie",
+            selectedPosterUrl = item.posterUrl,
+            selectedMovieTitle = normalizedQuery,
+            imdbId = item.imdbId.orEmpty(),
+            season = item.season?.toString().orEmpty(),
+            episode = item.episode?.toString().orEmpty(),
+            seasonsCount = item.seasonsCount ?: 0,
+            episodesCount = 0,
+            isMovie = !isTvHistoryItem,
         )
+        viewModelScope.launch {
+            hydrateVisualsFromTitle(
+                title = normalizedQuery,
+                isMovie = !isTvHistoryItem,
+                fallbackPosterUrl = item.posterUrl,
+            )
+        }
     }
 
     fun dismissSuggestions() {
@@ -326,40 +449,106 @@ class SearchViewModel @Inject constructor(
     fun findNextEpisode(item: SearchHistoryEntity, onReady: (String) -> Unit) {
         _uiState.value = _uiState.value.copy(nextEpisodeLoadingId = item.id)
         viewModelScope.launch {
+            val normalizedQuery = Uri.decode(item.query)
             val season = item.season ?: 1
             val candidateEp = (item.episode ?: 0) + 1
-            val imdbIdInt = item.imdbId?.toIntOrNull()
-            val seasonsCount = item.seasonsCount
+            val imdbIdInt = parseImdbId(item.imdbId)
+            val isTvHistoryItem =
+                item.contentType == "tv" ||
+                    item.season != null ||
+                    item.episode != null ||
+                    (item.seasonsCount ?: 0) > 0
+            val tvMatch = if (isTvHistoryItem && item.tmdbId == null) {
+                findTvMatch(normalizedQuery)
+            } else {
+                null
+            }
+            val resolvedTmdbId = item.tmdbId ?: tvMatch?.id
+            val resolvedPosterUrl = item.posterUrl ?: tvMatch?.toFeatureDto()?.attributes?.imgUrl
+            val resolvedSeasonCount = item.seasonsCount ?: resolvedTmdbId?.let { tmdbId ->
+                runCatching { tmdbApi.tvDetails(tmdbId).numberOfSeasons }.getOrNull()
+            }
 
             val (resolvedSeason, resolvedEp) = resolveNextEpisode(
-                imdbIdInt, season, candidateEp, seasonsCount, item.languages
+                title = normalizedQuery,
+                tmdbId = resolvedTmdbId,
+                imdbId = imdbIdInt,
+                season = season,
+                candidateEp = candidateEp,
+                seasonsCount = resolvedSeasonCount,
+                languages = item.languages,
             )
 
-            searchSession.movieTitle = item.query
+            searchSession.movieTitle = normalizedQuery
             searchSession.season = resolvedSeason
             searchSession.episode = resolvedEp
-            searchSession.languages = item.languages
-            searchSession.contentType = item.contentType
-            searchSession.posterUrl = item.posterUrl
+            searchSession.languages = item.languages ?: "en,he"
+            searchSession.contentType = if (isTvHistoryItem) "tv" else "movie"
+            searchSession.posterUrl = resolvedPosterUrl
             searchSession.imdbId = item.imdbId
+            searchSession.tmdbId = resolvedTmdbId
+            searchSession.seasonsCount = resolvedSeasonCount
+            searchSession.rememberSelectedFeature()
 
-            _uiState.value = _uiState.value.copy(nextEpisodeLoadingId = null)
-            onReady(item.query)
+            _uiState.value = _uiState.value.copy(
+                nextEpisodeLoadingId = null,
+                query = normalizedQuery,
+                selectedMovieTitle = normalizedQuery,
+                selectedPosterUrl = resolvedPosterUrl,
+                isMovie = !isTvHistoryItem,
+                season = resolvedSeason.toString(),
+                episode = resolvedEp.toString(),
+                seasonsCount = resolvedSeasonCount ?: 0,
+            )
+            saveSearchHistory(
+                query = normalizedQuery,
+                season = resolvedSeason,
+                episode = resolvedEp,
+                languages = searchSession.languages,
+                contentType = searchSession.contentType,
+                posterUrl = resolvedPosterUrl,
+                imdbId = item.imdbId,
+                tmdbId = resolvedTmdbId,
+                seasonsCount = resolvedSeasonCount,
+            )
+            onReady(normalizedQuery)
         }
     }
 
     private suspend fun resolveNextEpisode(
+        title: String,
+        tmdbId: Int?,
         imdbId: Int?,
         season: Int,
         candidateEp: Int,
         seasonsCount: Int?,
         languages: String?,
     ): Pair<Int, Int> {
-        if (imdbId == null) return Pair(season, candidateEp)
+        if (tmdbId != null) {
+            val sameSeasonEpisode = runCatching {
+                tmdbApi.tvSeasonDetails(tmdbId, season).episodes
+                    .mapNotNull { it.episodeNumber }
+                    .filter { it >= candidateEp }
+                    .minOrNull()
+            }.getOrNull()
+            if (sameSeasonEpisode != null) return Pair(season, sameSeasonEpisode)
+
+            val hasNextSeason = seasonsCount == null || season < seasonsCount
+            if (hasNextSeason) {
+                val nextSeasonEpisode = runCatching {
+                    tmdbApi.tvSeasonDetails(tmdbId, season + 1).episodes
+                        .mapNotNull { it.episodeNumber }
+                        .minOrNull()
+                }.getOrNull()
+                if (nextSeasonEpisode != null) return Pair(season + 1, nextSeasonEpisode)
+            }
+        }
 
         // 1. Check if next episode exists in same season
         val sameSeasonHits = runCatching {
             openSubtitlesApi.searchSubtitles(
+                query = if (tmdbId == null && imdbId == null) title else null,
+                tmdbId = tmdbId,
                 imdbId = imdbId,
                 season = season,
                 episode = candidateEp,
@@ -376,6 +565,8 @@ class SearchViewModel @Inject constructor(
 
         val nextSeasonHits = runCatching {
             openSubtitlesApi.searchSubtitles(
+                query = if (tmdbId == null && imdbId == null) title else null,
+                tmdbId = tmdbId,
                 imdbId = imdbId,
                 season = season + 1,
                 episode = 1,
@@ -387,11 +578,107 @@ class SearchViewModel @Inject constructor(
         return if (nextSeasonHits > 0) Pair(season + 1, 1) else Pair(season, candidateEp)
     }
 
+    private suspend fun findTvMatch(title: String) =
+        runCatching {
+            val normalizedTitle = title.trim().lowercase()
+            tmdbApi.searchMulti(title).results
+                .filter { it.mediaType == "tv" }
+                .sortedByDescending { result ->
+                    val candidate = (result.name ?: result.title).orEmpty().trim().lowercase()
+                    when {
+                        candidate == normalizedTitle -> 3
+                        candidate.startsWith(normalizedTitle) -> 2
+                        else -> 1
+                    }
+                }
+                .firstOrNull()
+        }.getOrNull()
+
+    private fun parseImdbId(value: String?): Int? {
+        return value
+            ?.trim()
+            ?.removePrefix("tt")
+            ?.trimStart('0')
+            ?.ifBlank { "0" }
+            ?.toIntOrNull()
+    }
+
+    private suspend fun hydrateSelectedSeries(
+        tmdbId: Int,
+        fallbackPosterUrl: String?,
+        title: String,
+    ) {
+        runCatching { tmdbApi.tvDetails(tmdbId) }
+            .onSuccess { details ->
+                if (_uiState.value.selectedMovieTitle != title) return@onSuccess
+                val seasonsCount = details.numberOfSeasons ?: 0
+                val episodesCount = details.numberOfEpisodes ?: 0
+                val imageUrl = details.heroImageUrl() ?: fallbackPosterUrl
+                searchSession.posterUrl = imageUrl
+                searchSession.seasonsCount = seasonsCount
+                searchSession.episodesCount = episodesCount
+                searchSession.rememberSelectedFeature()
+                saveSelectedTitleToHistory(
+                    title = title,
+                    isTv = true,
+                    posterUrl = imageUrl,
+                    imdbId = searchSession.imdbId,
+                    tmdbId = tmdbId,
+                    seasonsCount = seasonsCount,
+                )
+                _uiState.value = _uiState.value.copy(
+                    selectedMovieTitle = title,
+                    selectedPosterUrl = imageUrl,
+                    seasonsCount = seasonsCount,
+                    episodesCount = episodesCount,
+                    isMovie = false,
+                )
+            }
+            .onFailure { throwable ->
+                Log.w(
+                    "SearchViewModel",
+                    "TMDB details lookup failed for $tmdbId: ${throwable.message}",
+                )
+            }
+    }
+
+    private suspend fun hydrateVisualsFromTitle(
+        title: String,
+        isMovie: Boolean,
+        fallbackPosterUrl: String?,
+    ) {
+        runCatching { tmdbApi.searchMulti(title) }
+            .onSuccess { response ->
+                val match = response.results.firstOrNull { result ->
+                    if (isMovie) result.mediaType == "movie" else result.mediaType == "tv"
+                } ?: return@onSuccess
+
+                val posterUrl = match.toFeatureDto().attributes.imgUrl ?: fallbackPosterUrl
+                searchSession.posterUrl = posterUrl
+
+                if (!isMovie) {
+                    hydrateSelectedSeries(
+                        tmdbId = match.id,
+                        fallbackPosterUrl = posterUrl,
+                        title = title,
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(selectedPosterUrl = posterUrl)
+                }
+            }
+    }
+
     fun onImdbIdChange(id: String) { _uiState.value = _uiState.value.copy(imdbId = id) }
     fun onSeasonChange(s: String) {
         _uiState.value = _uiState.value.copy(
             season = if (_uiState.value.season == s) "" else s
         )
+        val seasonNumber = _uiState.value.season.toIntOrNull()
+        if (!_uiState.value.isMovie && seasonNumber != null) {
+            viewModelScope.launch {
+                refreshEpisodeCountForSeason(seasonNumber)
+            }
+        }
     }
 
     fun onEpisodeChange(e: String) {
@@ -415,14 +702,29 @@ class SearchViewModel @Inject constructor(
                 "mode" to state.searchMode.name.lowercase(),
                 "has_season_episode" to (state.season.isNotBlank() || state.episode.isNotBlank()).toString(),
                 "languages_count" to state.selectedLanguages.size.toString(),
+                "search_query" to state.query.trim(),
             )
         )
+        val hasSelectedTitle = !state.selectedMovieTitle.isNullOrBlank()
+        if (!hasSelectedTitle) {
+            searchSession.clearSelectionState()
+            searchSession.clearPendingSelectedFeature()
+            searchSession.movieTitle = state.query.ifBlank { null }
+            searchSession.contentType = "movie"
+        }
         // Persist search params to session — ResultsViewModel runs the actual search
         searchSession.season = state.season.toIntOrNull()
         searchSession.episode = state.episode.toIntOrNull()
+        searchSession.seasonsCount = state.seasonsCount.takeIf { it > 0 }
+        searchSession.episodesCount = state.episodesCount.takeIf { it > 0 }
         searchSession.languages = state.selectedLanguages.joinToString(",")
+        if (!state.isMovie && hasSelectedTitle) {
+            searchSession.rememberSelectedFeature()
+        }
         if (state.searchMode == SearchMode.IMDB_ID || state.imdbId.isNotBlank()) {
             searchSession.imdbId = state.imdbId.ifBlank { null }
+        } else if (!hasSelectedTitle) {
+            searchSession.imdbId = null
         }
         // Collapse autocomplete
         _uiState.value = state.copy(
@@ -431,23 +733,108 @@ class SearchViewModel @Inject constructor(
         )
         // Save to search history (fire-and-forget)
         val queryToSave = if (state.searchMode == SearchMode.TITLE) state.query.ifBlank { state.imdbId } else state.imdbId
-        if (queryToSave.isNotBlank()) {
+        val normalizedQueryToSave = Uri.decode(queryToSave)
+        if (normalizedQueryToSave.isNotBlank()) {
             viewModelScope.launch {
                 runCatching {
-                    searchHistoryDao.insert(
-                        SearchHistoryEntity(
-                            query = queryToSave,
-                            season = state.season.toIntOrNull(),
-                            episode = state.episode.toIntOrNull(),
-                            languages = state.selectedLanguages.joinToString(","),
-                            contentType = searchSession.contentType,
-                            posterUrl = state.selectedPosterUrl,
-                            imdbId = searchSession.imdbId,
-                            seasonsCount = state.seasonsCount.takeIf { it > 0 },
-                        )
+                    saveSearchHistory(
+                        query = normalizedQueryToSave,
+                        season = state.season.toIntOrNull(),
+                        episode = state.episode.toIntOrNull(),
+                        languages = state.selectedLanguages.joinToString(","),
+                        contentType = searchSession.contentType,
+                        posterUrl = state.selectedPosterUrl,
+                        imdbId = searchSession.imdbId,
+                        tmdbId = searchSession.tmdbId,
+                        seasonsCount = state.seasonsCount.takeIf { it > 0 },
                     )
                 }
             }
         }
+    }
+
+    fun prepareTitleBrowse() {
+        val state = _uiState.value
+        searchSession.languages = state.selectedLanguages.joinToString(",")
+        searchSession.pendingBrowseLangs = searchSession.languages
+    }
+
+    private suspend fun refreshEpisodeCountForSeason(seasonNumber: Int) {
+        val tmdbId = searchSession.tmdbId ?: return
+        val episodeCount = runCatching {
+            tmdbApi.tvSeasonDetails(tmdbId, seasonNumber).episodes
+                .mapNotNull { it.episodeNumber }
+                .maxOrNull()
+                ?: 0
+        }.getOrElse { 0 }
+
+        if (episodeCount <= 0) return
+
+        searchSession.episodesCount = episodeCount
+        searchSession.rememberSelectedFeature()
+
+        val clampedEpisode = (_uiState.value.episode.toIntOrNull() ?: 1).coerceIn(1, episodeCount)
+        _uiState.value = _uiState.value.copy(
+            episodesCount = episodeCount,
+            episode = clampedEpisode.toString(),
+        )
+    }
+
+    private fun clearSearchSessionSelection() {
+        searchSession.clearSelectionState()
+        searchSession.clearPendingSelectedFeature()
+    }
+
+    private fun saveSelectedTitleToHistory(
+        title: String,
+        isTv: Boolean,
+        posterUrl: String?,
+        imdbId: String?,
+        tmdbId: Int?,
+        seasonsCount: Int?,
+    ) {
+        if (title.isBlank()) return
+        val state = _uiState.value
+        viewModelScope.launch {
+            runCatching {
+                saveSearchHistory(
+                    query = Uri.decode(title),
+                    season = if (isTv) 1 else null,
+                    episode = if (isTv) 1 else null,
+                    languages = state.selectedLanguages.joinToString(","),
+                    contentType = if (isTv) "tv" else "movie",
+                    posterUrl = posterUrl,
+                    imdbId = imdbId,
+                    tmdbId = tmdbId,
+                    seasonsCount = seasonsCount,
+                )
+            }
+        }
+    }
+
+    private suspend fun saveSearchHistory(
+        query: String,
+        season: Int?,
+        episode: Int?,
+        languages: String?,
+        contentType: String?,
+        posterUrl: String?,
+        imdbId: String?,
+        tmdbId: Int?,
+        seasonsCount: Int?,
+    ) {
+        searchHistoryDao.insert(
+            SearchHistoryEntity(
+                query = query,
+                season = season,
+                episode = episode,
+                languages = languages,
+                contentType = contentType,
+                posterUrl = posterUrl,
+                imdbId = imdbId,
+                tmdbId = tmdbId,
+                seasonsCount = seasonsCount,
+            ),
+        )
     }
 }

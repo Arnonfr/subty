@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.subtranslate.data.local.SubTranslateDatabase
 import com.subtranslate.data.local.dao.SearchHistoryDao
 import com.subtranslate.data.local.dao.SubtitleHistoryDao
+import com.subtranslate.data.local.dao.TranslationCacheDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,7 +25,12 @@ object DatabaseModule {
             SubTranslateDatabase::class.java,
             "subtranslate.db"
         )
-            .addMigrations(SubTranslateDatabase.MIGRATION_1_2, SubTranslateDatabase.MIGRATION_2_3)
+            .addMigrations(
+                SubTranslateDatabase.MIGRATION_1_2,
+                SubTranslateDatabase.MIGRATION_2_3,
+                SubTranslateDatabase.MIGRATION_3_4,
+                SubTranslateDatabase.MIGRATION_4_5
+            )
             .build()
 
     @Provides
@@ -34,4 +40,8 @@ object DatabaseModule {
     @Provides
     fun provideSearchHistoryDao(db: SubTranslateDatabase): SearchHistoryDao =
         db.searchHistoryDao()
+
+    @Provides
+    fun provideTranslationCacheDao(db: SubTranslateDatabase): TranslationCacheDao =
+        db.translationCacheDao()
 }

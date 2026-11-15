@@ -1,36 +1,29 @@
-Subty היא הדרך הקלה ביותר למצוא, להוריד ולתרגם כתוביות לכל סרט או סדרת טלוויזיה – ישירות במכשיר האנדרואיד שלך.
+Subty helps you find subtitles for movies and TV shows, download the right file, and translate subtitles when you need another language.
 
-🔍 חיפוש כתוביות בשניות
-חפשו לפי שם הסרט או השתמשו ב-IMDB ID לתוצאות מדויקות. Subty סורקת מיליוני כתוביות ממאגר OpenSubtitles, מאגר הכתוביות הגדול בעולם. סננו לפי שפה, מיינו לפי פופולריות והורידו בלחיצה אחת.
+FIND THE RIGHT SUBTITLE
+Search by title, pick a movie or show, and narrow TV results by season and episode. Subty searches multiple subtitle sources and shows the source of each result, so you can choose the file that fits your release.
 
-🌍 תרגום לשפה שלך
-לאחר ההורדה, תוכלו לתרגם כל קובץ כתוביות ליותר מ-100 שפות באמצעות Google Translate. התרגום מתבצע ברקע – תוכלו להמשיך להשתמש בטלפון בזמן ש-Subty עובדת. צפו בתצוגה מקדימה של כל שורה לפני השמירה כדי לוודא שהתרגום מדויק.
+BUILT FOR MOVIES AND SERIES
+Recent titles stay on the Search screen, and TV shows can continue from the next episode with one tap. You can also change season and episode from the results screen without starting over.
 
-📁 שמירה ישירה לתיקיית ההורדות
-כל קבצי הכתוביות (.srt, .vtt, .ass) נשמרים ישירות בתיקיית ה-Downloads שלך, כך שנגן המדיה שלך יוכל למצוא אותם בקלות.
+DOWNLOAD AND SAVE
+Download subtitle files directly to your device. Subty supports common subtitle formats including .srt, .vtt, .ass, and .ssa.
 
-📋 היסטוריה מלאה
-כל חיפוש והורדה נשמרים בלשונית ההורדות שלך. תוכלו לחזור על חיפוש קודם בלחיצה אחת, או להמשיך מאותו מקום שבו הפסקתם.
+TRANSLATE WHEN NEEDED
+Translate downloaded subtitles on your device. Download a language model once, then translate again without an internet connection.
 
-⚡ מהיר וקל משקל
-אין צורך בחשבון לחיפוש בסיסי. ממשק כהה ונקי המיועד לקריאה נוחה. ללא פרסומות וללא עומס מיותר.
+Review machine-translated subtitles before use, especially names, slang, and idioms.
 
-תכונות עיקריות:
-• חיפוש במיליוני כתוביות לפי כותרת או IMDB ID
-• סינון לפי שפה (עברית, אנגלית, ערבית, צרפתית, ספרדית ועוד 100+ שפות)
-• סינון סדרות טלוויזיה לפי עונה ופרק
-• הורדת קבצי כתוביות ישירות לתיקיית ההורדות
-• תרגום כתוביות לכל שפה באמצעות Google Translate
-• תצוגה מקדימה של כתוביות מתורגמות לפני השמירה
-• תרגום ברקע – המשך להשתמש בטלפון תוך כדי התהליך
-• היסטוריית הורדות וחיפושים מלאה
-• פתיחת קבצי כתוביות ישירות ממנהל הקבצים שלך
-• תמיכה בפורמטים .srt, .vtt, ו-.ass
+KEY FEATURES
+- Search movies and TV shows by title
+- Select season and episode for series
+- Continue to the next episode from recent searches
+- Search multiple subtitle sources, including OpenSubtitles and SubDL
+- Optional Hebrew-focused Screwzira source when enabled
+- Filter results by language
+- Download subtitle files to your device
+- Translate subtitles in-app
+- Keep search and download history
+- Supports .srt, .vtt, .ass, and .ssa formats
 
-שפות נתמכות:
-עברית, אנגלית, ערבית, צרפתית, ספרדית, גרמנית, איטלקית, פורטוגזית, רוסית, יפנית, קוריאנית, סינית, טורקית, פולנית, הולנדית ועוד 100+ שפות.
-
-מקור הכתוביות:
-מופעל על ידי OpenSubtitles – מאגר הכתוביות הפתוח הגדול בעולם עם למעלה מ-4 מיליון קבצי כתוביות ביותר מ-60 שפות.
-
-Subty להורדה בחינם. Google Translate משמש לתרגום – השכבה החינמית כוללת 500,000 תווים בחודש (בערך 8 סרטים מלאים). אין צורך ברכישות בתוך האפליקציה לשימוש בסיסי.
+Subty is built for people who watch across languages and want a fast, focused subtitle workflow without ads or clutter.

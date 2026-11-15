@@ -3,16 +3,17 @@ package com.subtranslate.domain.usecase
 import com.subtranslate.domain.model.SubtitleFile
 import com.subtranslate.domain.model.TranslationProgress
 import com.subtranslate.domain.repository.TranslationRepository
+import com.subtranslate.data.remote.translation.TranslationModelCatalog
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class TranslateSubtitleUseCase @Inject constructor(
-    private val repository: TranslationRepository
+    private val repository: TranslationRepository,
 ) {
     operator fun invoke(
         subtitleFile: SubtitleFile,
         sourceLang: String,
         targetLang: String,
-        modelId: String = "mymemory"
+        modelId: String = TranslationModelCatalog.MLKIT_ON_DEVICE,
     ): Flow<TranslationProgress> = repository.translate(subtitleFile, sourceLang, targetLang, modelId)
 }

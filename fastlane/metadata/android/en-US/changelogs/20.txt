@@ -1,0 +1,2 @@
+Targets Android 16 for ongoing Play compatibility.
+Improves offline subtitle translation and saved translation history.

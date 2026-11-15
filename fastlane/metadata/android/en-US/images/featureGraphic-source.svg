@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#0D0B12"/>
+  <rect x="0" y="0" width="1024" height="500" fill="none" stroke="#2A2231" stroke-width="2"/>
+  <path d="M0 112H1024M0 194H1024M0 306H1024M0 388H1024" stroke="#211A26" stroke-width="2"/>
+  <rect x="86" y="108" width="10" height="284" fill="#A676FF"/>
+  <text x="132" y="236" fill="#FFF9F5" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="700" letter-spacing="-5">Subty</text>
+  <rect x="136" y="267" width="116" height="5" fill="#D3A16F"/>
+  <text x="136" y="333" fill="#D3A16F" font-family="Arial, Helvetica, sans-serif" font-size="37" font-weight="400">Find subtitles. Download with confidence.</text>
+  <text x="137" y="378" fill="#B9B0BC" font-family="Arial, Helvetica, sans-serif" font-size="22" letter-spacing="2">MOVIES  •  SERIES  •  MULTIPLE SOURCES</text>
+</svg>

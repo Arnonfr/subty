@@ -50,10 +50,11 @@ class HistoryViewModel @Inject constructor(
         searchSession.movieTitle  = item.query
         searchSession.season      = item.season
         searchSession.episode     = item.episode
-        searchSession.languages   = item.languages
-        searchSession.contentType = item.contentType
-        searchSession.imdbId      = null
-        searchSession.posterUrl   = null
+        searchSession.languages = item.languages ?: "en,he"
+        searchSession.contentType = item.contentType ?: "movie"
+        searchSession.imdbId      = item.imdbId
+        searchSession.posterUrl   = item.posterUrl
+        searchSession.seasonsCount = item.seasonsCount
     }
 
     /** Set pending browse data so SearchScreen pre-populates with this show on next entry. */
@@ -61,10 +62,11 @@ class HistoryViewModel @Inject constructor(
         searchSession.movieTitle  = item.query
         searchSession.season      = null
         searchSession.episode     = null
-        searchSession.languages   = item.languages
+        searchSession.languages = item.languages ?: "en,he"
         searchSession.contentType = "tv"
-        searchSession.imdbId      = null
-        searchSession.posterUrl   = null
+        searchSession.imdbId      = item.imdbId
+        searchSession.posterUrl   = item.posterUrl
+        searchSession.seasonsCount = item.seasonsCount
         searchSession.pendingBrowseTitle = item.query
         searchSession.pendingBrowseLangs = item.languages
     }

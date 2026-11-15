@@ -17,9 +17,10 @@ coreKtx = "1.15.0"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
 coroutines = "1.9.0"
+playBilling = "9.0.0"
 icuChardet = "72.1"
 googleServices = "4.4.2"
-firebaseAppDistribution = "5.1.1"
+firebaseAppDistribution = "5.3.1"
 firebaseBom = "33.9.0"
 firebaseCrashlytics = "3.0.6"
 androidxTest = "1.6.2"
@@ -78,12 +79,16 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 # Testing
 junit = { group = "junit", name = "junit", version = "4.13.2" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+
+# Google Play Billing
+play-billing = { group = "com.android.billingclient", name = "billing", version.ref = "playBilling" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTest" }
 
 # Firebase
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-distribution = { group = "com.google.firebase", name = "firebase-appdistribution-gradle", version.ref = "firebaseAppDistribution" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-gradle", version.ref = "firebaseCrashlytics" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -4,12 +4,13 @@ import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.subtranslate.BuildConfig
+import com.subtranslate.data.remote.translation.TranslationModelCatalog
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class SettingsDataStore(context: Context) {
+class SettingsDataStore(context: Context) : TranslationUsageStore {
 
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -30,10 +31,16 @@ class SettingsDataStore(context: Context) {
                 .putBoolean(KEY_LIGHT_THEME_DEFAULT_APPLIED, true)
                 .apply()
         }
-        if (!prefs.contains(KEY_MICROSOFT_DEFAULT_APPLIED)) {
+        if (!prefs.contains(KEY_TRANSLATION_MODEL_DEFAULT_APPLIED)) {
             prefs.edit()
-                .putString(KEY_MODEL, "microsoft")
-                .putBoolean(KEY_MICROSOFT_DEFAULT_APPLIED, true)
+                .putString(KEY_MODEL, DEFAULT_TRANSLATION_MODEL)
+                .putBoolean(KEY_TRANSLATION_MODEL_DEFAULT_APPLIED, true)
+                .apply()
+        }
+        if (!prefs.contains(KEY_SAVE_DESTINATION_DEFAULT_APPLIED)) {
+            prefs.edit()
+                .putString(KEY_SAVE_DESTINATION_MODE, SAVE_DESTINATION_MOVIES)
+                .putBoolean(KEY_SAVE_DESTINATION_DEFAULT_APPLIED, true)
                 .apply()
         }
     }
@@ -49,13 +56,7 @@ class SettingsDataStore(context: Context) {
         set(value) = prefs.edit().putString(KEY_TARGET_LANG, value).apply()
 
     var translationModel: String
-        get() = when (val model = prefs.getString(KEY_MODEL, "")) {
-            "google" -> "mymemory"
-            "gemini-3.1-flash-lite-preview" -> "gemini-2.5-flash-lite"
-            "" -> "microsoft"
-            null -> "microsoft"
-            else -> model
-        }
+        get() = TranslationModelCatalog.normalize(prefs.getString(KEY_MODEL, DEFAULT_TRANSLATION_MODEL))
         set(v) = prefs.edit().putString(KEY_MODEL, v).apply()
 
     var autoTranslateAfterDownload: Boolean
@@ -92,6 +93,15 @@ class SettingsDataStore(context: Context) {
         get() = prefs.getString(KEY_SAVE_FORMAT, "srt") ?: "srt"
         set(value) = prefs.edit().putString(KEY_SAVE_FORMAT, value).apply()
 
+    var saveDestinationMode: String
+        get() = prefs.getString(KEY_SAVE_DESTINATION_MODE, SAVE_DESTINATION_MOVIES)
+            ?: SAVE_DESTINATION_MOVIES
+        set(value) = prefs.edit().putString(KEY_SAVE_DESTINATION_MODE, value).apply()
+
+    var customSaveFolderUri: String?
+        get() = prefs.getString(KEY_CUSTOM_SAVE_FOLDER_URI, null)
+        set(value) = prefs.edit().putString(KEY_CUSTOM_SAVE_FOLDER_URI, value).apply()
+
     var autoSaveTranslated: Boolean
         get() = prefs.getBoolean(KEY_AUTO_SAVE, false)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_SAVE, value).apply()
@@ -101,6 +111,15 @@ class SettingsDataStore(context: Context) {
     var geminiApiKey: String?
         get() = prefs.getString(KEY_GEMINI_API_KEY, null)
         set(value) = prefs.edit().putString(KEY_GEMINI_API_KEY, value).apply()
+
+    var openRouterApiKey: String?
+        get() = prefs.getString(KEY_OPENROUTER_API_KEY, null)
+        set(value) = prefs.edit().putString(KEY_OPENROUTER_API_KEY, value).apply()
+
+    val effectiveOpenRouterApiKey: String?
+        get() = openRouterApiKey?.takeIf { it.isNotBlank() }
+            ?: BuildConfig.OPENROUTER_API_KEY.takeIf { it.isNotBlank() }
+            ?: System.getenv("OPENROUTER_API_KEY")?.takeIf { it.isNotBlank() }
 
     var openSubtitlesApiKey: String?
         get() = prefs.getString(KEY_OPENSUBTITLES_API_KEY, null)
@@ -132,6 +151,15 @@ class SettingsDataStore(context: Context) {
             ?: "global"
         set(v) = prefs.edit().putString("microsoft_region", v).apply()
 
+    var libreTranslateBaseUrl: String
+        get() = prefs.getString(KEY_LIBRETRANSLATE_BASE_URL, DEFAULT_LIBRETRANSLATE_BASE_URL)
+            ?: DEFAULT_LIBRETRANSLATE_BASE_URL
+        set(v) = prefs.edit().putString(KEY_LIBRETRANSLATE_BASE_URL, v.trim()).apply()
+
+    var libreTranslateApiKey: String?
+        get() = prefs.getString(KEY_LIBRETRANSLATE_API_KEY, null)
+        set(v) = prefs.edit().putString(KEY_LIBRETRANSLATE_API_KEY, v).apply()
+
     // ── Usage Tracking ───────────────────────────────────────────────────────
 
     /** Returns total characters translated this month for a given engine. */
@@ -146,7 +174,7 @@ class SettingsDataStore(context: Context) {
     }
 
     /** Adds translated characters to the current month's counter for an engine. */
-    fun addCharsUsed(engine: String, chars: Int) {
+    override fun addCharsUsed(engine: String, chars: Int) {
         val currentMonth = java.time.YearMonth.now().toString()
         val storedMonth = prefs.getString("usage_month", "") ?: ""
         val editor = prefs.edit()
@@ -163,23 +191,50 @@ class SettingsDataStore(context: Context) {
     }
 
     fun getTranslationsUsedThisMonth(): Int {
-        val currentMonth = java.time.YearMonth.now().toString()
-        val storedMonth = prefs.getString(KEY_TRANSLATION_LIMIT_MONTH, "") ?: ""
-        if (storedMonth != currentMonth) return 0
         return prefs.getInt(KEY_TRANSLATIONS_USED, 0)
     }
 
     fun addTranslationUsed() {
-        val currentMonth = java.time.YearMonth.now().toString()
-        val storedMonth = prefs.getString(KEY_TRANSLATION_LIMIT_MONTH, "") ?: ""
-        val current = if (storedMonth == currentMonth) prefs.getInt(KEY_TRANSLATIONS_USED, 0) else 0
+        val current = prefs.getInt(KEY_TRANSLATIONS_USED, 0)
         prefs.edit()
-            .putString(KEY_TRANSLATION_LIMIT_MONTH, currentMonth)
             .putInt(KEY_TRANSLATIONS_USED, current + 1)
             .apply()
     }
 
-    fun getMonthlyTranslationLimit(): Int = MONTHLY_TRANSLATION_LIMIT
+    override val starBalance: Int
+        get() = prefs.getInt(KEY_STAR_BALANCE, 0)
+
+    override val freeTranslationUsed: Boolean
+        get() = prefs.getBoolean(KEY_FREE_TRANSLATION_USED, false)
+
+    override fun debitStars(stars: Int) {
+        val current = starBalance
+        prefs.edit()
+            .putInt(KEY_STAR_BALANCE, (current - stars).coerceAtLeast(0))
+            .apply()
+    }
+
+    override fun markFreeTranslationUsed() {
+        prefs.edit()
+            .putBoolean(KEY_FREE_TRANSLATION_USED, true)
+            .apply()
+    }
+
+    fun addStars(stars: Int) {
+        prefs.edit()
+            .putInt(KEY_STAR_BALANCE, starBalance + stars)
+            .apply()
+    }
+
+    var processedStarPurchaseTokens: Set<String>
+        get() = prefs.getString(KEY_PROCESSED_STAR_PURCHASE_TOKENS, null)
+            ?.split("|")
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            ?: emptySet()
+        set(value) = prefs.edit()
+            .putString(KEY_PROCESSED_STAR_PURCHASE_TOKENS, value.joinToString("|"))
+            .apply()
 
     val analyticsUserId: String
         get() {
@@ -190,23 +245,47 @@ class SettingsDataStore(context: Context) {
             return generated
         }
 
+    /** Anonymous operational events are enabled by default; subtitle content is never sent. */
+    var liveAnalyticsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_LIVE_ANALYTICS_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_LIVE_ANALYTICS_ENABLED, value).apply()
+
+    /** Search text is more revealing than event metadata and requires an explicit opt-in. */
+    var shareSearchTerms: Boolean
+        get() = prefs.getBoolean(KEY_SHARE_SEARCH_TERMS, false)
+        set(value) = prefs.edit().putBoolean(KEY_SHARE_SEARCH_TERMS, value).apply()
+
     companion object {
         private const val KEY_SOURCE_LANG = "source_lang"
         private const val KEY_TARGET_LANG = "target_lang"
         private const val KEY_MODEL = "translation_model"
+        // Applied only once, so established cloud preferences remain untouched.
+        private const val DEFAULT_TRANSLATION_MODEL = TranslationModelCatalog.MLKIT_ON_DEVICE
         private const val KEY_AUTO_TRANSLATE = "auto_translate"
         private const val KEY_SHOW_POSTERS = "show_posters"
         private const val KEY_COMPACT_RESULTS = "compact_results"
         private const val KEY_SEASON_EPISODE_TEXT_FIELDS = "season_episode_text_fields"
+        private const val KEY_SAVE_DESTINATION_MODE = "save_destination_mode"
+        private const val KEY_CUSTOM_SAVE_FOLDER_URI = "custom_save_folder_uri"
         private const val KEY_LIGHT_THEME_DEFAULT_APPLIED = "light_theme_default_applied"
-        private const val KEY_MICROSOFT_DEFAULT_APPLIED = "microsoft_default_applied"
+        private const val KEY_TRANSLATION_MODEL_DEFAULT_APPLIED = "translation_model_default_applied"
+        private const val KEY_SAVE_DESTINATION_DEFAULT_APPLIED = "save_destination_default_applied"
         private const val KEY_SAVE_FORMAT = "save_format"
         private const val KEY_AUTO_SAVE = "auto_save"
         private const val KEY_GEMINI_API_KEY = "gemini_api_key"
+        private const val KEY_OPENROUTER_API_KEY = "openrouter_api_key"
         private const val KEY_OPENSUBTITLES_API_KEY = "opensubtitles_api_key"
         private const val KEY_TRANSLATION_LIMIT_MONTH = "translation_limit_month"
         private const val KEY_TRANSLATIONS_USED = "translations_used"
+        private const val KEY_STAR_BALANCE = "star_balance"
+        private const val KEY_FREE_TRANSLATION_USED = "free_translation_used"
+        private const val KEY_PROCESSED_STAR_PURCHASE_TOKENS = "processed_star_purchase_tokens"
         private const val KEY_ANALYTICS_USER_ID = "analytics_user_id"
-        private const val MONTHLY_TRANSLATION_LIMIT = 10
+        private const val KEY_LIVE_ANALYTICS_ENABLED = "live_analytics_enabled"
+        private const val KEY_SHARE_SEARCH_TERMS = "share_search_terms"
+        private const val KEY_LIBRETRANSLATE_BASE_URL = "libretranslate_base_url"
+        private const val KEY_LIBRETRANSLATE_API_KEY = "libretranslate_api_key"
+        private const val DEFAULT_LIBRETRANSLATE_BASE_URL = "https://translate.argosopentech.com"
+        private const val SAVE_DESTINATION_MOVIES = "movies"
     }
 }

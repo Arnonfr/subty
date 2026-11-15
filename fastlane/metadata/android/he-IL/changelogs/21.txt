@@ -1,0 +1,4 @@
+A new Subty icon inspired by subtitles in motion.
+Improved offline translation with separate dialogue lines, sentence context, and better Hebrew punctuation.
+Clearer right-to-left previews and timestamps.
+Smoother translation progress, cancellation, and notification permission handling.

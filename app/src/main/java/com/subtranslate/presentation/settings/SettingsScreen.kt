@@ -1,538 +1,119 @@
 package com.subtranslate.presentation.settings
 
 import android.content.Intent
-import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.subtranslate.BuildConfig
-import com.subtranslate.presentation.theme.*
+import com.subtranslate.presentation.theme.SubtyBg
+import com.subtranslate.presentation.theme.SubtyButton
+import com.subtranslate.presentation.theme.SubtyButtonStyle
+import com.subtranslate.presentation.theme.SubtyLanguagePickerRow
+import com.subtranslate.presentation.theme.SubtyLabel
+import com.subtranslate.presentation.theme.SubtySegmentChip
+import com.subtranslate.presentation.theme.SubtySwitch
+import com.subtranslate.presentation.theme.SubtyText
+import com.subtranslate.presentation.theme.SubtyText3
+import com.subtranslate.presentation.theme.SubtyTopBar
 import com.subtranslate.util.GOOGLE_TRANSLATE_LANGUAGES
-
-private val MODELS = listOf(
-    "microsoft"                      to "Microsoft",
-    "gemini-2.5-flash"               to "Gemini",
-    "gemini-2.5-flash-lite"          to "Gemini Lite",
-    "deepl"                          to "DeepL",
-    "libretranslate"                 to "LibreTranslate (Free)",
-    "mymemory"                       to "MyMemory (Free)",
-)
 
 private val FORMATS = listOf("srt" to "SRT", "vtt" to "VTT", "ass" to "ASS")
 
 @Composable
-fun SettingsScreen(
-    onOpenApiKeys: () -> Unit = {},
-    viewModel: SettingsViewModel = hiltViewModel(),
-) {
-    val state by viewModel.uiState.collectAsState()
-    LaunchedEffect(Unit) { viewModel.refreshUsage() }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SubtyBg)
-            .verticalScroll(rememberScrollState()),
-    ) {
-        SubtyPageTitle(
-            "Settings",
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp),
-        )
-
-        Spacer(Modifier.height(20.dp))
-
-        // ── Translation ───────────────────────────────────────────────────────
-        SettingsSectionHeader("Translation", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        SubtyLanguagePickerRow(
-            label = "Default target language",
-            selected = state.defaultTargetLang,
-            options = GOOGLE_TRANSLATE_LANGUAGES,
-            onSelect = viewModel::onTargetLangChange,
-        )
-        SubtyDividerDim()
-        SettingsDropdown(
-            label = "Model",
-            selected = state.translationModel,
-            options = MODELS.filter { it.first in state.availableModels },
-            onSelect = viewModel::onModelChange,
-            moreOptionsLabel = "More options",
-            onMoreOptions = onOpenApiKeys,
-        )
-        SubtyDividerDim()
-        SubtyToggleRow(
-            label = "Auto-translate on download",
-            description = "Start translation immediately after downloading",
-            checked = state.autoTranslate,
-            onCheckedChange = viewModel::onAutoTranslateChange,
-        )
-        SubtyDivider()
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Advanced ─────────────────────────────────────────────────────────
-        SettingsSectionHeader("Advanced", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        SettingsNavRow("API Keys", "Optional provider overrides", onOpenApiKeys)
-        SubtyDivider()
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Save ──────────────────────────────────────────────────────────────
-        SettingsSectionHeader("Save", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        SettingsDropdown(
-            label = "Preferred format",
-            selected = state.preferredSaveFormat,
-            options = FORMATS,
-            onSelect = viewModel::onSaveFormatChange,
-        )
-        SubtyDividerDim()
-        SubtyToggleRow(
-            label = "Auto-save translated files",
-            description = "Save to Downloads automatically when done",
-            checked = state.autoSave,
-            onCheckedChange = viewModel::onAutoSaveChange,
-        )
-        SubtyDivider()
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Usage ─────────────────────────────────────────────────────────────
-        SettingsSectionHeader("Usage", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        UsageRow(
-            label = "Monthly translations",
-            used = state.translationsUsedThisMonth,
-            limit = state.monthlyTranslationLimit,
-        )
-        SubtyDividerDim()
-        UsageRow(
-            label = "MyMemory characters",
-            used = state.usage.myMemory,
-            limit = Int.MAX_VALUE,
-        )
-        SubtyDividerDim()
-        UsageRow(
-            label = "LibreTranslate characters",
-            used = state.usage.libreTranslate,
-            limit = Int.MAX_VALUE,
-        )
-        SubtyDividerDim()
-        UsageRow(
-            label = "Microsoft characters",
-            used = state.usage.microsoft,
-            limit = Int.MAX_VALUE,
-        )
-        SubtyDividerDim()
-        UsageRow(
-            label = "Gemini characters",
-            used = state.usage.gemini,
-            limit = Int.MAX_VALUE,
-        )
-        SubtyDividerDim()
-        UsageRow(
-            label = "DeepL characters",
-            used = state.usage.deepL,
-            limit = Int.MAX_VALUE,
-        )
-        SubtyDivider()
-
-        Spacer(Modifier.height(24.dp))
-
-        // ── Display ───────────────────────────────────────────────────────────
-        SettingsSectionHeader("Display", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        SubtyToggleRow(
-            label = "Dark mode",
-            description = "Switch between dark and light appearance",
-            checked = state.isDarkTheme,
-            onCheckedChange = viewModel::onDarkThemeChange,
-        )
-        SubtyDividerDim()
-        SubtyToggleRow(
-            label = "Show movie posters",
-            description = "Display cover art in search results",
-            checked = state.showPosters,
-            onCheckedChange = viewModel::onShowPostersChange,
-        )
-        SubtyDividerDim()
-        SubtyToggleRow(
-            label = "Compact results",
-            description = "Smaller cards, more results on screen",
-            checked = state.compactResults,
-            onCheckedChange = viewModel::onCompactResultsChange,
-        )
-        SubtyDividerDim()
-        SubtyToggleRow(
-            label = "Manual season/episode fields",
-            description = "Use text inputs instead of selectable number chips",
-            checked = state.useSeasonEpisodeTextFields,
-            onCheckedChange = viewModel::onSeasonEpisodeInputModeChange,
-        )
-        SubtyDivider()
-
-        Spacer(Modifier.height(28.dp))
-
-        SubtyButton(
-            text = "Save",
-            onClick = viewModel::save,
-            style = SubtyButtonStyle.FILLED,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-        )
-
-        if (state.saved) {
-            Spacer(Modifier.height(12.dp))
-            SubtySuccessBanner(
-                "Settings saved",
-                modifier = Modifier.padding(horizontal = 24.dp),
-            )
-        }
-
-        Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
-fun ApiKeysScreen(
-    onBack: () -> Unit = {},
-    viewModel: SettingsViewModel = hiltViewModel(),
-) {
+fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SubtyBg)
-            .verticalScroll(rememberScrollState()),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            SubtyText(
-                "‹",
-                fontSize = 28,
-                weight = FontWeight.Normal,
-                color = SubtyText1,
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) { onBack() },
-            )
-            SubtyPageTitle("API Keys")
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        uri?.let {
+            runCatching { context.contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) }
+            viewModel.onSaveDestinationModeChange("custom")
+            viewModel.onCustomSaveFolderUriChange(it.toString())
         }
-
-        Spacer(Modifier.height(20.dp))
-        SettingsSectionHeader("Provider Keys", Modifier.padding(horizontal = 24.dp))
-        SubtyDivider()
-        ApiKeyRow(
-            label = "Gemini API Key",
-            value = state.geminiApiKey,
-            placeholder = "Enter your Gemini API key",
-            onValueChange = viewModel::onGeminiApiKeyChange,
-            getLinkUrl = "https://aistudio.google.com/app/apikey",
-            getLinkLabel = "Get free API key →",
-            context = context,
-        )
-        SubtyDividerDim()
-        ApiKeyRow(
-            label = "DeepL API Key",
-            value = state.deeplApiKey,
-            placeholder = "Enter your DeepL API key",
-            onValueChange = viewModel::onDeepLApiKeyChange,
-            getLinkUrl = "https://www.deepl.com/pro-api",
-            getLinkLabel = "Get free API key →",
-            context = context,
-        )
-        SubtyDividerDim()
-        ApiKeyRow(
-            label = "Microsoft Azure Key",
-            value = state.microsoftApiKey,
-            placeholder = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
-                "✓ Pre-configured (optional override)"
-            else
-                "Enter your Translator key",
-            onValueChange = viewModel::onMicrosoftApiKeyChange,
-            getLinkUrl = "https://portal.azure.com/#create/Microsoft.CognitiveServicesTextTranslation",
-            getLinkLabel = if (BuildConfig.MICROSOFT_API_KEY.isNotBlank())
-                "Override with your own key →"
-            else
-                "Create free resource →",
-            context = context,
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-        ) {
-            SubtyText("Region", fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
-            Spacer(Modifier.height(4.dp))
-            SubtyTextField(
-                value = state.microsoftRegion,
-                onValueChange = viewModel::onMicrosoftRegionChange,
-                placeholder = "global",
-            )
-            SubtyText(
-                "Use 'global' for multi-service keys",
-                fontSize = 12,
-                color = SubtyText3,
-            )
-        }
-        SubtyDivider()
-
-        Spacer(Modifier.height(28.dp))
-        SubtyButton(
-            text = "Save",
-            onClick = viewModel::save,
-            style = SubtyButtonStyle.FILLED,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-        )
-
-        if (state.saved) {
-            Spacer(Modifier.height(12.dp))
-            SubtySuccessBanner(
-                "Settings saved",
-                modifier = Modifier.padding(horizontal = 24.dp),
-            )
-        }
-
-        Spacer(Modifier.height(24.dp))
     }
-}
+    LaunchedEffect(Unit) { viewModel.refreshOfflineLanguages() }
 
-@Composable
-private fun SettingsSectionHeader(text: String, modifier: Modifier = Modifier) {
-    SubtyText(
-        text = text.uppercase(),
-        modifier = modifier.padding(bottom = 10.dp),
-        fontSize = 10,
-        weight = FontWeight.Bold,
-        color = SubtyMocha,
-    )
-}
-
-@Composable
-private fun SettingsNavRow(
-    label: String,
-    description: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) { onClick() }
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            SubtyText(label, fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
-            Spacer(Modifier.height(2.dp))
-            SubtyText(description, fontSize = 12, color = SubtyText3)
-        }
-        SubtyText("›", fontSize = 22, color = SubtyText3)
-    }
-}
-
-@Composable
-private fun ApiKeyRow(
-    label: String,
-    value: String,
-    placeholder: String,
-    onValueChange: (String) -> Unit,
-    getLinkUrl: String,
-    getLinkLabel: String,
-    context: android.content.Context,
-) {
-    var showKey by remember { mutableStateOf(false) }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        SubtyText(label, fontSize = 14, weight = FontWeight.SemiBold, color = SubtyText1)
-        SubtyTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = placeholder,
-            visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                SubtyText(
-                    text = if (showKey) "Hide" else "Show",
-                    fontSize = 11,
-                    weight = FontWeight.Bold,
-                    color = SubtyMocha,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { showKey = !showKey },
-                )
-            },
-        )
-        SubtyText(
-            text = getLinkLabel,
-            fontSize = 12,
-            weight = FontWeight.Bold,
-            color = SubtyMocha,
-            modifier = Modifier.clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-            ) {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getLinkUrl))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                runCatching { context.startActivity(intent) }
-            },
-        )
-    }
-}
-
-@Composable
-private fun UsageRow(
-    label: String,
-    used: Int,
-    limit: Int,
-) {
-    val percentage = if (limit > 0 && limit < Int.MAX_VALUE) (used.toFloat() / limit * 100).toInt() else null
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column {
-            SubtyText(label, fontSize = 13, weight = FontWeight.Medium, color = SubtyText1)
-            if (percentage != null) {
-                val color = when {
-                    percentage >= 100 -> androidx.compose.ui.graphics.Color.Red
-                    percentage >= 80 -> androidx.compose.ui.graphics.Color(0xFFFFA500)
-                    else -> SubtyMocha
+    Column(Modifier.fillMaxSize().background(SubtyBg)) {
+        SubtyTopBar(title = "Settings")
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            SettingsSection("Translation") {
+                SubtyText("Offline translation", fontSize = 16)
+                SubtyText("Translations are processed on this device. Download a language model once, then use it without an internet connection.", fontSize = 11, color = SubtyText3)
+                SubtyLanguagePickerRow("Default target language", state.defaultTargetLang, GOOGLE_TRANSLATE_LANGUAGES, viewModel::onTargetLangChange)
+                SubtyLabel("Offline languages")
+                listOf("en" to "English", "he" to "Hebrew", "es" to "Spanish", "fr" to "French").forEach { (code, name) ->
+                    val downloaded = code in state.downloadedOfflineLanguages
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        SubtyText("$name  ${if (downloaded) "Downloaded" else "Not downloaded"}", fontSize = 12)
+                        SubtyButton(if (downloaded) "Remove" else "Download", { if (downloaded) viewModel.removeOfflineLanguage(code) else viewModel.downloadOfflineLanguage(code) }, style = SubtyButtonStyle.OUTLINE, small = true)
+                    }
                 }
-                SubtyText(
-                    "$percentage% of free tier",
-                    fontSize = 10,
-                    color = color,
-                )
             }
+            SettingsSection("Output") {
+                SubtyLabel("Save destination")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SubtySegmentChip("Movies", state.saveDestinationMode == "movies", { viewModel.onSaveDestinationModeChange("movies") }, Modifier.weight(1f))
+                    SubtySegmentChip("Custom", state.saveDestinationMode == "custom", { viewModel.onSaveDestinationModeChange("custom") }, Modifier.weight(1f))
+                }
+                SubtyText(if (state.saveDestinationMode == "custom" && !state.customSaveFolderUri.isNullOrBlank()) "Custom folder selected." else "Default path: Movies/Subty on this device.", fontSize = 11, color = SubtyText3)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SubtyButton("Choose folder", { viewModel.onSaveDestinationModeChange("custom"); folderPicker.launch(null) }, style = SubtyButtonStyle.OUTLINE, small = true, modifier = Modifier.weight(1f))
+                    SubtyButton("Use Movies", { viewModel.onSaveDestinationModeChange("movies") }, style = SubtyButtonStyle.FILLED, small = true, modifier = Modifier.weight(1f))
+                }
+                SubtyLabel("Preferred save format")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FORMATS.forEach { (id, name) -> SubtySegmentChip(name, state.preferredSaveFormat == id, { viewModel.onSaveFormatChange(id) }, Modifier.weight(1f)) }
+                }
+            }
+            SettingsSection("Behavior") {
+                ToggleRow("Auto translate after download", state.autoTranslate, viewModel::onAutoTranslateChange)
+                ToggleRow("Auto save translated files", state.autoSave, viewModel::onAutoSaveChange)
+                ToggleRow("Dark mode", state.isDarkTheme, viewModel::onDarkThemeChange)
+                ToggleRow("Show posters", state.showPosters, viewModel::onShowPostersChange)
+                ToggleRow("Compact results", state.compactResults, viewModel::onCompactResultsChange)
+                ToggleRow("Use season / episode fields", state.useSeasonEpisodeTextFields, viewModel::onUseSeasonEpisodeTextFieldsChange)
+            }
+            SettingsSection("Privacy") {
+                SubtyText("Help improve Subty with anonymous usage events. Subtitle text, files, and keys are never sent.", fontSize = 11, color = SubtyText3)
+                ToggleRow("Share anonymous usage data", state.liveAnalyticsEnabled, viewModel::onLiveAnalyticsEnabledChange)
+                if (state.liveAnalyticsEnabled) {
+                    SubtyText("Search words are optional and let us see what people look for.", fontSize = 11, color = SubtyText3)
+                    ToggleRow("Include search words", state.shareSearchTerms, viewModel::onShareSearchTermsChange)
+                }
+            }
+            SubtyButton(if (state.saved) "Saved" else "Save changes", viewModel::save, style = SubtyButtonStyle.FILLED, small = true, modifier = Modifier.fillMaxWidth())
+            SubtyText(if (state.saved) "Settings saved locally." else "Changes are stored locally on this device.", fontSize = 11, color = SubtyText3)
         }
-        SubtyText(
-            "%,d".format(used),
-            fontSize = 13,
-            weight = FontWeight.Bold,
-            color = SubtyText1,
-        )
     }
 }
 
 @Composable
-private fun SettingsDropdown(
-    label: String,
-    selected: String,
-    options: List<Pair<String, String>>,
-    onSelect: (String) -> Unit,
-    moreOptionsLabel: String? = null,
-    onMoreOptions: (() -> Unit)? = null,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) { expanded = true }
-                .padding(horizontal = 24.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                SubtyLabel(label)
-                Spacer(Modifier.height(4.dp))
-                SubtyText(
-                    options.find { it.first == selected }?.second ?: selected,
-                    fontSize = 15,
-                    weight = FontWeight.SemiBold,
-                    color = SubtyText1,
-                )
-            }
-            Icon(
-                Icons.Default.ArrowDropDown,
-                contentDescription = null,
-                tint = SubtyText3,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .background(SubtyBg2)
-                .border(1.dp, SubtyBorderDim),
-        ) {
-            options.forEach { (code, name) ->
-                DropdownMenuItem(
-                    text = {
-                        SubtyText(
-                            name,
-                            fontSize = 14,
-                            color = if (code == selected) SubtyMocha else SubtyText1,
-                            weight = if (code == selected) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    },
-                    onClick = { onSelect(code); expanded = false },
-                    modifier = Modifier.background(SubtyBg2),
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                )
-            }
-            if (moreOptionsLabel != null && onMoreOptions != null) {
-                DropdownMenuItem(
-                    text = {
-                        SubtyText(
-                            moreOptionsLabel,
-                            fontSize = 14,
-                            color = SubtyMocha,
-                            weight = FontWeight.Bold,
-                        )
-                    },
-                    onClick = { expanded = false; onMoreOptions() },
-                    modifier = Modifier.background(SubtyBg2),
-                    contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                )
-            }
-        }
+private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SubtyText(title, fontSize = 16, uppercase = true, letterSpacing = 0.04f)
+        content()
+    }
+}
+
+@Composable
+private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        SubtyText(label, fontSize = 13)
+        SubtySwitch(checked, onCheckedChange)
     }
 }

@@ -11,24 +11,24 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.services)
-    alias(libs.plugins.firebase.appdistribution)
-    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
     namespace = "com.subtranslate"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.subtranslate"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 15
-        versionName = "1.12"
+        targetSdk = 36
+        versionCode = 22
+        versionName = "1.19"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val geminiApiKey = System.getenv("GEMINI_API_KEY") ?: localProps["GEMINI_API_KEY"] ?: ""
-        val googleTranslateApiKey = System.getenv("GOOGLE_TRANSLATE_API_KEY") ?: localProps["GOOGLE_TRANSLATE_API_KEY"] ?: ""
+        // Store-v1: translation providers are disabled; do not package these keys.
+        val geminiApiKey = ""
+        val openRouterApiKey = ""
+        val googleTranslateApiKey = ""
         // Key already in preview/index.html (public repo) — fallback so CI builds work without the secret
         val opensubtitlesApiKey = System.getenv("OPENSUBTITLES_API_KEY")
             ?: localProps["OPENSUBTITLES_API_KEY"]?.toString()
@@ -45,13 +45,15 @@ android {
         val osPassword = System.getenv("OPENSUBTITLES_PASSWORD")
             ?: localProps["OPENSUBTITLES_PASSWORD"]?.toString()
             ?: ""
-
-        val microsoftApiKey = System.getenv("MICROSOFT_API_KEY")
-            ?: localProps["MICROSOFT_API_KEY"]?.toString()
+        val screwziraEmail = System.getenv("SCREWZIRA_EMAIL")
+            ?: localProps["SCREWZIRA_EMAIL"]?.toString()
             ?: ""
-        val microsoftRegion = System.getenv("MICROSOFT_REGION")
-            ?: localProps["MICROSOFT_REGION"]?.toString()
-            ?: "westeurope"
+        val screwziraPassword = System.getenv("SCREWZIRA_PASSWORD")
+            ?: localProps["SCREWZIRA_PASSWORD"]?.toString()
+            ?: ""
+
+        val microsoftApiKey = ""
+        val microsoftRegion = ""
         val tmdbApiKey = System.getenv("TMDB_API_KEY")
             ?: localProps["TMDB_API_KEY"]?.toString()
             ?: ""
@@ -59,9 +61,12 @@ android {
         buildConfigField("String", "OPENSUBTITLES_API_KEY", "\"$opensubtitlesApiKey\"")
         buildConfigField("String", "SUBDL_API_KEY", "\"$subdlApiKey\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        buildConfigField("String", "OPENROUTER_API_KEY", "\"$openRouterApiKey\"")
         buildConfigField("String", "GOOGLE_TRANSLATE_API_KEY", "\"$googleTranslateApiKey\"")
         buildConfigField("String", "OPENSUBTITLES_USERNAME", "\"$osUsername\"")
         buildConfigField("String", "OPENSUBTITLES_PASSWORD", "\"$osPassword\"")
+        buildConfigField("String", "SCREWZIRA_EMAIL", "\"$screwziraEmail\"")
+        buildConfigField("String", "SCREWZIRA_PASSWORD", "\"$screwziraPassword\"")
         buildConfigField("String", "MICROSOFT_API_KEY", "\"$microsoftApiKey\"")
         buildConfigField("String", "MICROSOFT_REGION", "\"$microsoftRegion\"")
         buildConfigField("String", "TMDB_API_KEY", "\"$tmdbApiKey\"")
@@ -102,21 +107,10 @@ android {
                 "proguard-rules.pro"
             )
 
-            firebaseAppDistribution {
-                artifactType = "AAB"
-                val creds = System.getenv("FIREBASE_SERVICE_ACCOUNT").orEmpty()
-                if (creds.isNotBlank()) serviceCredentialsFile = creds
-            }
         }
 
         debug {
             signingConfig = signingConfigs.getByName("debug")
-            firebaseAppDistribution {
-                artifactType = "APK"
-                val creds = System.getenv("FIREBASE_SERVICE_ACCOUNT").orEmpty()
-                if (creds.isNotBlank()) serviceCredentialsFile = creds
-                testers = "arnon7700@gmail.com"
-            }
         }
     }
 
@@ -133,6 +127,7 @@ android {
         compose = true
         buildConfig = true
     }
+
 }
 
 dependencies {
@@ -141,7 +136,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.kotlinx.coroutines.android)
+implementation(libs.kotlinx.coroutines.android)
 
     // Compose
     implementation(platform(libs.compose.bom))
@@ -181,18 +176,16 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
-    // Security
-    implementation(libs.security.crypto)
+// Security
+implementation(libs.security.crypto)
+implementation("androidx.documentfile:documentfile:1.0.1")
+    implementation("com.google.mlkit:translate:17.0.3")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
 
-    // Testing
-    testImplementation(libs.junit)
+// Testing
+testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
 
-    // Firebase
-    implementation(platform(libs.firebase.bom))
-    implementation("com.google.firebase:firebase-config-ktx")
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-crashlytics")
-    implementation("com.google.firebase:firebase-firestore-ktx")
 }

@@ -21,6 +21,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -41,6 +43,8 @@ fun SubtyText(
     uppercase: Boolean = false,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
+    textAlign: TextAlign? = null,
+    textDirection: TextDirection = TextDirection.Unspecified,
 ) {
     M3Text(
         text = if (uppercase) text.uppercase() else text,
@@ -51,6 +55,8 @@ fun SubtyText(
         letterSpacing = letterSpacing.em,
         maxLines = maxLines,
         overflow = overflow,
+        textAlign = textAlign,
+        style = TextStyle(textDirection = textDirection),
         lineHeight = (fontSize * 1.4).sp,
     )
 }
@@ -112,6 +118,7 @@ fun SubtyTopBar(
     title: String,
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    showDivider: Boolean = true,
 ) {
     Column(modifier = modifier) {
         Row(
@@ -126,12 +133,12 @@ fun SubtyTopBar(
             if (onBack != null) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(36.dp)
                         .clickable(onClick = onBack),
                     contentAlignment = Alignment.Center,
                 ) {
                     val arrowColor = SubtyText1
-                    Canvas(modifier = Modifier.size(18.dp)) {
+                    Canvas(modifier = Modifier.size(22.dp)) {
                         val cx = size.width / 2f
                         val cy = size.height / 2f
                         val color = arrowColor
@@ -153,13 +160,15 @@ fun SubtyTopBar(
                 modifier = Modifier.weight(1f),
             )
         }
-        SubtyDivider()
+        if (showDivider) {
+            SubtyDivider()
+        }
     }
 }
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
 
-enum class SubtyButtonStyle { OUTLINE, FILLED, MOCHA }
+enum class SubtyButtonStyle { OUTLINE, FILLED, MOCHA, ACCENT }
 
 @Composable
 fun SubtyButton(
@@ -174,19 +183,23 @@ fun SubtyButton(
 ) {
     val bg = when {
         !enabled -> Color.Transparent
-        style == SubtyButtonStyle.FILLED -> SubtyText1
+        style == SubtyButtonStyle.FILLED -> SubtyMocha
         style == SubtyButtonStyle.MOCHA -> SubtyMocha
+        style == SubtyButtonStyle.ACCENT -> SubtyMocha
         else -> Color.Transparent
     }
     val fg = when {
         !enabled -> SubtyText3
-        style == SubtyButtonStyle.FILLED -> SubtyBg
+        style == SubtyButtonStyle.FILLED -> SubtyWhite
         style == SubtyButtonStyle.MOCHA -> SubtyBg
+        style == SubtyButtonStyle.ACCENT -> SubtyWhite
         else -> SubtyText1
     }
     val borderColor = when {
         !enabled -> SubtyText3
         style == SubtyButtonStyle.MOCHA -> SubtyMocha
+        style == SubtyButtonStyle.FILLED -> SubtyMocha
+        style == SubtyButtonStyle.ACCENT -> SubtyMocha
         else -> SubtyBorder
     }
     val hPad = if (small) 16.dp else 20.dp
@@ -233,23 +246,7 @@ fun SubtyChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val bg    = if (selected) SubtyText1 else Color.Transparent
-    val fg    = if (selected) SubtyBg else SubtyText2
-    Box(
-        modifier = modifier
-            .border(1.dp, if (selected) SubtyBorder else SubtyBorderDim)
-            .background(bg)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            )
-            .padding(horizontal = 26.dp, vertical = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        SubtyText(text, fontSize = 14, weight = FontWeight.Bold,
-            letterSpacing = 0.06f, uppercase = true, color = fg)
-    }
+    SubtySegmentChip(text = text, selected = selected, onClick = onClick, modifier = modifier)
 }
 
 /** Language chip in the filter bar (underline style) */
@@ -260,28 +257,38 @@ fun SubtyLangChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    SubtySegmentChip(text = text, selected = selected, onClick = onClick, modifier = modifier)
+}
+
+@Composable
+fun SubtySegmentChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
         modifier = modifier
+            .defaultMinSize(minWidth = 74.dp)
+            .height(42.dp)
+            .border(1.dp, if (selected) SubtyMochaSoft else SubtyBorder)
+            .background(if (selected) SubtyMochaSoft else SubtyBg3)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 26.dp, vertical = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center,
     ) {
         SubtyText(
             text,
-            fontSize = 14,
-            weight = FontWeight.Bold,
-            letterSpacing = 0.08f,
+            fontSize = 12,
+            weight = FontWeight.Medium,
+            letterSpacing = 0.02f,
             uppercase = true,
-            color = if (selected) SubtyText1 else SubtyText3,
+            color = if (selected) SubtyWhite else SubtyText1,
         )
-        if (selected) {
-            Spacer(Modifier.height(5.dp))
-            Box(Modifier.height(2.dp).width(32.dp).background(SubtyMocha))
-        }
     }
 }
 
@@ -292,13 +299,16 @@ fun SubtyCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .border(1.dp, SubtyBorder)
-            .background(SubtyBg2),
-        content = content,
-    )
+    Column(modifier = modifier.fillMaxWidth()) {
+        SubtyDivider()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            content = content,
+        )
+        SubtyDivider()
+    }
 }
 
 // ── Text field ───────────────────────────────────────────────────────────────

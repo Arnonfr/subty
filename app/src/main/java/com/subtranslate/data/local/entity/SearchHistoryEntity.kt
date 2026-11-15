@@ -13,6 +13,7 @@ data class SearchHistoryEntity(
     val contentType: String?,   // "movie" | "tv" | null
     val posterUrl: String? = null,
     val imdbId: String? = null,
+    val tmdbId: Int? = null,
     val seasonsCount: Int? = null,
     val searchedAt: Long = System.currentTimeMillis(),
 )
